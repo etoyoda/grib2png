@@ -364,8 +364,8 @@ bdsdecode(const unsigned char *bds, size_t buflen, unsigned igrid, unsigned ipar
   enum gribscan_err_t
 scanmsg(unsigned char *buf, size_t buflen, const char *locator)
 {
+#if 0
   enum gribscan_err_t r = GSE_OKAY;
-  size_t pdsofs = 8, pdslen, gdsofs, gdslen, bdsofs, bdslen;
   unsigned igrid, iparm;
   int ilev, ift1, ift2, d_scale;
   struct tm reftime;
@@ -384,13 +384,11 @@ scanmsg(unsigned char *buf, size_t buflen, const char *locator)
   pdsreftime(&reftime, buf + pdsofs);
   pdsftime(&ift1, &ift2, buf + pdsofs);
   d_scale = si2(buf + pdsofs + 26);
-#if 0
   {
   char rtbuf[32];
   fprintf(stderr, "%s: g%03u p%03u v%04d r%s f%03d..%03d\n", locator,
     igrid, iparm, ilev, showtime(rtbuf, sizeof rtbuf, &reftime), ift1/60, ift2/60);
   }
-#endif
   /* checking product */
   r = check_msg(buf[pdsofs+4], buf[pdsofs+5], iparm, ift2, ilev, &reftime,
     igrid);
@@ -413,7 +411,50 @@ scanmsg(unsigned char *buf, size_t buflen, const char *locator)
     bdsofs, bdslen, buflen);
   MYASSERT1(memcmp(buf + bdsofs + bdslen, "7777", 4) == 0, "endpos=%zu", bdsofs + bdslen);
   r = bdsdecode(buf + bdsofs, bdslen, igrid, iparm, d_scale);
-  return r;
+#endif
+  size_t recl, pos;
+  unsigned rectype;
+  size_t idsofs = 0, idslen = 0;
+  size_t gdsofs = 0, gdslen = 0;
+  size_t pdsofs = 0, pdslen = 0;
+  size_t drsofs = 0, drslen = 0;
+  size_t bmsofs = 0, bmslen = 0;
+  for (pos = 16u; pos <= buflen - 4; pos += recl) {
+    recl = ui4(buf + pos);
+    if (recl == 0x37373737uL) {
+      /* 第8節を検出 */
+      break;
+    }
+    rectype = buf[pos + 4];
+    printf("%s:%lu %u\n", locator, (unsigned long)pos, rectype);
+    switch (rectype) {
+case 1:
+      idsofs = pos;
+      idslen = recl;
+      break;
+case 3:
+      gdsofs = pos;
+      gdslen = recl;
+      break;
+case 4:
+      pdsofs = pos;
+      pdslen = recl;
+      break;
+case 5:
+      drsofs = pos;
+      drslen = recl;
+      break;
+case 6:
+      bmsofs = pos;
+      bmslen = recl;
+      break;
+case 7:
+      break;
+default:
+      break;
+    }
+  }
+  return GSE_OKAY;
 }
 
 /*
