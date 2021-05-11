@@ -7,6 +7,12 @@
 #include "gribscan.h"
 
   size_t
+ui4(const unsigned char *buf)
+{
+  return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+}
+
+  size_t
 ui3(const unsigned char *buf)
 {
   return (buf[0] << 16) | (buf[1] << 8) | buf[2];
@@ -411,34 +417,39 @@ scanmsg(unsigned char *buf, size_t buflen, const char *locator)
 }
 
 /*
- * IDS(GRIB第0節, "GRIB"に続く4バイト)を読み込んで、GRIB第1版であれば
+ * IDS(GRIB第0節, "GRIB"に続く12バイト)を読み込んで、GRIB第2版であれば
  * 電文長だけ読み込んで解読する。
  */
   enum gribscan_err_t
 gdecode(FILE *fp, const char *locator)
 {
   enum gribscan_err_t r = GSE_OKAY;
-  unsigned char ids[4];
+  unsigned char ids[12];
   size_t zr, msglen;
   unsigned char *msgbuf;
   /* section 0 IDS */
-  zr = fread(ids, 1, 4, fp);
-  if (zr < 4) {
+  zr = fread(ids, 1, 12, fp);
+  if (zr < 12) {
     fputs("EOF in IDS", stderr);
     return ERR_OVERRUN;
   }
-  if (ids[3] != 1u) {
-    fputs("Not GRIB Edition 1\n", stderr);
+  if (ids[3] != 2u) {
+    fputs("Not GRIB Edition 2\n", stderr);
     return GSE_JUSTWARN;
   }
-  msglen = ui3(ids);
+  msglen = ui4(ids + 4);
+  if (msglen != 0u) {
+    fputs("GRIB message size 2GiB or more not supported\n", stderr);
+    return GSE_JUSTWARN;
+  }
+  msglen = ui4(ids + 8);
   msgbuf = malloc(msglen);
   if (msgbuf == NULL) { return ERR_NOMEM; }
   /* --- begin ensure malloc-free --- */
   memcpy(msgbuf+0, "GRIB", 4);
-  memcpy(msgbuf+4, ids, 4);
-  zr = fread(msgbuf+8, 1, msglen-8, fp);
-  if (zr < msglen - 8) {
+  memcpy(msgbuf+4, ids, 12);
+  zr = fread(msgbuf + 16, 1, msglen - 16, fp);
+  if (zr < msglen - 16) {
     fputs("EOF in GRIB\n", stderr);
     r = ERR_OVERRUN;
     goto free_and_return;
@@ -484,7 +495,7 @@ scandata(const char *fnam)
           fnam + ((strlen(fnam) > 24) ? (strlen(fnam) - 24) : 0), lpos);
         r = gdecode(fp, locator);
         if (r != GSE_OKAY) {
-          fprintf(stderr, "%s: GRIB1 decode %u\n", locator, r);
+          fprintf(stderr, "%s: GRIB decode %u\n", locator, r);
           if (r != GSE_JUSTWARN) {
             goto klose;
           }
