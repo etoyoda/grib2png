@@ -12,6 +12,7 @@ ui4(const unsigned char *buf)
   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
 }
 
+#if 0
   size_t
 ui3(const unsigned char *buf)
 {
@@ -38,19 +39,6 @@ si2(const unsigned char *buf)
   long r;
   r = ((buf[0] & 0x7Fu) << 8) | buf[1];
   return (buf[0] & 0x80u) ? -r : r;
-}
-
-  float
-mfloat(const unsigned char *buf)
-{
-  unsigned bsign, exp;
-  unsigned long mant;
-  float r;
-  bsign = buf[0] >> 7;
-  exp = ((signed)(buf[0] & 0x7Fu) - 64) * 4 - 24;
-  mant = ui3(buf + 1);
-  r = ldexpf((float)mant, exp);
-  return bsign ? -r : r;
 }
 
   unsigned
@@ -123,73 +111,11 @@ unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
   return getbits(buf + byteofs, bitofs, nbits);
 }
 
-#define VLEV_SURF 0
-#define VLEV_MSL 0
-#define VLEV_ERR -1
-
-  int
-pds2vlev(const unsigned char *buf)
-{
-  switch (buf[9]) {
-  case 1:
-    return VLEV_SURF;
-  case 102:
-    return VLEV_MSL;
-  case 100:
-    return (buf[10] << 8) | buf[11];
-  default:
-    return VLEV_ERR;
-  }
-}
-
-  void
-pdsreftime(struct tm *v, const unsigned char *buf)
-{
-  v->tm_year = buf[12] + buf[24] * 100 - 2000;
-  v->tm_mon = buf[13] - 1;
-  v->tm_mday = buf[14];
-  v->tm_hour = buf[15];
-  v->tm_min = buf[16];
-  v->tm_sec = 0;
-  v->tm_isdst = v->tm_wday = v->tm_yday = 0;
-}
-
   const char *
 showtime(char *buf, size_t size, const struct tm *t)
 {
     strftime(buf, size, "%Y-%m-%dT%H:%MZ", t);
     return buf;
-}
-
-  int
-pdsftime(int *pift1, int *pift2, const unsigned char *buf)
-{
-  int factor;
-  switch (buf[17]) {
-  case 0:
-    factor = 1;
-    break;
-  case 1:
-    factor = 60;
-    break;
-  default:
-    fprintf(stderr, "unsupported time unit %u\n", buf[17]);
-    return -1;
-  }
-  switch (buf[20]) {
-  case 0:
-  case 1:
-    *pift1 = *pift2 = buf[18] * factor;
-    break;
-  case 4:
-    *pift1 = buf[18] * factor;
-    *pift2 = buf[19] * factor;
-    break;
-  default:
-    fprintf(stderr, "unsupported time range type %u\n", buf[20]);
-    return -1;
-  }
-  return 0;
 }
 
 #define MYASSERT1(test, _plusfmt, val) \
@@ -204,159 +130,12 @@ pdsftime(int *pift1, int *pift2, const unsigned char *buf)
     return ERR_BADGRIB; \
   }
 
-const unsigned thinpat[73] = {
-  73, 73, 73, 73, 73, 73, 73, 73, 72, 72,
-  72, 71, 71, 71, 70, 70, 69, 69, 68, 67,
-  67, 66, 65, 65, 64, 63, 62, 61, 60, 60,
-  59, 58, 57, 56, 55, 54, 52, 51, 50, 49,
-  48, 47, 45, 44, 43, 42, 40, 39, 38, 36,
-  35, 33, 32, 30, 29, 28, 26, 25, 23, 22,
-  20, 19, 17, 16, 14, 12, 11,  9,  8,  6,
-  5,  3,  2 };
-
-  enum gribscan_err_t
-gdscheck(unsigned char *gds, unsigned igrid)
-{
-  unsigned nrows, ncols, i;
-  long la1, la2, lo1, lo2;
-  /* common feature */
-  MYASSERT1(gds[3] == 0, "NV=%u", gds[3]);
-  MYASSERT1(gds[5] == 0, "gridtype=%u", gds[5]);
-  ncols = ui2(gds + 6);
-  nrows = ui2(gds + 8);
-  /* igrid-dependent feature */
-  la1 = si3(gds + 10);
-  lo1 = si3(gds + 13);
-  la2 = si3(gds + 17);
-  lo2 = si3(gds + 20);
-  /* check latitude range */
-  switch (igrid) {
-  case 37: case 38: case 39: case 40:
-    MYASSERT1(ncols == 0xFFFF, "%u", ncols);
-    MYASSERT1(nrows == 73u, "%u", nrows);
-    MYASSERT1((la1 == 0), "%lu", la1);
-    MYASSERT1((la2 == 90000), "%lu", la2);
-    for (i = 0; i < 73; i++) {
-      unsigned ncols = ui2(gds + gds[4] + i * 2 - 1);
-      MYASSERT3((ncols == thinpat[i]), "ncols=%u thinpatN[%u]=%u",
-        ncols, i, thinpat[i]);
-    }
-    break;
-  case 41: case 42: case 43: case 44:
-    MYASSERT1(ncols == 0xFFFF, "%u", ncols);
-    MYASSERT1(nrows == 73u, "%u", nrows);
-    MYASSERT1((la1 == -90000), "%ld", la1);
-    MYASSERT1((la2 == 0), "%ld", la2);
-    for (i = 0; i < 73; i++) {
-      unsigned ncols = ui2(gds + gds[4] + i * 2 - 1);
-      MYASSERT3((ncols == thinpat[72-i]), "ncols=%u thinpatS[%u]=%u",
-        ncols, i, thinpat[72-i]);
-    }
-    break;
-  case 255:
-    MYASSERT1(ncols == 113u, "%u", ncols);
-    MYASSERT1(nrows == 65u, "%u", nrows);
-    MYASSERT1((la1 == 60000), "%ld", la1);
-    MYASSERT1((la2 == -20000), "%ld", la2);
-    break;
-  }
-  /* longitude range check */
-  switch (igrid) {
-  case 37: case 41:
-    MYASSERT1((lo1 == 330000), "%ld", lo1);
-    MYASSERT1((lo2 == 60000), "%ld", lo2);
-    break;
-  case 38: case 42:
-    MYASSERT1((lo1 == 60000), "%ld", lo1);
-    MYASSERT1((lo2 == 150000), "%ld", lo2);
-    break;
-  case 39: case 43:
-    MYASSERT1((lo1 == 150000), "%lu", lo1);
-    MYASSERT1((lo2 == 240000), "%lu", lo2);
-    break;
-  case 40: case 44:
-    MYASSERT1((lo1 == 240000), "%lu", lo1);
-    MYASSERT1((lo2 == 330000), "%lu", lo2);
-    break;
-  case 255:
-    MYASSERT1((lo1 == 60000), "%ld", lo1);
-    MYASSERT1((lo2 == 200000), "%ld", lo2);
-    break;
-  }
-
-  return GSE_OKAY;
-}
-
-  const char *
-parm_mnemonic(unsigned iparm)
-{
-  static const char *master[65]= {
-    /* 0-9 */
-    "null", "Pres", "PrMSL", "PTend", "PVort",  "IcaHt", "Gp", "Hgt", "Dist", "HStDv",
-    /* 10-19 */
-    "TOzne", "Tmp", "VTmp", "PoT", "EPoT",      "TMax", "TMin", "DPT", "Depr", "LapR",
-    /* 20-29 */
-    "Vis", "RdSp1", "RdSp2", "RdSp3", "PLI",    "TmpA", "PresA", "GpA", "WvSp1", "WvSp2",
-    /* 30-39 */
-    "WvSp3", "WDir", "Wind", "UGrd", "VGrd",    "Strm", "VPot", "MntSF", "SgCVV", "VVel",
-    /* 40-49 */
-    "DzDt", "AbsV", "AbsD", "RelV", "RelD",     "VUCSh", "VVCSh", "DirC", "SpC", "UOGrd",
-    /* 50-59 */
-    "VOGrd", "SpfH", "RH", "MixR", "PWat",      "VapP", "SatD", "Evp", "CIce", "PRate",
-    /* 60-69 */
-    "Tstm", "APcp", "NCPcp", "ACPcp"
-  };
-  if (iparm < 64) {
-    return master[iparm];
-  } else {
-    return "?";
-  }
-}
-
 #define WEAK_ASSERT1(test, _plusfmt, val) \
   if (!(test)) { \
     fprintf(stderr, "assert(%s) " _plusfmt "\n", #test, val); \
     return GSE_JUSTWARN; \
   }
-
-  enum gribscan_err_t
-bdsdecode(const unsigned char *bds, size_t buflen, unsigned igrid, unsigned iparm,
-  int d_scale)
-{
-  int e_scale = si2(bds + 4);
-  float refval = mfloat(bds + 6);
-  unsigned depth = bds[10];
-  unsigned blankbits = bds[3] & 0xFu;
-  double dfactor = pow(10.0, -d_scale);
-  float maxval = refval + ((1 << depth) - 1) * ldexpf(1.0f, e_scale);
-  const char *sparm = parm_mnemonic(iparm);
-  unsigned npts;
-  if (iparm == 2) { dfactor *= 0.01; };
-  fprintf(stderr, "p%03u %-6.6s d%03d E%03d depth%03u min%-9.6g max%-9.6g\n",
-    iparm, sparm, d_scale, e_scale, depth, refval * dfactor, maxval * dfactor);
-  switch (igrid) {
-    case 37: case 38: case 39: case 40: case 41: case 42: case 43: case 44:
-      npts = 3447u;
-      break;
-    case 255:
-      npts = 7345u;
-      break;
-    default:
-      fprintf(stderr, "unsupported igrid=%u\n", igrid);
-      return GSE_JUSTWARN;
-  }
-  MYASSERT3(depth * npts + blankbits + 88u == buflen * 8,
-    "depth=%u blankbits=%u buflen=%zu", depth, blankbits, buflen);
-#if 0
-  for (i = 0; i < npts; i++) {
-    unsigned y;
-    y = unpackbits(bds + 11u, depth, i);
-    fprintf(stderr, " %u", y);
-  }
-  fprintf(stderr, "\n");
 #endif
-  return GSE_OKAY;
-}
 
 /*
  * GRIB報buf（長さbuflenバイト）を解読する。
@@ -364,54 +143,6 @@ bdsdecode(const unsigned char *bds, size_t buflen, unsigned igrid, unsigned ipar
   enum gribscan_err_t
 scanmsg(unsigned char *buf, size_t buflen, const char *locator)
 {
-#if 0
-  enum gribscan_err_t r = GSE_OKAY;
-  unsigned igrid, iparm;
-  int ilev, ift1, ift2, d_scale;
-  struct tm reftime;
-  pdslen = ui3(buf + pdsofs);
-  MYASSERT1((pdslen + 8 < buflen), "pdslen=%zu", pdslen);
-  WEAK_ASSERT1((buf[pdsofs + 4] == 34), "origcenter=%u", buf[pdsofs + 4]);
-  igrid = buf[pdsofs + 6];
-  WEAK_ASSERT1((((igrid >= 37) && (igrid <= 44)) || (igrid == 255)), "gridtype=%u", igrid);
-  WEAK_ASSERT1((buf[pdsofs + 7] == 0x80u), "flags=%#X", buf[pdsofs + 7]);
-  iparm = buf[pdsofs + 8];
-  ilev = pds2vlev(buf + pdsofs);
-  if (ilev == VLEV_ERR) {
-    fprintf(stderr, "unsupported vert level %u\n", buf[pdsofs + 9]);
-    return GSE_JUSTWARN;
-  }
-  pdsreftime(&reftime, buf + pdsofs);
-  pdsftime(&ift1, &ift2, buf + pdsofs);
-  d_scale = si2(buf + pdsofs + 26);
-  {
-  char rtbuf[32];
-  fprintf(stderr, "%s: g%03u p%03u v%04d r%s f%03d..%03d\n", locator,
-    igrid, iparm, ilev, showtime(rtbuf, sizeof rtbuf, &reftime), ift1/60, ift2/60);
-  }
-  /* checking product */
-  r = check_msg(buf[pdsofs+4], buf[pdsofs+5], iparm, ift2, ilev, &reftime,
-    igrid);
-  if (r == GSE_SKIP) {
-    return GSE_OKAY;
-  }
-  /* checking gds */
-  gdsofs = pdsofs + pdslen;
-  MYASSERT1((gdsofs + 8 < buflen), "gdsofs=%zu", gdsofs);
-  gdslen = ui3(buf + gdsofs);
-  /* may return 1 */
-  r = gdscheck(buf + gdsofs, igrid);
-  if (r != GSE_OKAY) {
-    return r;
-  }
-  bdsofs = gdsofs + gdslen;
-  MYASSERT1((bdsofs + 8 < buflen), "bdspos=%zu", bdsofs);
-  bdslen = ui3(buf + bdsofs);
-  MYASSERT3((bdsofs + bdslen + 4 <= buflen), "bdsofs=%zu, bdslen=%zu, buflen=%zu",
-    bdsofs, bdslen, buflen);
-  MYASSERT1(memcmp(buf + bdsofs + bdslen, "7777", 4) == 0, "endpos=%zu", bdsofs + bdslen);
-  r = bdsdecode(buf + bdsofs, bdslen, igrid, iparm, d_scale);
-#endif
   size_t recl, pos;
   unsigned rectype;
   size_t idsofs = 0, idslen = 0;
