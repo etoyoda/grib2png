@@ -1,7 +1,7 @@
 OBJS=gribscan.o mainlogic.o
 LIBS= -lm
 LFLAGS= -g
-CFLAGS= -g --pedantic -std=gnu99 -Wall -Werror
+CFLAGS= -g --pedantic -std=gnu99 -Wall 
 CC=cc
 
 .SUFFIXES:
