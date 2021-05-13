@@ -4,6 +4,17 @@
 #include "gribscan.h"
 
   enum gribscan_err_t
+checksec7(const struct grib2secs *gsp)
+{
+  struct tm t;
+  char sreftime[24];
+  mkreftime(&t, gsp);
+  showtime(sreftime, sizeof sreftime, &t);
+  printf("%p %s\n", gsp->ds, sreftime);
+  return GSE_OKAY;
+}
+
+  enum gribscan_err_t
 argscan(int argc, const char **argv)
 {
   int i;
@@ -18,4 +29,3 @@ argscan(int argc, const char **argv)
   }
   return r;
 }
-

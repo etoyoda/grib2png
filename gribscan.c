@@ -137,12 +137,6 @@ showtime(char *buf, size_t size, const struct tm *tp)
     return buf;
 }
 
-struct grib2secs {
-  const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
-  size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
-  unsigned discipline;
-};
-
   void
 mkreftime(struct tm *tp, const struct grib2secs *gsp)
 {
@@ -152,17 +146,6 @@ mkreftime(struct tm *tp, const struct grib2secs *gsp)
   tp->tm_hour = gsp->ids[16];
   tp->tm_min = gsp->ids[17];
   tp->tm_sec = gsp->ids[18];
-}
-
-  enum gribscan_err_t
-checksec7(const struct grib2secs *gsp)
-{
-  struct tm t;
-  char sreftime[24];
-  mkreftime(&t, gsp);
-  showtime(sreftime, sizeof sreftime, &t);
-  printf("%p %s\n", gsp->ds, sreftime);
-  return GSE_OKAY;
 }
 
 /*

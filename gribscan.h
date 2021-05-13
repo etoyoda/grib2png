@@ -16,28 +16,28 @@ typedef enum gribscan_err_t {
   ERR_BADGRIB
 } gribscan_err_t;
 
-/* --- mainlogic.c --- */
-
-struct cfgout_t {
-  unsigned ctr;
-  unsigned gen;
-  unsigned par;
-  unsigned ft;
-  unsigned lev;
-  time_t rt;
-  float *acc;
-  float *wgt;
+struct grib2secs {
+  const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
+  size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
+  unsigned discipline;
 };
 
-extern enum gribscan_err_t
+/* --- mainlogic.c --- */
+
+extern gribscan_err_t
   argscan(int argc, const char **argv);
 
 extern time_t timegm6(unsigned y, unsigned m, unsigned d,
   unsigned h, unsigned n, unsigned s);
 
+extern gribscan_err_t
+  checksec7(const struct grib2secs *gsp);
+
 /* --- gribscan.c --- */
 
-enum gribscan_err_t
+extern const char *
+  showtime(char *buf, size_t size, const struct tm *t);
+extern void
+  mkreftime(struct tm *tp, const struct grib2secs *gsp);
+extern gribscan_err_t
   scandata(const char *fnam);
-
-extern const char *showtime(char *buf, size_t size, const struct tm *t);
