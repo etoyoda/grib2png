@@ -12,6 +12,14 @@ ui4(const unsigned char *buf)
   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
 }
 
+  int
+si2(const unsigned char *buf)
+{
+  long r;
+  r = ((buf[0] & 0x7Fu) << 8) | buf[1];
+  return (buf[0] & 0x80u) ? -r : r;
+}
+
 #if 0
   size_t
 ui3(const unsigned char *buf)
@@ -30,14 +38,6 @@ si3(const unsigned char *buf)
 {
   long r;
   r = ((buf[0] & 0x7Fu) << 16) | (buf[1] << 8) | buf[2];
-  return (buf[0] & 0x80u) ? -r : r;
-}
-
-  int
-si2(const unsigned char *buf)
-{
-  long r;
-  r = ((buf[0] & 0x7Fu) << 8) | buf[1];
   return (buf[0] & 0x80u) ? -r : r;
 }
 
@@ -111,13 +111,6 @@ unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
   return getbits(buf + byteofs, bitofs, nbits);
 }
 
-  const char *
-showtime(char *buf, size_t size, const struct tm *t)
-{
-    strftime(buf, size, "%Y-%m-%dT%H:%MZ", t);
-    return buf;
-}
-
 #define MYASSERT1(test, _plusfmt, val) \
   if (!(test)) { \
     fprintf(stderr, "assert(%s) " _plusfmt "\n", #test, val); \
@@ -137,16 +130,38 @@ showtime(char *buf, size_t size, const struct tm *t)
   }
 #endif
 
+  const char *
+showtime(char *buf, size_t size, const struct tm *tp)
+{
+    strftime(buf, size, "%Y-%m-%dT%H:%MZ", tp);
+    return buf;
+}
+
 struct grib2secs {
   const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
   size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
   unsigned discipline;
 };
 
+  void
+mkreftime(struct tm *tp, const struct grib2secs *gsp)
+{
+  tp->tm_year = si2(gsp->ids + 12) - 1900;
+  tp->tm_mon = gsp->ids[14] - 1;
+  tp->tm_mday = gsp->ids[15];
+  tp->tm_hour = gsp->ids[16];
+  tp->tm_min = gsp->ids[17];
+  tp->tm_sec = gsp->ids[18];
+}
+
   enum gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
-  printf("%p i%p g%p p%p d%p\n", gsp->ds, gsp->ids, gsp->gds, gsp->pds, gsp->drs);
+  struct tm t;
+  char sreftime[24];
+  mkreftime(&t, gsp);
+  showtime(sreftime, sizeof sreftime, &t);
+  printf("%p %s\n", gsp->ds, sreftime);
   return GSE_OKAY;
 }
 
