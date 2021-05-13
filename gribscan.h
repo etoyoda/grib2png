@@ -31,9 +31,6 @@ struct cfgout_t {
 
 extern enum gribscan_err_t
   argscan(int argc, const char **argv);
-extern enum gribscan_err_t
-  check_msg(unsigned ctr, unsigned gen, unsigned par, unsigned ft,
-  unsigned lev, struct tm *rtime, unsigned igrid);
 
 extern time_t timegm6(unsigned y, unsigned m, unsigned d,
   unsigned h, unsigned n, unsigned s);

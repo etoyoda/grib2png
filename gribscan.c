@@ -137,51 +137,69 @@ showtime(char *buf, size_t size, const struct tm *t)
   }
 #endif
 
+struct grib2secs {
+  const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
+  size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
+  unsigned discipline;
+};
+
+  enum gribscan_err_t
+checksec7(const struct grib2secs *gsp)
+{
+  printf("%p i%p g%p p%p d%p\n", gsp->ds, gsp->ids, gsp->gds, gsp->pds, gsp->drs);
+  return GSE_OKAY;
+}
+
 /*
  * GRIB報buf（長さbuflenバイト）を解読する。
  */
   enum gribscan_err_t
 scanmsg(unsigned char *buf, size_t buflen, const char *locator)
 {
-  size_t recl, pos;
+  enum gribscan_err_t r;
   unsigned rectype;
-  size_t idsofs = 0, idslen = 0;
-  size_t gdsofs = 0, gdslen = 0;
-  size_t pdsofs = 0, pdslen = 0;
-  size_t drsofs = 0, drslen = 0;
-  size_t bmsofs = 0, bmslen = 0;
+  size_t recl, pos;
+  struct grib2secs gs;
+  gs.ids = gs.gds = gs.pds = gs.drs = gs.bms = gs.ds = NULL;
+  gs.idslen = gs.gdslen = gs.pdslen = gs.drslen = gs.bmslen = gs.dslen = 0;
+  gs.discipline = buf[6];
   for (pos = 16u; pos <= buflen - 4; pos += recl) {
     recl = ui4(buf + pos);
     if (recl == 0x37373737uL) {
       /* 第8節を検出 */
       break;
     }
-    rectype = buf[pos + 4];
-    printf("%s:%lu %u\n", locator, (unsigned long)pos, rectype);
+    rectype = buf[pos+4];
     switch (rectype) {
 case 1:
-      idsofs = pos;
-      idslen = recl;
+      gs.ids = buf + pos;
+      gs.idslen = recl;
       break;
 case 3:
-      gdsofs = pos;
-      gdslen = recl;
+      gs.gds = buf + pos;
+      gs.gdslen = recl;
       break;
 case 4:
-      pdsofs = pos;
-      pdslen = recl;
+      gs.pds = buf + pos;
+      gs.pdslen = recl;
       break;
 case 5:
-      drsofs = pos;
-      drslen = recl;
+      gs.drs = buf + pos;
+      gs.drslen = recl;
       break;
 case 6:
-      bmsofs = pos;
-      bmslen = recl;
+      gs.bms = buf + pos;
+      gs.bmslen = recl;
       break;
 case 7:
+      gs.ds = buf + pos;
+      gs.dslen = recl;
+      r = checksec7(&gs);
+      if (r != GSE_OKAY)
+        return r;
       break;
 default:
+      fprintf(stderr, "%s:%lu %u\n", locator, (unsigned long)pos, rectype);
       break;
     }
   }

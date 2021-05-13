@@ -19,9 +19,3 @@ argscan(int argc, const char **argv)
   return r;
 }
 
-  enum gribscan_err_t
-check_msg(unsigned ctr, unsigned gen, unsigned par, unsigned ft,
-  unsigned lev, struct tm *rtime, unsigned igrid)
-{
-  return GSE_OKAY;
-}
