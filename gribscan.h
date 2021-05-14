@@ -18,6 +18,12 @@ typedef enum gribscan_err_t {
 
 /* --- mainlogic.c --- */
 
+struct grib2secs {
+  const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
+  size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
+  unsigned discipline;
+};
+
 struct cfgout_t {
   unsigned ctr;
   unsigned gen;
@@ -34,6 +40,9 @@ extern enum gribscan_err_t
 
 extern time_t timegm6(unsigned y, unsigned m, unsigned d,
   unsigned h, unsigned n, unsigned s);
+
+extern gribscan_err_t
+checksec7(const struct grib2secs *gsp);
 
 /* --- gribscan.c --- */
 

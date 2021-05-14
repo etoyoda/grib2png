@@ -137,19 +137,6 @@ showtime(char *buf, size_t size, const struct tm *t)
   }
 #endif
 
-struct grib2secs {
-  const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
-  size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
-  unsigned discipline;
-};
-
-  enum gribscan_err_t
-checksec7(const struct grib2secs *gsp)
-{
-  printf("%p i%p g%p p%p d%p\n", gsp->ds, gsp->ids, gsp->gds, gsp->pds, gsp->drs);
-  return GSE_OKAY;
-}
-
 /*
  * GRIB報buf（長さbuflenバイト）を解読する。
  */

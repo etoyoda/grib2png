@@ -19,3 +19,9 @@ argscan(int argc, const char **argv)
   return r;
 }
 
+  enum gribscan_err_t
+checksec7(const struct grib2secs *gsp)
+{
+  printf("%p i%p g%p p%p d%p\n", gsp->ds, gsp->ids, gsp->gds, gsp->pds, gsp->drs);
+  return GSE_OKAY;
+}
