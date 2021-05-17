@@ -6,7 +6,7 @@
 
 #include "gribscan.h"
 
-  size_t
+  unsigned long
 ui4(const unsigned char *buf)
 {
   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
@@ -20,17 +20,17 @@ si2(const unsigned char *buf)
   return (buf[0] & 0x80u) ? -r : r;
 }
 
+  unsigned
+ui2(const unsigned char *buf)
+{
+  return (buf[0] << 8) | buf[1];
+}
+
 #if 0
   size_t
 ui3(const unsigned char *buf)
 {
   return (buf[0] << 16) | (buf[1] << 8) | buf[2];
-}
-
-  unsigned
-ui2(const unsigned char *buf)
-{
-  return (buf[0] << 8) | buf[1];
 }
 
   long

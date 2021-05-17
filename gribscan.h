@@ -35,6 +35,12 @@ extern gribscan_err_t
 
 /* --- gribscan.c --- */
 
+extern unsigned long
+  ui4(const unsigned char *buf);
+extern int
+  si2(const unsigned char *buf);
+extern unsigned
+  ui2(const unsigned char *buf);
 extern const char *
   showtime(char *buf, size_t size, const struct tm *t);
 extern void

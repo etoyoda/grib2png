@@ -3,6 +3,31 @@
 #include <time.h>
 #include "gribscan.h"
 
+/*
+ * 4 オクテットでパラメタを次の構造で表現する
+ * 0xFF000000: 予約 (暫定ゼロ、ローカルの処理に使用)
+ * 0x00FF0000: discipline
+ * 0x0000FF00: category
+ * 0x000000FF: parameter
+ * ~0: エラー
+ */
+  unsigned long
+get_parameter(const struct grib2secs *gsp)
+{
+  unsigned long r;
+  r = gsp->discipline << 16;
+  if (gsp->pdslen == 0)
+    return ~0;
+  switch (ui2(gsp->pds + 7)) {
+  case 0:
+    r |= ui2(gsp->pds + 9);
+    break;
+  default:
+    return ~0;
+  }
+  return r;
+}
+
   enum gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
@@ -10,7 +35,7 @@ checksec7(const struct grib2secs *gsp)
   char sreftime[24];
   mkreftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
-  printf("%p %s\n", gsp->ds, sreftime);
+  printf("%p %s %08lx\n", gsp->ds, sreftime, get_parameter(gsp));
   return GSE_OKAY;
 }
 
