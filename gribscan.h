@@ -44,6 +44,6 @@ extern unsigned
 extern const char *
   showtime(char *buf, size_t size, const struct tm *t);
 extern void
-  mkreftime(struct tm *tp, const struct grib2secs *gsp);
+  get_reftime(struct tm *tp, const struct grib2secs *gsp);
 extern gribscan_err_t
   scandata(const char *fnam);

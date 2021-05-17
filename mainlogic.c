@@ -33,7 +33,7 @@ checksec7(const struct grib2secs *gsp)
 {
   struct tm t;
   char sreftime[24];
-  mkreftime(&t, gsp);
+  get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
   printf("%p %s %08lx\n", gsp->ds, sreftime, get_parameter(gsp));
   return GSE_OKAY;
