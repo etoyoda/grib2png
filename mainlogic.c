@@ -78,6 +78,46 @@ get_ftime(const struct grib2secs *gsp)
   return r;
 }
 
+  long
+get_duration(const struct grib2secs *gsp)
+{
+  long r;
+  unsigned tunits;
+  unsigned pdst;
+  unsigned nranges;
+  if (gsp->pdslen == 0)
+    return LONG_MAX;
+  pdst = ui2(gsp->pds + 7);
+  switch (pdst) {
+  case 0:
+    return 0;
+  case 8:
+    nranges = gsp->pds[41];
+    tunits = gsp->pds[48];
+    r = ui4(gsp->pds + 49);
+    break;
+  default:
+    fprintf(stderr, "unsupported PDS template 4.%u\n", pdst);
+    return LONG_MAX;
+  }
+  if (nranges != 1) {
+    fprintf(stderr, "unsupported n time ranges %u > 1\n", nranges);
+    return LONG_MAX;
+  }
+  switch (tunits) {
+  case 0: break;
+  case 1: r *= 60; break;
+  case 2: r *= (60 * 24); break;
+  case 10: r *= (3 * 60); break;
+  case 11: r *= (6 * 60); break;
+  case 12: r *= (12 * 60); break;
+  case 13: r /= 60; break;
+  default:
+    return LONG_MAX;
+  }
+  return r;
+}
+
   double
 float40(const unsigned char *ptr)
 {
@@ -118,10 +158,10 @@ get_vlevel(const struct grib2secs *gsp)
     r = float40(vlevptr);
     break;
   case 101:
-    r = 101324.25;
+    r = 101324.0;
     break;
   case 103:
-    r = 101324.0 - float40(vlevptr);
+    r = 101320.0 - float40(vlevptr);
     break;
   default:
     fprintf(stderr, "unsupported vertical level type %u\n", vtype);
@@ -131,16 +171,52 @@ get_vlevel(const struct grib2secs *gsp)
   return r;
 }
 
+  const char *
+param_name(unsigned iparm)
+{
+  static char buf[32];
+  switch (iparm) {
+  case 0x000000: return "T";
+  case 0x000006: return "dT";
+  case 0x000101: return "RH";
+  case 0x000107: return "RR1H";
+  case 0x000108: return "RAIN";
+  case 0x000202: return "U";
+  case 0x000203: return "V";
+  case 0x000204: return "PSI";
+  case 0x000205: return "CHI";
+  case 0x000208: return "VVPa";
+  case 0x00020c: return "rVOR";
+  case 0x00020d: return "rDIV";
+  case 0x000300: return "Pres";
+  case 0x000301: return "Pmsl";
+  case 0x000305: return "Z";
+  default:
+    sprintf(buf, "p%02u-%03u-%03u-%03u",
+      iparm >> 24, (iparm >> 16) & 0xFF,
+      (iparm >> 8) & 0xFF, iparm & 0xFF);
+    return buf;
+  }
+}
+
   enum gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
   struct tm t;
   char sreftime[24];
+  unsigned long iparm;
+  double vlev;
+  long ftime, dura;
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
-  printf("%p b%s p%06lx f%-+5ld v%-8.1lf\n",
-    gsp->ds, sreftime, get_parameter(gsp),
-    get_ftime(gsp), get_vlevel(gsp));
+  iparm = get_parameter(gsp);
+  ftime = get_ftime(gsp);
+  vlev = get_vlevel(gsp);
+  dura = get_duration(gsp);
+//  if (ftime <= 720 && vlev >= 100000.0) {
+    printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
+      sreftime, param_name(iparm), ftime, dura, vlev);
+//  }
   return GSE_OKAY;
 }
 
