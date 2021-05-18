@@ -138,7 +138,7 @@ checksec7(const struct grib2secs *gsp)
   char sreftime[24];
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
-  printf("%p b%s p%08lx f%-+5ld v%-7.1lf\n",
+  printf("%p b%s p%06lx f%-+5ld v%-8.1lf\n",
     gsp->ds, sreftime, get_parameter(gsp),
     get_ftime(gsp), get_vlevel(gsp));
   return GSE_OKAY;
