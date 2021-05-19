@@ -22,6 +22,14 @@ struct grib2secs {
   unsigned discipline;
 };
 
+typedef enum iparm {
+  IPARM_T      = 0x000000,
+  IPARM_RH     = 0x000101,
+  IPARM_RAIN   = 0x000108,
+  IPARM_Pmsl   = 0x000301,
+  IPARM_Z      = 0x000305,
+} iparm_t;
+
 /* --- mainlogic.c --- */
 
 extern gribscan_err_t
@@ -44,7 +52,7 @@ extern unsigned
 extern const char *
   showtime(char *buf, size_t size, const struct tm *t);
 extern const char *
-  param_name(unsigned iparm);
+  param_name(unsigned long iparm);
 
 extern void
   get_reftime(struct tm *tp, const struct grib2secs *gsp);

@@ -298,7 +298,7 @@ get_vlevel(const struct grib2secs *gsp)
 }
 
   const char *
-param_name(unsigned iparm)
+param_name(unsigned long iparm)
 {
   static char buf[32];
   switch (iparm) {
@@ -318,7 +318,7 @@ param_name(unsigned iparm)
   case 0x000301: return "Pmsl";
   case 0x000305: return "Z";
   default:
-    sprintf(buf, "p%02u-%03u-%03u-%03u",
+    sprintf(buf, "p%02lu-%03lu-%03lu-%03lu",
       iparm >> 24, (iparm >> 16) & 0xFF,
       (iparm >> 8) & 0xFF, iparm & 0xFF);
     return buf;

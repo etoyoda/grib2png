@@ -19,10 +19,28 @@ checksec7(const struct grib2secs *gsp)
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
-  if (ftime <= 720 && vlev >= 85000.0) {
-    printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
-      sreftime, param_name(iparm), ftime, dura, vlev);
+  if (ftime + dura > 720) return GSE_OKAY;
+  switch (iparm) {
+  case IPARM_T:
+  case IPARM_RH:
+    if (!(vlev == 50000.0 || vlev == 85000.0 || vlev == 92500.0)) {
+      return GSE_OKAY;
+    }
+    break;
+  case IPARM_RAIN:
+    if (vlev != 101325.0) return GSE_OKAY;
+    break;
+  case IPARM_Pmsl:
+    if (vlev != 101324.0) return GSE_OKAY;
+    break;
+  case IPARM_Z:
+    if (!(vlev == 50000.0 || vlev == 85000.0)) return GSE_OKAY;
+    break;
+  default:
+    return GSE_OKAY;
   }
+  printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
+    sreftime, param_name(iparm), ftime, dura, vlev);
   return GSE_OKAY;
 }
 
