@@ -6,7 +6,7 @@
 #include "gribscan.h"
 
 // エラーは 0
-  unsigned long
+  size_t
 get_npixels(const struct grib2secs *gsp)
 {
   if (gsp->drslen == 0)
@@ -14,25 +14,68 @@ get_npixels(const struct grib2secs *gsp)
   return ui4(gsp->drs + 5);
 }
 
-  enum gribscan_err_t
+  gribscan_err_t
+decode_ds(const struct grib2secs *gsp, double *dbuf)
+{
+  size_t npixels;
+  unsigned drstempl;
+  float refv;
+  unsigned char *refv_eqv;
+  int scale_e;
+  int scale_d;
+  unsigned width;
+  size_t i;
+  double max;
+  if ((gsp->drslen == 0) || (gsp->dslen == 0)) {
+    fprintf(stderr, "missing DRS %zu DS %zu\n", gsp->drslen, gsp->dslen);
+    return ERR_BADGRIB;
+  }
+  npixels = ui4(gsp->drs + 5);
+  drstempl = ui2(gsp->drs + 9);
+  if (drstempl != 0) {
+    fprintf(stderr, "unsupported DRS template 5.%u\n", drstempl);
+    return ERR_BADGRIB;
+  }
+  refv_eqv = (unsigned char *)&refv;
+  refv_eqv[3] = gsp->drs[11];
+  refv_eqv[2] = gsp->drs[12];
+  refv_eqv[1] = gsp->drs[13];
+  refv_eqv[0] = gsp->drs[14];
+  scale_e = si2(gsp->drs + 15);
+  scale_d = si2(gsp->drs + 17);
+  width = gsp->drs[19];
+  max = 0; //d
+  for (i = 0; i < npixels; i++) {
+    dbuf[i] = (refv + ldexp(unpackbits(gsp->ds + 5, width, i), scale_e))
+      * pow(10.0, -scale_d);
+    if (dbuf[i] > max) max = dbuf[i]; //d
+  }
+  printf("refv %g e %d d %d w %u max %g\n", refv, scale_e, scale_d, width, max);
+  return GSE_OKAY;
+}
+
+  gribscan_err_t
 convsec7(const struct grib2secs *gsp)
 {
-  unsigned long npixels;
+  size_t npixels;
   double *dbuf;
+  gribscan_err_t r;
   if ((npixels = get_npixels(gsp)) == 0) {
     fprintf(stderr, "DRS missing\n");
     return ERR_BADGRIB;
   }
+  //--- begin memory commit
   if ((dbuf = malloc(sizeof(double) * npixels)) == NULL) {
+    fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
-  //--- 
-  //---
+  r = decode_ds(gsp, dbuf);
+  //--- end memory commit
   free(dbuf);
-  return GSE_OKAY;
+  return r;
 }
 
-  enum gribscan_err_t
+  gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
   struct tm t;
@@ -73,11 +116,11 @@ checksec7(const struct grib2secs *gsp)
   return convsec7(gsp);
 }
 
-  enum gribscan_err_t
+  gribscan_err_t
 argscan(int argc, const char **argv)
 {
   int i;
-  enum gribscan_err_t r;
+  gribscan_err_t r;
   for (i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
       r = GSE_OKAY;

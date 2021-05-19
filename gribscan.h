@@ -6,14 +6,14 @@ typedef enum gribscan_err_t {
   GSE_OKAY = 0,
   GSE_SKIP,
   GSE_JUSTWARN,
+  ERR_NOMEM,
+  ERR_BADGRIB,
   ERR_NOINPUT,
   ERR_OUTPAT,
   ERR_REGEX,
   ERR_TOOMANYCFG,
   ERR_OVERRUN,
-  ERR_NOMEM,
-  ERR_IO,
-  ERR_BADGRIB
+  ERR_IO
 } gribscan_err_t;
 
 struct grib2secs {
@@ -64,6 +64,9 @@ extern unsigned long
   get_parameter(const struct grib2secs *gsp);
 extern double
   get_vlevel(const struct grib2secs *gsp);
+
+extern unsigned
+  unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
 
 extern gribscan_err_t
   scandata(const char *fnam);

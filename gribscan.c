@@ -41,6 +41,7 @@ si3(const unsigned char *buf)
   r = ((buf[0] & 0x7Fu) << 16) | (buf[1] << 8) | buf[2];
   return (buf[0] & 0x80u) ? -r : r;
 }
+#endif
 
   unsigned
 getbits(const unsigned char *buf, size_t bitofs, size_t nbits)
@@ -112,6 +113,7 @@ unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
   return getbits(buf + byteofs, bitofs, nbits);
 }
 
+#if 0
 #define MYASSERT1(test, _plusfmt, val) \
   if (!(test)) { \
     fprintf(stderr, "assert(%s) " _plusfmt "\n", #test, val); \
@@ -297,6 +299,7 @@ get_vlevel(const struct grib2secs *gsp)
   return r;
 }
 
+// 引数を iparm_t にするためには次のケースを全部列挙しなければならない
   const char *
 param_name(unsigned long iparm)
 {
@@ -346,10 +349,10 @@ get_reftime(struct tm *tp, const struct grib2secs *gsp)
 /*
  * GRIB報buf（長さbuflenバイト）を解読する。
  */
-  enum gribscan_err_t
+  gribscan_err_t
 scanmsg(unsigned char *buf, size_t buflen, const char *locator)
 {
-  enum gribscan_err_t r;
+  gribscan_err_t r;
   unsigned rectype;
   size_t recl, pos;
   struct grib2secs gs;
@@ -403,10 +406,10 @@ default:
  * IDS(GRIB第0節, "GRIB"に続く12バイト)を読み込んで、GRIB第2版であれば
  * 電文長だけ読み込んで解読する。
  */
-  enum gribscan_err_t
+  gribscan_err_t
 gdecode(FILE *fp, const char *locator)
 {
-  enum gribscan_err_t r = GSE_OKAY;
+  gribscan_err_t r = GSE_OKAY;
   unsigned char ids[12];
   size_t zr, msglen;
   unsigned char *msgbuf;
@@ -447,10 +450,10 @@ free_and_return:
 /*
  * ファイル名 fnam を開き、バイト列 "GRIB" を探し、そこからGRIBとして解読する。
  */
-  enum gribscan_err_t
+  gribscan_err_t
 scandata(const char *fnam)
 {
-  enum gribscan_err_t r = GSE_OKAY;
+  gribscan_err_t r = GSE_OKAY;
   FILE *fp;
   long lpos = 0;
   int c;
