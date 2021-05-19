@@ -43,7 +43,19 @@ extern unsigned
   ui2(const unsigned char *buf);
 extern const char *
   showtime(char *buf, size_t size, const struct tm *t);
+extern const char *
+  param_name(unsigned iparm);
+
 extern void
   get_reftime(struct tm *tp, const struct grib2secs *gsp);
+extern long
+  get_ftime(const struct grib2secs *gsp);
+extern long
+  get_duration(const struct grib2secs *gsp);
+extern unsigned long
+  get_parameter(const struct grib2secs *gsp);
+extern double
+  get_vlevel(const struct grib2secs *gsp);
+
 extern gribscan_err_t
   scandata(const char *fnam);
