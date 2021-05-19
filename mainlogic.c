@@ -213,10 +213,10 @@ checksec7(const struct grib2secs *gsp)
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
-//  if (ftime <= 720 && vlev >= 100000.0) {
+  if (ftime <= 720 && vlev >= 100000.0) {
     printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
       sreftime, param_name(iparm), ftime, dura, vlev);
-//  }
+  }
   return GSE_OKAY;
 }
 
