@@ -157,7 +157,7 @@ get_parameter(const struct grib2secs *gsp)
   unsigned long r;
   r = gsp->discipline << 16;
   if (gsp->pdslen == 0)
-    return ~0;
+    return ~0ul;
   pdst = ui2(gsp->pds + 7);
   switch (pdst) {
   case 0:
@@ -166,7 +166,7 @@ get_parameter(const struct grib2secs *gsp)
     break;
   default:
     fprintf(stderr, "unsupported PDS template 4.%u\n", pdst);
-    return ~0;
+    return ~0ul;
   }
   return r;
 }

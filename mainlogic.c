@@ -5,6 +5,33 @@
 #include <math.h>
 #include "gribscan.h"
 
+// エラーは 0
+  unsigned long
+get_npixels(const struct grib2secs *gsp)
+{
+  if (gsp->drslen == 0)
+    return 0;
+  return ui4(gsp->drs + 5);
+}
+
+  enum gribscan_err_t
+convsec7(const struct grib2secs *gsp)
+{
+  unsigned long npixels;
+  double *dbuf;
+  if ((npixels = get_npixels(gsp)) == 0) {
+    fprintf(stderr, "DRS missing\n");
+    return ERR_BADGRIB;
+  }
+  if ((dbuf = malloc(sizeof(double) * npixels)) == NULL) {
+    return ERR_NOMEM;
+  }
+  //--- 
+  //---
+  free(dbuf);
+  return GSE_OKAY;
+}
+
   enum gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
@@ -19,7 +46,9 @@ checksec7(const struct grib2secs *gsp)
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
+  // 長すぎる予報時間は最初に捨ててしまう
   if (ftime + dura > 720) return GSE_OKAY;
+  // 要素と面の複合フィルタ
   switch (iparm) {
   case IPARM_T:
   case IPARM_RH:
@@ -41,7 +70,7 @@ checksec7(const struct grib2secs *gsp)
   }
   printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
     sreftime, param_name(iparm), ftime, dura, vlev);
-  return GSE_OKAY;
+  return convsec7(gsp);
 }
 
   enum gribscan_err_t
