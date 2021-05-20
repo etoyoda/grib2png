@@ -25,7 +25,6 @@ decode_ds(const struct grib2secs *gsp, double *dbuf)
   int scale_d;
   unsigned width;
   size_t i;
-  double max;
   if ((gsp->drslen == 0) || (gsp->dslen == 0)) {
     fprintf(stderr, "missing DRS %zu DS %zu\n", gsp->drslen, gsp->dslen);
     return ERR_BADGRIB;
@@ -44,13 +43,17 @@ decode_ds(const struct grib2secs *gsp, double *dbuf)
   scale_e = si2(gsp->drs + 15);
   scale_d = si2(gsp->drs + 17);
   width = gsp->drs[19];
-  max = 0; //d
   for (i = 0; i < npixels; i++) {
     dbuf[i] = (refv + ldexp(unpackbits(gsp->ds + 5, width, i), scale_e))
       * pow(10.0, -scale_d);
-    if (dbuf[i] > max) max = dbuf[i]; //d
   }
-  printf("refv %g e %d d %d w %u max %g\n", refv, scale_e, scale_d, width, max);
+  return GSE_OKAY;
+}
+
+  gribscan_err_t
+project_ds(const struct grib2secs *gsp, double *dbuf)
+{
+  
   return GSE_OKAY;
 }
 
@@ -70,6 +73,9 @@ convsec7(const struct grib2secs *gsp)
     return ERR_NOMEM;
   }
   r = decode_ds(gsp, dbuf);
+  if (r == GSE_OKAY) {
+    r = project_ds(gsp, dbuf);
+  }
   //--- end memory commit
   free(dbuf);
   return r;
@@ -106,7 +112,7 @@ checksec7(const struct grib2secs *gsp)
     if (vlev != 101324.0) return GSE_OKAY;
     break;
   case IPARM_Z:
-    if (!(vlev == 50000.0 || vlev == 85000.0)) return GSE_OKAY;
+    if (!(vlev == 50000.0)) return GSE_OKAY;
     break;
   default:
     return GSE_OKAY;

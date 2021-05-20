@@ -19,7 +19,10 @@ typedef enum gribscan_err_t {
 struct grib2secs {
   const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
   size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
+  // ISはここだけを保存している
   unsigned discipline;
+  // デコード結果
+  size_t npixels;
 };
 
 typedef enum iparm {
