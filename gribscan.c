@@ -7,12 +7,14 @@
 
 #include "gribscan.h"
 
+// 4オクテット符号なし整数の解読
   unsigned long
 ui4(const unsigned char *buf)
 {
   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
 }
 
+// 2オクテット符号付き整数の解読
   int
 si2(const unsigned char *buf)
 {
@@ -21,28 +23,17 @@ si2(const unsigned char *buf)
   return (buf[0] & 0x80u) ? -r : r;
 }
 
+// 2オクテット符号なし整数の解読
   unsigned
 ui2(const unsigned char *buf)
 {
   return (buf[0] << 8) | buf[1];
 }
 
-#if 0
-  size_t
-ui3(const unsigned char *buf)
-{
-  return (buf[0] << 16) | (buf[1] << 8) | buf[2];
-}
-
-  long
-si3(const unsigned char *buf)
-{
-  long r;
-  r = ((buf[0] & 0x7Fu) << 16) | (buf[1] << 8) | buf[2];
-  return (buf[0] & 0x80u) ? -r : r;
-}
-#endif
-
+// 任意ビット数整数の抽出
+// 先頭オクテット buf の bitofs ビット飛ばした場所から nbits 幅
+// 制約: bitofs は 0..7
+// 長大ビット配列からの抽出は unpackbits() を使う
   unsigned
 getbits(const unsigned char *buf, size_t bitofs, size_t nbits)
 {
@@ -105,6 +96,8 @@ getbits(const unsigned char *buf, size_t bitofs, size_t nbits)
   return c0 | c1 | c2 | c3;
 }
 
+// 任意ビット数整数の抽出
+// 長大ビット配列 buf の bitofs ビット目から nbits 幅を抽出
   unsigned
 unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
 {
@@ -112,26 +105,6 @@ unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
   size_t bitofs = (nbits * pos) % 8u;
   return getbits(buf + byteofs, bitofs, nbits);
 }
-
-#if 0
-#define MYASSERT1(test, _plusfmt, val) \
-  if (!(test)) { \
-    fprintf(stderr, "assert(%s) " _plusfmt "\n", #test, val); \
-    return ERR_BADGRIB; \
-  }
-
-#define MYASSERT3(test, _plusfmt, v1, v2, v3) \
-  if (!(test)) { \
-    fprintf(stderr, "assert(%s) " _plusfmt "\n", #test, v1, v2, v3); \
-    return ERR_BADGRIB; \
-  }
-
-#define WEAK_ASSERT1(test, _plusfmt, val) \
-  if (!(test)) { \
-    fprintf(stderr, "assert(%s) " _plusfmt "\n", #test, val); \
-    return GSE_JUSTWARN; \
-  }
-#endif
 
 /*
  * 4 オクテットでパラメタを次の構造で表現する
@@ -141,16 +114,6 @@ unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
  * 0x0000FF00: category
  * 0x000000FF: parameter
  * ~0: エラー
- * 用例:
- * 0x00000000: temperature
- * 0x00000101: relative humidity
- * 0x00000108: total precipitation
- * 0x00000202: u component of wind
- * 0x00000203: v component of wind
- * 0x0000020c: relative vorticity
- * 0x0000020d: relative divergence
- * 0x00000301: sea level pressure
- * 0x00000305: geopotential height
  */
   unsigned long
 get_parameter(const struct grib2secs *gsp)
