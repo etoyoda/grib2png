@@ -68,6 +68,10 @@ extern unsigned long
   get_parameter(const struct grib2secs *gsp);
 extern double
   get_vlevel(const struct grib2secs *gsp);
+extern size_t
+  get_npixels(const struct grib2secs *gsp);
+extern gribscan_err_t
+  decode_ds(const struct grib2secs *gsp, double *dbuf);
 
 extern unsigned
   unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
