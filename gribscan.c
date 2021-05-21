@@ -504,7 +504,9 @@ grib2scan_by_filename(const char *fnam)
   int state = 0;
   fp = fopen(fnam, "rb");
   if (fp == NULL) { goto error; }
+#if 0
   fprintf(stderr, "=== file %s ===\n", fnam);
+#endif
   /* automaton to find the magic number "GRIB */
   while ((c = getc(fp)) != EOF) {
     switch (state) {
