@@ -350,56 +350,106 @@ get_reftime(struct tm *tp, const struct grib2secs *gsp)
  * GRIB報buf（長さbuflenバイト）を解読する。
  */
   gribscan_err_t
-scanmsg(unsigned char *buf, size_t buflen, const char *locator)
+grib2loopsecs(struct grib2secs *gsp, FILE *fp, const char *locator)
 {
+  // 気象庁1.25度格子GSM予報値の場合 recl = 62645 であり、多少大きく設定
+  const size_t RECLZERO = 64 * 1024;
   gribscan_err_t r;
+  size_t recl, zr;
   unsigned rectype;
-  size_t recl, pos;
-  struct grib2secs gs;
-  gs.ids = gs.gds = gs.pds = gs.drs = gs.bms = gs.ds = NULL;
-  gs.idslen = gs.gdslen = gs.pdslen = gs.drslen = gs.bmslen = gs.dslen = 0;
-  gs.discipline = buf[6];
-  for (pos = 16u; pos <= buflen - 4; pos += recl) {
-    recl = ui4(buf + pos);
+  unsigned char *secbuf;
+  for (;;) {
+    secbuf = malloc(RECLZERO);
+    if (secbuf == NULL) {
+      return ERR_NOMEM;
+    }
+    zr = fread(secbuf, 1, 4, fp);
+    if (zr != 4) {
+      return ERR_IO;
+    }
+    recl = ui4(secbuf);
+    /* 第8節を検出したら抜ける */
     if (recl == 0x37373737uL) {
-      /* 第8節を検出 */
       break;
     }
-    rectype = buf[pos+4];
+    if (recl > RECLZERO) {
+      secbuf = realloc(secbuf, recl);
+      if (secbuf == NULL) {
+        return ERR_NOMEM;
+      }
+    }
+    zr = fread(secbuf + 4, 1, recl - 4, fp);
+    if (zr != recl - 4) {
+      return ERR_IO;
+    }
+    rectype = secbuf[4];
     switch (rectype) {
 case 1:
-      gs.ids = buf + pos;
-      gs.idslen = recl;
+      if (gsp->ids) { free(gsp->ids); }
+      gsp->ids = secbuf;
+      gsp->idslen = recl;
       break;
 case 3:
-      gs.gds = buf + pos;
-      gs.gdslen = recl;
+      if (gsp->gds) { free(gsp->gds); }
+      gsp->gds = secbuf;
+      gsp->gdslen = recl;
       break;
 case 4:
-      gs.pds = buf + pos;
-      gs.pdslen = recl;
+      if (gsp->pds) { free(gsp->pds); }
+      gsp->pds = secbuf;
+      gsp->pdslen = recl;
       break;
 case 5:
-      gs.drs = buf + pos;
-      gs.drslen = recl;
+      if (gsp->drs) { free(gsp->drs); }
+      gsp->drs = secbuf;
+      gsp->drslen = recl;
       break;
 case 6:
-      gs.bms = buf + pos;
-      gs.bmslen = recl;
+      if (gsp->bms) { free(gsp->bms); }
+      gsp->bms = secbuf;
+      gsp->bmslen = recl;
       break;
 case 7:
-      gs.ds = buf + pos;
-      gs.dslen = recl;
-      r = checksec7(&gs);
+      if (gsp->ds) { free(gsp->ds); }
+      gsp->ds = secbuf;
+      gsp->dslen = recl;
+      r = checksec7(gsp);
       if (r != GSE_OKAY)
         return r;
       break;
 default:
-      fprintf(stderr, "%s:%lu %u\n", locator, (unsigned long)pos, rectype);
+      fprintf(stderr, "%s: Unsupported section type %u\n", locator, rectype);
       break;
     }
   }
   return GSE_OKAY;
+}
+
+  struct grib2secs *
+new_grib2secs(const unsigned char ids[12])
+{
+  struct grib2secs *r;
+  r = malloc(sizeof(struct grib2secs));
+  if (r == NULL) { return NULL; }
+  r->discipline = ids[2];
+  r->msglen = ui4(ids + 4);
+  r->msglen <<= 32;
+  r->msglen |= ui4(ids + 8);
+  r->ids = r->gds = r->pds = r->drs = r->bms = r->ds = NULL;
+  r->idslen = r->gdslen = r->pdslen = r->drslen = r->bmslen = r->dslen = 0;
+  return r;
+}
+
+  void
+del_grib2secs(struct grib2secs *gsp)
+{
+  if (gsp->ids) { free(gsp->ids); }
+  if (gsp->gds) { free(gsp->gds); }
+  if (gsp->pds) { free(gsp->pds); }
+  if (gsp->drs) { free(gsp->drs); }
+  if (gsp->bms) { free(gsp->bms); }
+  if (gsp->ds) { free(gsp->ds); }
+  free(gsp);
 }
 
 /*
@@ -411,8 +461,9 @@ gdecode(FILE *fp, const char *locator)
 {
   gribscan_err_t r = GSE_OKAY;
   unsigned char ids[12];
-  size_t zr, msglen;
-  unsigned char *msgbuf;
+  size_t zr;
+  /* 解読結果を保持する構造体 */
+  struct grib2secs *gsp;
   /* section 0 IDS */
   zr = fread(ids, 1, 12, fp);
   if (zr < 12) {
@@ -420,30 +471,15 @@ gdecode(FILE *fp, const char *locator)
     return ERR_OVERRUN;
   }
   if (ids[3] != 2u) {
-    fputs("Not GRIB Edition 2\n", stderr);
+    fprintf(stderr, "Unsupported GRIB Edition %u\n", ids[3]);
     return GSE_JUSTWARN;
   }
-  msglen = ui4(ids + 4);
-  if (msglen != 0u) {
-    fputs("GRIB message size 2GiB or more not supported\n", stderr);
-    return GSE_JUSTWARN;
+  gsp = new_grib2secs(ids);
+  if (gsp == NULL) {
+    return ERR_NOMEM;
   }
-  msglen = ui4(ids + 8);
-  msgbuf = malloc(msglen);
-  if (msgbuf == NULL) { return ERR_NOMEM; }
-  /* --- begin ensure malloc-free --- */
-  memcpy(msgbuf+0, "GRIB", 4);
-  memcpy(msgbuf+4, ids, 12);
-  zr = fread(msgbuf + 16, 1, msglen - 16, fp);
-  if (zr < msglen - 16) {
-    fputs("EOF in GRIB\n", stderr);
-    r = ERR_OVERRUN;
-    goto free_and_return;
-  }
-  r = scanmsg(msgbuf, msglen, locator);
-free_and_return:
-  free(msgbuf);
-  /* --- end ensure malloc-free --- */
+  r = grib2loopsecs(gsp, fp, locator);
+  del_grib2secs(gsp);
   return r;
 }
 
@@ -451,7 +487,7 @@ free_and_return:
  * ファイル名 fnam を開き、バイト列 "GRIB" を探し、そこからGRIBとして解読する。
  */
   gribscan_err_t
-scandata(const char *fnam)
+grib2scan_by_filename(const char *fnam)
 {
   gribscan_err_t r = GSE_OKAY;
   FILE *fp;

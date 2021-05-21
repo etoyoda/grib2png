@@ -131,7 +131,7 @@ argscan(int argc, const char **argv)
     if (argv[i][0] == '-') {
       r = GSE_OKAY;
     } else {
-      r = scandata(argv[i]);
+      r = grib2scan_by_filename(argv[i]);
       if (r != GSE_OKAY) break;
     }
   }

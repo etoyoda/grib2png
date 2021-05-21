@@ -17,10 +17,11 @@ typedef enum gribscan_err_t {
 } gribscan_err_t;
 
 struct grib2secs {
-  const unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
-  size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
   // ISはここだけを保存している
   unsigned discipline;
+  size_t msglen;
+  unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
+  size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
   // デコード結果
   size_t npixels;
 };
@@ -72,4 +73,4 @@ extern unsigned
   unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
 
 extern gribscan_err_t
-  scandata(const char *fnam);
+  grib2scan_by_filename(const char *fnam);
