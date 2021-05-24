@@ -5,12 +5,14 @@
 #include <math.h>
 #include "gribscan.h"
 
+// 投影法パラメタ。とはいっても今のところは正距円筒図法だけ想定している。
 typedef struct bounding_t {
   double n, w, s, e;
   double di, dj;
   size_t ni, nj;
 } bounding_t;
 
+// GRIB2 GDSからデータの投影法パラメタを bp に抽出する。
   gribscan_err_t
 decode_gds(const struct grib2secs *gsp, bounding_t *bp)
 {
@@ -68,6 +70,7 @@ decode_gds(const struct grib2secs *gsp, bounding_t *bp)
   return GSE_OKAY;
 }
 
+// GPVデータから投影法パラメタを抽出して再投影する
   gribscan_err_t
 project_ds(const struct grib2secs *gsp, double *dbuf)
 {
