@@ -106,15 +106,14 @@ unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
   return getbits(buf + byteofs, bitofs, nbits);
 }
 
-/*
- * 4 オクテットでパラメタを次の構造で表現する
- * 構造:
- * 0xFF000000: 予約 (暫定ゼロ、ローカルの処理に使用)
- * 0x00FF0000: discipline
- * 0x0000FF00: category
- * 0x000000FF: parameter
- * ~0: エラー
- */
+// gsp の指示する PDS からパラメタを抽出
+// 4 オクテットでパラメタを次の構造で表現する
+// 構造:
+// 0xFF000000: (暫定ゼロ、ローカル定義の処理のために予約)
+// 0x00FF0000: discipline
+// 0x0000FF00: category
+// 0x000000FF: parameter
+// ~0: エラー
   unsigned long
 get_parameter(const struct grib2secs *gsp)
 {
@@ -354,9 +353,8 @@ decode_ds(const struct grib2secs *gsp, double *dbuf)
   return GSE_OKAY;
 }
 
-/*
- * GRIB報buf（長さbuflenバイト）を解読する。
- */
+// GRIB2 の各節を fp から読み込んで、節の修飾関係に従って gsp に積み込んで、
+// 第7節（データ節）が読めるたびに checksec7() を呼び出す。
   gribscan_err_t
 grib2loopsecs(struct grib2secs *gsp, FILE *fp, const char *locator)
 {
@@ -433,6 +431,8 @@ default:
   return GSE_OKAY;
 }
 
+/* 解読構造体 grib2secs を malloc() して初期化して返す。
+ */
   struct grib2secs *
 new_grib2secs(const unsigned char ids[12])
 {
@@ -448,6 +448,8 @@ new_grib2secs(const unsigned char ids[12])
   return r;
 }
 
+/* 解読構造体 grib2secs を破棄、要すれば各節のメモリを破棄してから。
+ */
   void
 del_grib2secs(struct grib2secs *gsp)
 {
@@ -460,12 +462,13 @@ del_grib2secs(struct grib2secs *gsp)
   free(gsp);
 }
 
-/*
- * IDS(GRIB第0節, "GRIB"に続く12バイト)を読み込んで、GRIB第2版であれば
- * 電文長だけ読み込んで解読する。
+/* GRIB2 電文の解読。
+ * 前提としてマジックナンバー "GRIB" が読み込まれた状態で呼ばれる。
+ * この関数は IDS の残り12オクテットを読み込み、残りの節は
+ * grib2loopsecs() で解読する。
  */
   gribscan_err_t
-gdecode(FILE *fp, const char *locator)
+grib2decode(FILE *fp, const char *locator)
 {
   gribscan_err_t r = GSE_OKAY;
   unsigned char ids[12];
@@ -525,7 +528,7 @@ grib2scan_by_filename(const char *fnam)
         char locator[32];
         snprintf(locator, sizeof locator, "%-.24s:%lu",
           fnam + ((strlen(fnam) > 24) ? (strlen(fnam) - 24) : 0), lpos);
-        r = gdecode(fp, locator);
+        r = grib2decode(fp, locator);
         if (r != GSE_OKAY) {
           fprintf(stderr, "%s: GRIB decode %u\n", locator, r);
           if (r != GSE_JUSTWARN) {

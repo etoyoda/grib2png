@@ -6,10 +6,35 @@
 #include "gribscan.h"
 
   gribscan_err_t
-project_ds(const struct grib2secs *gsp, double *dbuf)
+decode_gds(const struct grib2secs *gsp)
 {
+  size_t npixels, gpixels;
+  unsigned gsysno, gdt;
+  npixels = get_npixels(gsp);
+  if (gsp->gdslen == 0) {
+    fprintf(stderr, "GDS missing\n");
+    return ERR_BADGRIB;
+  }
+  if ((gsysno = gsp->gds[5]) != 0) {
+    fprintf(stderr, "Unsupported GDS#5 %u\n", gsysno);
+    return ERR_UNSUPPORTED;
+  }
+  if ((gpixels = ui4(gsp->gds + 6)) != npixels) {
+    fprintf(stderr, "Pixels unmatch DRS %zu != GDS %zu\n", npixels, gpixels);
+    return ERR_UNSUPPORTED;
+  }
+  if ((gdt = ui2(gsp->gds + 12)) != 0) {
+    fprintf(stderr, "Unsupported GDT 5.%u\n", gdt);
+    return ERR_UNSUPPORTED;
+  }
   
   return GSE_OKAY;
+}
+
+  gribscan_err_t
+project_ds(const struct grib2secs *gsp, double *dbuf)
+{
+  return decode_gds(gsp);
 }
 
   gribscan_err_t
@@ -36,6 +61,9 @@ convsec7(const struct grib2secs *gsp)
   return r;
 }
 
+/* 第1節〜第7節のセット gsp について、
+ * 必要であれば convsec7() を呼び出す。
+ */
   gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
@@ -77,6 +105,11 @@ checksec7(const struct grib2secs *gsp)
   return convsec7(gsp);
 }
 
+/* コマンドライン引数 argc, argv を左からチェックして、
+ * 要すれば入力ファイルを開く。
+ * （いずれコマンドラインオプションを処理する建設予定地）
+ * grib2scan_by_filename() から checksec7() が第7節の数だけ呼び出される。
+ */
   gribscan_err_t
 argscan(int argc, const char **argv)
 {
