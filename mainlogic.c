@@ -84,23 +84,30 @@ rad2deg(double x)
   return 180.0 * x * M_1_PI;
 }
 
-typedef struct next4_t {
-  size_t ofs[4];
-  double wgt[4];
-} next4_t;
-
   double
 interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
 {
-  double ri, rj;
-  size_t ijofs;
+  double ri, rj, fi, fj, weight[4];
+  size_t ijofs[4];
   if (lon < 0.0) { lon += 360.0; } 
+  if (lon < bp->w || lon > bp->e || lat > bp->n || lat < bp->s) {
+    return nan("");
+  }
   ri = (lon - bp->w) * bp->ni / (bp->e - bp->w);
   rj = (lat - bp->s) * bp->nj / (bp->n - bp->s);
-  ijofs = floor(ri) + floor(rj) * bp->ni;
-  printf("lat %+8.5g lon %+8.5g ri %+8.5g rj %+8.5g v %8.5g\n",
-    lat, lon, ri, rj, dbuf[ijofs]);
-  return dbuf[ijofs];
+  fi = ri - floor(ri);
+  fj = rj - floor(rj);
+  ijofs[0] = floor(ri) + floor(rj) * bp->ni;
+  weight[0] = (1.0 - fi) + (1.0 - fj);
+  ijofs[1] =  ceil(ri) + floor(rj) * bp->ni;
+  weight[1] = fi + (1.0 - fj);
+  ijofs[2] = floor(ri) +  ceil(rj) * bp->ni;
+  weight[2] = (1.0 - fi) + fj;
+  ijofs[3] =  ceil(ri) +  ceil(rj) * bp->ni;
+  weight[3] = fi + fj;
+  return (dbuf[ijofs[0]] * weight[0] + dbuf[ijofs[1]] * weight[1]
+    + dbuf[ijofs[2]] * weight[2] + dbuf[ijofs[3]] * weight[3])
+    / (weight[0] + weight[1] + weight[2] + weight[3]);
 }
 
   gribscan_err_t
@@ -117,6 +124,7 @@ reproject(const bounding_t *bp, const double *dbuf)
       double lon = 2 * M_PI * (ldexp((int)i + 0.5, -8 - (int)of.z) - 0.5);
       size_t ijofs = (of.xz - of.xa + 1) * (j - of.ya) + (i - of.xa);
       gbuf[ijofs] = interpol(dbuf, bp, rad2deg(lat), rad2deg(lon));
+      printf("%7.2f %7.2f %10.6g\n", rad2deg(lat), rad2deg(lon), gbuf[ijofs]);
     }
   }
   return GSE_OKAY;
