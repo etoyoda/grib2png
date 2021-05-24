@@ -84,19 +84,40 @@ rad2deg(double x)
   return 180.0 * x * M_1_PI;
 }
 
+typedef struct next4_t {
+  size_t ofs[4];
+  double wgt[4];
+} next4_t;
+
+  double
+interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
+{
+  double ri, rj;
+  size_t ijofs;
+  if (lon < 0.0) { lon += 360.0; } 
+  ri = (lon - bp->w) * bp->ni / (bp->e - bp->w);
+  rj = (lat - bp->s) * bp->nj / (bp->n - bp->s);
+  ijofs = floor(ri) + floor(rj) * bp->ni;
+  printf("lat %+8.5g lon %+8.5g ri %+8.5g rj %+8.5g v %8.5g\n",
+    lat, lon, ri, rj, dbuf[ijofs]);
+  return dbuf[ijofs];
+}
+
   gribscan_err_t
 reproject(const bounding_t *bp, const double *dbuf)
 {
   outframe_t of = { 2, 0, 1023, 0, 1023 };
+  double *gbuf;
+  gbuf = malloc(sizeof(double) * 1024 * 1024);
   for (unsigned j = of.ya; j <= of.yz; j++) {
     double lat = asin(tanh(
       (1.0 - ldexp((int)j + 0.5, -7 - (int)of.z)) * M_PI
     ));
     for (unsigned i = of.xa; i <= of.xz; i++) {
       double lon = 2 * M_PI * (ldexp((int)i + 0.5, -8 - (int)of.z) - 0.5);
-      if (j == of.ya) printf("x %4u = %g\n", i, rad2deg(lon));
+      size_t ijofs = (of.xz - of.xa + 1) * (j - of.ya) + (i - of.xa);
+      gbuf[ijofs] = interpol(dbuf, bp, rad2deg(lat), rad2deg(lon));
     }
-    printf("y %4u = %g\n", j, rad2deg(lat));
   }
   return GSE_OKAY;
 }
