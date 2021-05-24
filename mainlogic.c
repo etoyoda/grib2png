@@ -43,6 +43,11 @@ decode_gds(const struct grib2secs *gsp, bounding_t *bp)
   }
   bp->ni = si4(gsp->gds + 30);
   bp->nj = si4(gsp->gds + 34);
+  if (npixels != bp->ni * bp->nj) {
+    fprintf(stderr, "Unsupported npixels %zu != Ni %zu * Nj %zu\n", 
+      npixels, bp->ni, bp->nj);
+    return ERR_UNSUPPORTED;
+  }
   bp->n = si4(gsp->gds + 46) / 1.0e6;
   bp->w = si4(gsp->gds + 50) / 1.0e6;
   bp->s = si4(gsp->gds + 55) / 1.0e6;
