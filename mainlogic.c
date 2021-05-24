@@ -111,20 +111,17 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
 }
 
   gribscan_err_t
-reproject(const bounding_t *bp, const double *dbuf)
+reproject(double *gbuf, const bounding_t *bp, const double *dbuf,
+  const outframe_t *ofp)
 {
-  outframe_t of = { 2, 0, 1023, 0, 1023 };
-  double *gbuf;
-  gbuf = malloc(sizeof(double) * 1024 * 1024);
-  for (unsigned j = of.ya; j <= of.yz; j++) {
+  for (unsigned j = ofp->ya; j <= ofp->yz; j++) {
     double lat = asin(tanh(
-      (1.0 - ldexp((int)j + 0.5, -7 - (int)of.z)) * M_PI
+      (1.0 - ldexp((int)j + 0.5, -7 - (int)ofp->z)) * M_PI
     ));
-    for (unsigned i = of.xa; i <= of.xz; i++) {
-      double lon = 2 * M_PI * (ldexp((int)i + 0.5, -8 - (int)of.z) - 0.5);
-      size_t ijofs = (of.xz - of.xa + 1) * (j - of.ya) + (i - of.xa);
+    for (unsigned i = ofp->xa; i <= ofp->xz; i++) {
+      double lon = 2 * M_PI * (ldexp((int)i + 0.5, -8 - (int)ofp->z) - 0.5);
+      size_t ijofs = (ofp->xz - ofp->xa + 1) * (j - ofp->ya) + (i - ofp->xa);
       gbuf[ijofs] = interpol(dbuf, bp, rad2deg(lat), rad2deg(lon));
-      printf("%7.2f %7.2f %10.6g\n", rad2deg(lat), rad2deg(lon), gbuf[ijofs]);
     }
   }
   return GSE_OKAY;
@@ -136,8 +133,17 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
 {
   gribscan_err_t r;
   bounding_t b;
+  outframe_t of = { 2, 0, 1023, 0, 1023 };
+  double *gbuf;
+  size_t onx, ony;
+  onx = of.xz - of.xa + 1;
+  ony = of.yz - of.ya + 1;
   r = decode_gds(gsp, &b);
-  r = reproject(&b, dbuf);
+  gbuf = malloc(sizeof(double) * onx * ony);
+  if (gbuf == NULL) { return ERR_NOMEM; }
+  reproject(gbuf, &b, dbuf, &of);
+  r = writeimg(gbuf, onx, ony);
+  free(gbuf);
   return r;
 }
 
