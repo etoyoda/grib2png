@@ -70,6 +70,37 @@ decode_gds(const struct grib2secs *gsp, bounding_t *bp)
   return GSE_OKAY;
 }
 
+typedef struct outframe_t {
+  unsigned z; // zoom level
+  unsigned xa; // min x axis
+  unsigned xz; // max x axis
+  unsigned ya; // min x axis
+  unsigned yz; // max x axis
+} outframe_t;
+
+  double
+rad2deg(double x)
+{
+  return 180.0 * x * M_1_PI;
+}
+
+  gribscan_err_t
+reproject(const bounding_t *bp, const double *dbuf)
+{
+  outframe_t of = { 2, 0, 1023, 0, 1023 };
+  for (unsigned j = of.ya; j <= of.yz; j++) {
+    double lat = asin(tanh(
+      (1.0 - ldexp((int)j + 0.5, -7 - (int)of.z)) * M_PI
+    ));
+    for (unsigned i = of.xa; i <= of.xz; i++) {
+      double lon = 2 * M_PI * (ldexp((int)i + 0.5, -8 - (int)of.z) - 0.5);
+      if (j == of.ya) printf("x %4u = %g\n", i, rad2deg(lon));
+    }
+    printf("y %4u = %g\n", j, rad2deg(lat));
+  }
+  return GSE_OKAY;
+}
+
 // GPVデータから投影法パラメタを抽出して再投影する
   gribscan_err_t
 project_ds(const struct grib2secs *gsp, double *dbuf)
@@ -77,8 +108,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   gribscan_err_t r;
   bounding_t b;
   r = decode_gds(gsp, &b);
-  printf("::%p %g %g %g %g %zu %zu\n", gsp->gds, b.n, b.s, b.e, b.w,
-    b.ni, b.nj);
+  r = reproject(&b, dbuf);
   return r;
 }
 
