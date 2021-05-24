@@ -5,11 +5,17 @@
 #include <math.h>
 #include "gribscan.h"
 
+typedef struct bounding_t {
+  double n, w, s, e;
+  double di, dj;
+  size_t ni, nj;
+} bounding_t;
+
   gribscan_err_t
-decode_gds(const struct grib2secs *gsp)
+decode_gds(const struct grib2secs *gsp, bounding_t *bp)
 {
   size_t npixels, gpixels;
-  unsigned gsysno, gdt;
+  unsigned gsysno, gdt, unit;
   npixels = get_npixels(gsp);
   if (gsp->gdslen == 0) {
     fprintf(stderr, "GDS missing\n");
@@ -27,6 +33,22 @@ decode_gds(const struct grib2secs *gsp)
     fprintf(stderr, "Unsupported GDT 5.%u\n", gdt);
     return ERR_UNSUPPORTED;
   }
+  if ((unit = ui4(gsp->gds + 38)) != 0) {
+    fprintf(stderr, "Unsupported unit dividend %u\n", unit);
+    return ERR_UNSUPPORTED;
+  }
+  if ((unit = ui4(gsp->gds + 42)) != 0xFFFFFFFF) {
+    fprintf(stderr, "Unsupported unit divisor %u\n", unit);
+    return ERR_UNSUPPORTED;
+  }
+  bp->ni = si4(gsp->gds + 30);
+  bp->nj = si4(gsp->gds + 34);
+  bp->n = si4(gsp->gds + 46) / 1.0e6;
+  bp->w = si4(gsp->gds + 50) / 1.0e6;
+  bp->s = si4(gsp->gds + 55) / 1.0e6;
+  bp->e = si4(gsp->gds + 59) / 1.0e6;
+  bp->di = si4(gsp->gds + 63) / 1.0e6;
+  bp->dj = si4(gsp->gds + 67) / 1.0e6;
   
   return GSE_OKAY;
 }
@@ -34,7 +56,12 @@ decode_gds(const struct grib2secs *gsp)
   gribscan_err_t
 project_ds(const struct grib2secs *gsp, double *dbuf)
 {
-  return decode_gds(gsp);
+  gribscan_err_t r;
+  bounding_t b;
+  r = decode_gds(gsp, &b);
+  printf("::%p %g %g %g %g %g %g %zu %zu\n", gsp->gds, b.n, b.s, b.e, b.w,
+    b.di, b.dj, b.ni, b.nj);
+  return r;
 }
 
   gribscan_err_t

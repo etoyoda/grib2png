@@ -46,6 +46,7 @@ extern gribscan_err_t
 
 /* --- gribscan.c --- */
 
+extern long si4(const unsigned char *buf);
 extern unsigned long
   ui4(const unsigned char *buf);
 extern int

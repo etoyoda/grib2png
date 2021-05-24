@@ -7,6 +7,15 @@
 
 #include "gribscan.h"
 
+// 4オクテット符号付き整数の解読
+  long
+si4(const unsigned char *buf)
+{
+  unsigned long r;
+  r = ((buf[0] & 0x7Fu) << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+  return (buf[0] & 0x80u) ? -r : r;
+}
+
 // 4オクテット符号なし整数の解読
   unsigned long
 ui4(const unsigned char *buf)
