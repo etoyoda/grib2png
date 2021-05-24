@@ -49,6 +49,16 @@ decode_gds(const struct grib2secs *gsp, bounding_t *bp)
   bp->e = si4(gsp->gds + 59) / 1.0e6;
   bp->di = si4(gsp->gds + 63) / 1.0e6;
   bp->dj = si4(gsp->gds + 67) / 1.0e6;
+  if (abs(abs((bp->e - bp->w) / bp->ni) - abs(bp->di)) > 1.0e-6) {
+    fprintf(stderr, "GDS E %g - W %g != Ni %zu * Di %g\n",
+      bp->e, bp->w, bp->ni, bp->di);
+    return ERR_UNSUPPORTED;
+  }
+  if (abs(abs((bp->n - bp->s) / bp->nj) - abs(bp->dj)) > 1.0e-6) {
+    fprintf(stderr, "GDS N %g - S %g != Nj %zu * Dj %g\n",
+      bp->e, bp->w, bp->ni, bp->di);
+    return ERR_UNSUPPORTED;
+  }
   
   return GSE_OKAY;
 }
@@ -59,8 +69,8 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   gribscan_err_t r;
   bounding_t b;
   r = decode_gds(gsp, &b);
-  printf("::%p %g %g %g %g %g %g %zu %zu\n", gsp->gds, b.n, b.s, b.e, b.w,
-    b.di, b.dj, b.ni, b.nj);
+  printf("::%p %g %g %g %g %zu %zu\n", gsp->gds, b.n, b.s, b.e, b.w,
+    b.ni, b.nj);
   return r;
 }
 
