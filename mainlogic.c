@@ -98,13 +98,13 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   fi = ri - floor(ri);
   fj = rj - floor(rj);
   ijofs[0] = floor(ri) + floor(rj) * bp->ni;
-  weight[0] = (1.0 - fi) + (1.0 - fj);
+  weight[0] = M_SQRT2 - hypot(fi, fj);
   ijofs[1] =  ceil(ri) + floor(rj) * bp->ni;
-  weight[1] = fi + (1.0 - fj);
+  weight[1] = M_SQRT2 - hypot(1 - fi, fj);
   ijofs[2] = floor(ri) +  ceil(rj) * bp->ni;
-  weight[2] = (1.0 - fi) + fj;
+  weight[2] = M_SQRT2 - hypot(fi, 1 - fj);
   ijofs[3] =  ceil(ri) +  ceil(rj) * bp->ni;
-  weight[3] = fi + fj;
+  weight[3] = M_SQRT2 - hypot(1 - fi, 1 - fj);
   return (dbuf[ijofs[0]] * weight[0] + dbuf[ijofs[1]] * weight[1]
     + dbuf[ijofs[2]] * weight[2] + dbuf[ijofs[3]] * weight[3])
     / (weight[0] + weight[1] + weight[2] + weight[3]);
