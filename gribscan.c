@@ -429,8 +429,7 @@ case 7:
       gsp->ds = secbuf;
       gsp->dslen = recl;
       r = checksec7(gsp);
-      if (r != GSE_OKAY)
-        return r;
+      if (!(r == GSE_OKAY || r == GSE_SKIP)) { return r; }
       break;
 default:
       fprintf(stderr, "%s: Unsupported section type %u\n", locator, rectype);
