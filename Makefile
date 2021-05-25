@@ -10,6 +10,9 @@ CC=cc
 grib2png: $(OBJS)
 	$(CC) $(LFLAGS) -o grib2png $(OBJS) $(LIBS)
 
+testv: testv.c visual.o
+	$(CC) $(LFLAGS) -o testv testv.c visual.o $(LIBS)
+
 .c.o:
 	$(CC) -c $(CFLAGS) $<
 
