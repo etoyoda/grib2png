@@ -6,12 +6,13 @@ typedef enum gribscan_err_t {
   GSE_OKAY = 0,
   GSE_SKIP,
   GSE_JUSTWARN,
-  ERR_NOMEM,
+  ERR_GENERIC = 4,
   ERR_NOINPUT,
   ERR_BADGRIB,
   ERR_UNSUPPORTED,
   ERR_TOOMANYCFG,
   ERR_OVERRUN,
+  ERR_NOMEM,
   ERR_IO
 } gribscan_err_t;
 

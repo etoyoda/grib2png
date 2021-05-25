@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <math.h>
 #include "gribscan.h"
+#include "visual.h"
 
 // 投影法パラメタ。とはいっても今のところは正距円筒図法だけ想定している。
 typedef struct bounding_t {
@@ -142,7 +143,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   gbuf = malloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf, &of);
-  r = writeimg(gbuf, onx, ony);
+  r = gridsave(gbuf, onx, ony);
   free(gbuf);
   return r;
 }
