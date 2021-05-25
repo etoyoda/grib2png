@@ -71,7 +71,7 @@ render(png_bytep *ovector, const double *gbuf,
   for (size_t j = 0; j < oheight; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ij = i + j * owidth;
-      unsigned long ival = gbuf[ij] * 128;
+      unsigned long ival = gbuf[ij];
       png_bytep pixel = ovector[j] + i * 4;
       pixel[0] = (ival << 16) & 0xFF;
       pixel[1] = (ival <<  8) & 0xFF;
