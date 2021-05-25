@@ -26,10 +26,20 @@ struct grib2secs {
   size_t npixels;
 };
 
-typedef enum iparm {
+typedef enum iparm_t {
   IPARM_T      = 0x000000,
+  IPARM_dT     = 0x000006,
   IPARM_RH     = 0x000101,
+  IPARM_RR1H   = 0x000107,
   IPARM_RAIN   = 0x000108,
+  IPARM_U      = 0x000202,
+  IPARM_V      = 0x000203,
+  IPARM_PSI    = 0x000204,
+  IPARM_CHI    = 0x000205,
+  IPARM_VVPa   = 0x000208,
+  IPARM_rVOR   = 0x00020c,
+  IPARM_rDIV   = 0x00020d,
+  IPARM_Pres   = 0x000300,
   IPARM_Pmsl   = 0x000301,
   IPARM_Z      = 0x000305,
 } iparm_t;

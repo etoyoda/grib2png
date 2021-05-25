@@ -336,7 +336,7 @@ decode_ds(const struct grib2secs *gsp, double *dbuf)
   int scale_e;
   int scale_d;
   unsigned width;
-  size_t i;
+  iparm_t param;
   if ((gsp->drslen == 0) || (gsp->dslen == 0)) {
     fprintf(stderr, "missing DRS %zu DS %zu\n", gsp->drslen, gsp->dslen);
     return ERR_BADGRIB;
@@ -355,7 +355,28 @@ decode_ds(const struct grib2secs *gsp, double *dbuf)
   scale_e = si2(gsp->drs + 15);
   scale_d = si2(gsp->drs + 17);
   width = gsp->drs[19];
-  for (i = 0; i < npixels; i++) {
+  // 特定パラメタの場合十進尺度 scale_d を補正する
+  // 海面気圧: hPa 単位に変換
+  // 渦度または発散: 1e-6/s 単位に変換
+  // 気温または露点: 0.1 K 単位に変換
+  // 積算降水量: 0.1 mm 単位に変換
+  switch (param = get_parameter(gsp)) {
+case IPARM_Pmsl:
+    scale_d += 2;
+    break;
+case IPARM_rDIV:
+case IPARM_rVOR:
+    scale_d -= 6;
+    break;
+case IPARM_T:
+case IPARM_dT:
+case IPARM_RAIN:
+    scale_d -= 1;
+    break;
+default:
+    break;
+  }
+  for (unsigned i = 0; i < npixels; i++) {
     dbuf[i] = (refv + ldexp(unpackbits(gsp->ds + 5, width, i), scale_e))
       * pow(10.0, -scale_d);
   }
