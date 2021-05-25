@@ -302,7 +302,7 @@ param_name(unsigned long iparm)
   const char *
 showtime(char *buf, size_t size, const struct tm *tp)
 {
-    strftime(buf, size, "%Y-%m-%dT%H:%MZ", tp);
+    strftime(buf, size, "%Y%m%dT%H%MZ", tp);
     return buf;
 }
 

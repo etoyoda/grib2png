@@ -6,14 +6,14 @@ typedef enum gribscan_err_t {
   GSE_OKAY = 0,
   GSE_SKIP,
   GSE_JUSTWARN,
-  ERR_GENERIC = 4,
+  ERR_UNSUPPORTED = 4,
+  ERR_BADGRIB = 8,
+  ERR_GENERIC = 16,
+  ERR_IO = 'I',
+  ERR_NOMEM = 'M',
   ERR_NOINPUT,
-  ERR_BADGRIB,
-  ERR_UNSUPPORTED,
   ERR_TOOMANYCFG,
-  ERR_OVERRUN,
-  ERR_NOMEM,
-  ERR_IO
+  ERR_OVERRUN
 } gribscan_err_t;
 
 struct grib2secs {

@@ -71,6 +71,43 @@ decode_gds(const struct grib2secs *gsp, bounding_t *bp)
   return GSE_OKAY;
 }
 
+  const char *
+level_name(double vlev)
+{
+  static char lvbuf[32];
+  if (vlev == 101325.0) {
+    return "sfc";
+  } else if (vlev == 101324.0) {
+    return "msl";
+  } else if (vlev == 101302.5) {
+    return "z2";
+  } else if (vlev == 101214.5) {
+    return "z10";
+  } else {
+    snprintf(lvbuf, sizeof lvbuf, "p%g", vlev / 100.0);
+    return lvbuf;
+  }
+}
+
+  void
+mkfilename(char *filename, size_t fnlen, const struct grib2secs *gsp)
+{
+  struct tm time;
+  unsigned long param = get_parameter(gsp);
+  long ft = get_ftime(gsp);
+  long dt = get_duration(gsp);
+  time_t itime;
+  double vlev = get_vlevel(gsp);
+  char vtbuf[32];
+  get_reftime(&time, gsp);
+  itime = timegm(&time);
+  itime += (ft + dt) * 60;
+  showtime(vtbuf, sizeof vtbuf, gmtime(&itime));
+  snprintf(filename, fnlen, "v%s_f%03lu_%s_%s.png", vtbuf, (ft+dt)/60,
+    level_name(vlev), param_name(param));
+  printf("# %s\n", filename);
+}
+
 typedef struct outframe_t {
   unsigned z; // zoom level
   unsigned xa; // min x axis
@@ -137,13 +174,15 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   outframe_t of = { 2, 0, 1023, 0, 1023 };
   double *gbuf;
   size_t onx, ony;
+  char filename[256];
   onx = of.xz - of.xa + 1;
   ony = of.yz - of.ya + 1;
   r = decode_gds(gsp, &b);
   gbuf = malloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf, &of);
-  r = gridsave(gbuf, onx, ony);
+  mkfilename(filename, sizeof filename, gsp);
+  r = gridsave(gbuf, onx, ony, filename);
   free(gbuf);
   return r;
 }
