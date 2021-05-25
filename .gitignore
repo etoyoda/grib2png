@@ -1,0 +1,5 @@
+.gitignore
+tags
+*.o
+*.bin
+*.log
