@@ -11,31 +11,38 @@ typedef struct bounding_t {
   double n, w, s, e;
   double di, dj;
   size_t ni, nj;
+  int wraplon;
 } bounding_t;
 
 // GRIB2 GDSからデータの投影法パラメタを bp に抽出する。
   gribscan_err_t
 decode_gds(const struct grib2secs *gsp, bounding_t *bp)
 {
-  size_t npixels, gpixels;
+  size_t gpixels;
   unsigned gsysno, gdt, unit;
-  npixels = get_npixels(gsp);
+  size_t npixels = get_npixels(gsp);
+  // === 未サポートの状況の検知 ===
+  // GDS 欠損
   if (gsp->gdslen == 0) {
     fprintf(stderr, "GDS missing\n");
     return ERR_BADGRIB;
   }
+  // GDS に中身がなく既登録格子系番号で指示する場合 (obsolete)
   if ((gsysno = gsp->gds[5]) != 0) {
     fprintf(stderr, "Unsupported GDS#5 %u\n", gsysno);
     return ERR_UNSUPPORTED;
   }
+  // GDS 格子数が DRS 格子数と不一致の場合（= ビットマップ使用時）
   if ((gpixels = ui4(gsp->gds + 6)) != npixels) {
     fprintf(stderr, "Pixels unmatch DRS %zu != GDS %zu\n", npixels, gpixels);
     return ERR_UNSUPPORTED;
   }
+  // GDT が 5.0 (正距円筒図法) ではない場合
   if ((gdt = ui2(gsp->gds + 12)) != 0) {
     fprintf(stderr, "Unsupported GDT 5.%u\n", gdt);
     return ERR_UNSUPPORTED;
   }
+  // 経緯度の単位が 1e-6 deg ではない場合
   if ((unit = ui4(gsp->gds + 38)) != 0) {
     fprintf(stderr, "Unsupported unit dividend %u\n", unit);
     return ERR_UNSUPPORTED;
@@ -44,6 +51,7 @@ decode_gds(const struct grib2secs *gsp, bounding_t *bp)
     fprintf(stderr, "Unsupported unit divisor %u\n", unit);
     return ERR_UNSUPPORTED;
   }
+  // GDS 格子数が ni*nj と不一致の場合 (thinned grid)
   bp->ni = si4(gsp->gds + 30);
   bp->nj = si4(gsp->gds + 34);
   if (npixels != bp->ni * bp->nj) {
@@ -51,21 +59,32 @@ decode_gds(const struct grib2secs *gsp, bounding_t *bp)
       npixels, bp->ni, bp->nj);
     return ERR_UNSUPPORTED;
   }
+  // 主要要素デコード
   bp->n = si4(gsp->gds + 46) / 1.0e6;
   bp->w = si4(gsp->gds + 50) / 1.0e6;
   bp->s = si4(gsp->gds + 55) / 1.0e6;
   bp->e = si4(gsp->gds + 59) / 1.0e6;
+  // 東端 bp->e が西経表示で大小関係が不正常な場合補正
+  if (bp->e < bp->w) { bp->e += 360.0; }
+  // 格子長 di との整合性チェック
   bp->di = si4(gsp->gds + 63) / 1.0e6;
-  bp->dj = si4(gsp->gds + 67) / 1.0e6;
-  if (abs(abs((bp->e - bp->w) / bp->ni) - abs(bp->di)) > 1.0e-6) {
+  if (fabs(fabs((bp->e - bp->w) / (bp->ni - 1)) - fabs(bp->di)) > 1.0e-6) {
     fprintf(stderr, "GDS E %g - W %g != Ni %zu * Di %g\n",
       bp->e, bp->w, bp->ni, bp->di);
     return ERR_UNSUPPORTED;
   }
-  if (abs(abs((bp->n - bp->s) / bp->nj) - abs(bp->dj)) > 1.0e-6) {
+  // 格子長 dj との整合性チェック
+  bp->dj = si4(gsp->gds + 67) / 1.0e6;
+  if (fabs(fabs((bp->n - bp->s) / (bp->nj - 1)) - fabs(bp->dj)) > 1.0e-6) {
     fprintf(stderr, "GDS N %g - S %g != Nj %zu * Dj %g\n",
       bp->e, bp->w, bp->ni, bp->di);
     return ERR_UNSUPPORTED;
+  }
+  // 緯度円全円周あるかチェック
+  if (fabs((bp->e - bp->w) * bp->ni / (bp->ni - 1) - 360.0) < 1.0e-6) {
+    bp->wraplon = 1;
+  } else {
+    bp->wraplon = 0;
   }
   
   return GSE_OKAY;
@@ -127,21 +146,24 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
 {
   double ri, rj, fi, fj, weight[4];
   size_t ijofs[4];
-  if (lon < 0.0) { lon += 360.0; } 
-  if (lon < bp->w || lon > bp->e || lat > bp->n || lat < bp->s) {
-    return nan("");
-  }
+  int ceil_ri, floor_ri;
+  if (lon < bp->w) { lon += 360.0; } 
+  if (lat > bp->n || lat < bp->s) { return nan(""); }
   ri = (lon - bp->w) * bp->ni / (bp->e - bp->w);
+  if ((lon > bp->e) && !bp->wraplon) { return nan(""); }
   rj = (lat - bp->s) * bp->nj / (bp->n - bp->s);
   fi = ri - floor(ri);
   fj = rj - floor(rj);
-  ijofs[0] = floor(ri) + floor(rj) * bp->ni;
+  // これは起こらないとはおもうんだけど
+  if ((floor_ri = floor(ri)) > (bp->ni - 1)) { floor_ri = bp->ni - 1; }
+  if ((ceil_ri = ceil(ri)) > (bp->ni - 1)) { ceil_ri = 0; }
+  ijofs[0] = floor_ri + floor(rj) * bp->ni;
   weight[0] = M_SQRT2 - hypot(fi, fj);
-  ijofs[1] =  ceil(ri) + floor(rj) * bp->ni;
+  ijofs[1] =  ceil_ri + floor(rj) * bp->ni;
   weight[1] = M_SQRT2 - hypot(1 - fi, fj);
-  ijofs[2] = floor(ri) +  ceil(rj) * bp->ni;
+  ijofs[2] = floor_ri +  ceil(rj) * bp->ni;
   weight[2] = M_SQRT2 - hypot(fi, 1 - fj);
-  ijofs[3] =  ceil(ri) +  ceil(rj) * bp->ni;
+  ijofs[3] =  ceil_ri +  ceil(rj) * bp->ni;
   weight[3] = M_SQRT2 - hypot(1 - fi, 1 - fj);
   return (dbuf[ijofs[0]] * weight[0] + dbuf[ijofs[1]] * weight[1]
     + dbuf[ijofs[2]] * weight[2] + dbuf[ijofs[3]] * weight[3])
