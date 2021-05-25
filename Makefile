@@ -1,5 +1,5 @@
 OBJS=gribscan.o mainlogic.o visual.o
-LIBS= -lm
+LIBS= -lm -lpng
 LFLAGS= -g
 CFLAGS= -g --pedantic -std=gnu99 -Wall 
 CC=cc
