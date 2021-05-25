@@ -229,23 +229,23 @@ checksec7(const struct grib2secs *gsp)
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
   // 長すぎる予報時間は最初に捨ててしまう
-  if (ftime + dura > 720) return GSE_OKAY;
+  if (ftime + dura > 720) return GSE_SKIP;
   // 要素と面の複合フィルタ
   switch (iparm) {
   case IPARM_T:
   case IPARM_RH:
     if (!(vlev == 50000.0 || vlev == 85000.0 || vlev == 92500.0)) {
-      return GSE_OKAY;
+      return GSE_SKIP;
     }
     break;
   case IPARM_RAIN:
-    if (vlev != 101325.0) return GSE_OKAY;
+    if (vlev != 101325.0) return GSE_SKIP;
     break;
   case IPARM_Pmsl:
-    if (vlev != 101324.0) return GSE_OKAY;
+    if (vlev != 101324.0) return GSE_SKIP;
     break;
   case IPARM_Z:
-    if (!(vlev == 50000.0)) return GSE_OKAY;
+    if (!(vlev == 50000.0)) return GSE_SKIP;
     break;
   default:
     return GSE_OKAY;
