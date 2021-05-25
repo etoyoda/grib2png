@@ -197,6 +197,10 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   double *gbuf;
   size_t onx, ony;
   char filename[256];
+  char *textv[] = {
+    "https://github.com/etoyoda/grib2png",
+    "https://www.wis-jma.go.jp/",
+    NULL };
   onx = of.xz - of.xa + 1;
   ony = of.yz - of.ya + 1;
   r = decode_gds(gsp, &b);
@@ -204,7 +208,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf, &of);
   mkfilename(filename, sizeof filename, gsp);
-  r = gridsave(gbuf, onx, ony, filename);
+  r = gridsave(gbuf, onx, ony, filename, textv);
   free(gbuf);
   return r;
 }

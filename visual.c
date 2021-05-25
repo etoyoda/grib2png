@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 #include <png.h>
 #include "visual.h"
 
@@ -21,10 +22,25 @@ new_pngimg(size_t owidth, size_t oheight)
   return r;
 }
 
+  void
+png_set_textv(png_structp png, png_infop info, char **textv)
+{
+  const int ntext = 2;
+  png_text textbuf[ntext];
+  textbuf[0].key = "Software";
+  textbuf[1].key = "Source";
+  for (int i = 0; i < ntext; i++) {
+    textbuf[i].compression = PNG_TEXT_COMPRESSION_NONE;
+    textbuf[i].text = textv[i];
+    textbuf[i].text_length = strlen(textbuf[i].text);
+  }
+  png_set_text(png, info, textbuf, ntext);
+}
+
 // RGBA バッファ ovector (寸法 owidth * oheight) をファイル filename に出力
   int
 write_pngimg(png_bytep *ovector, size_t owidth, size_t oheight,
-  const char *filename)
+  const char *filename, char **textv)
 {
   int r = 0;
   // ファイルを開く
@@ -37,7 +53,8 @@ write_pngimg(png_bytep *ovector, size_t owidth, size_t oheight,
   png_infop info = png_create_info_struct(png);
   if (info == NULL) { r = 'I'; errno = EDOM; goto err_png; }
   if (setjmp(png_jmpbuf(png))) { errno = EDOM; goto err_png; }
-  // テキストヘッダ記入 (TBD)
+  // テキストヘッダ記入
+  png_set_textv(png, info, textv);
   // ファイル書き出し
   png_init_io(png, fp);
   png_set_IHDR(png, info, owidth, oheight, 8, PNG_COLOR_TYPE_RGBA,
@@ -85,7 +102,7 @@ render(png_bytep *ovector, const double *gbuf,
 
   int
 gridsave(double *gbuf, size_t owidth, size_t oheight,
-  const char *filename)
+  const char *filename, char **textv)
 {
   png_bytep *ovector;
   int r = 0;
@@ -96,7 +113,7 @@ gridsave(double *gbuf, size_t owidth, size_t oheight,
   r = render(ovector, gbuf, owidth, oheight);
   if (r != 0) goto badend;
   // 3. PNG書き出し
-  r = write_pngimg(ovector, owidth, oheight, filename);
+  r = write_pngimg(ovector, owidth, oheight, filename, textv);
 badend:
   // 4. メモリ開放
   del_pngimg(ovector);
