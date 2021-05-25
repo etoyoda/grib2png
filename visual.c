@@ -11,16 +11,13 @@
 new_pngimg(size_t owidth, size_t oheight)
 {
   png_bytep *r;
-  r = malloc(sizeof(png_bytep) * oheight);
+  r = malloc(sizeof(png_bytep) * oheight + 1);
   if (r == NULL) { return NULL; }
-  r[0] = calloc(owidth * oheight, sizeof(png_byte) * 4);
-  if (r[0] == NULL) {
-    free(r);
-    return NULL;
+  for (int j = 0; j < oheight; j++) {
+    r[j] = calloc(owidth, sizeof(png_byte) * 4);
+    if (r[j] == NULL) { return NULL; }
   }
-  for (int j = 1; j < oheight; j++) {
-    r[j] = r[0] + owidth * 4;
-  }
+  r[oheight] = NULL;
   return r;
 }
 
@@ -61,7 +58,9 @@ err_fclose:
   void
 del_pngimg(png_bytep *ovector)
 {
-  free(ovector[0]);
+  for (unsigned j = 0; ovector[j]; j++) {
+    free(ovector[j]);
+  }
   free(ovector);
 }
 
@@ -72,7 +71,7 @@ render(png_bytep *ovector, const double *gbuf,
   for (size_t j = 0; j < oheight; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ij = i + j * owidth;
-      unsigned long ival = gbuf[ij] * 256;
+      unsigned long ival = gbuf[ij] * 128;
       png_bytep pixel = ovector[j] + i * 4;
       pixel[0] = (ival << 16) & 0xFF;
       pixel[1] = (ival <<  8) & 0xFF;
