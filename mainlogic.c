@@ -149,9 +149,9 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   int ceil_ri, floor_ri;
   if (lon < bp->w) { lon += 360.0; } 
   if (lat > bp->n || lat < bp->s) { return nan(""); }
-  ri = (lon - bp->w) * bp->ni / (bp->e - bp->w);
+  ri = (lon - bp->w) * (bp->ni - 1) / (bp->e - bp->w);
   if ((lon > bp->e) && !bp->wraplon) { return nan(""); }
-  rj = (lat - bp->s) * bp->nj / (bp->n - bp->s);
+  rj = (bp->n - lat) * (bp->nj - 1) / (bp->n - bp->s);
   fi = ri - floor(ri);
   fj = rj - floor(rj);
   // これは起こらないとはおもうんだけど
