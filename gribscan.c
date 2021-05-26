@@ -7,6 +7,8 @@
 
 #include "gribscan.h"
 
+//=== レプレゼンテーション層 ===
+
 // 4オクテット符号付き整数の解読
   long
 si4(const unsigned char *buf)
@@ -115,6 +117,37 @@ unpackbits(const unsigned char *buf, size_t nbits, size_t pos)
   return getbits(buf + byteofs, bitofs, nbits);
 }
 
+// GRIB 固有の 40 ビット浮動小数点数の解読
+  double
+float40(const unsigned char *ptr)
+{
+  if (ptr[0] == 255) {
+    return nan("");
+  } else if ((0x80 & ptr[0]) != 0) {
+    return pow(10.0, ptr[0] & 0x7F) * ui4(ptr + 1);
+  } else {
+    return pow(10.0, -ptr[0]) * ui4(ptr + 1);
+  }
+}
+
+// ビッグエンディアン32ビット浮動小数点数の解読
+  double
+float32(const unsigned char *buf)
+{
+  int sign = (buf[0] & 0x80) ? -1 : 1;
+  unsigned e = ((buf[0] & 0x7Fu) << 1) | ((buf[1] >> 7) & 0x1u);
+  unsigned long mant = (buf[1] << 16) | (buf[2] << 8) | buf[3];
+  if (e == 0 && mant == 0.0) {
+    return sign * 0.0;
+  } else if (e == 0) {
+    return sign * ldexp((double)mant, e - 127 - 23);
+  } else {
+    return sign * ldexp((double)(mant | 0x800000uL), e - 127 - 23);
+  }
+}
+
+//=== GRIB の構造解析 ===
+
 // gsp の指示する PDS からパラメタを抽出
 // 4 オクテットでパラメタを次の構造で表現する
 // 構造:
@@ -215,18 +248,6 @@ get_duration(const struct grib2secs *gsp)
     return LONG_MAX;
   }
   return r;
-}
-
-  double
-float40(const unsigned char *ptr)
-{
-  if (ptr[0] == 255) {
-    return nan("");
-  } else if ((0x80 & ptr[0]) != 0) {
-    return pow(10.0, ptr[0] & 0x7F) * ui4(ptr + 1);
-  } else {
-    return pow(10.0, -ptr[0]) * ui4(ptr + 1);
-  }
 }
 
   double
@@ -331,8 +352,6 @@ decode_ds(const struct grib2secs *gsp, double *dbuf)
 {
   size_t npixels;
   unsigned drstempl;
-  float refv;
-  unsigned char *refv_eqv;
   int scale_e;
   int scale_d;
   unsigned width;
@@ -347,11 +366,7 @@ decode_ds(const struct grib2secs *gsp, double *dbuf)
     fprintf(stderr, "unsupported DRS template 5.%u\n", drstempl);
     return ERR_BADGRIB;
   }
-  refv_eqv = (unsigned char *)&refv;
-  refv_eqv[3] = gsp->drs[11];
-  refv_eqv[2] = gsp->drs[12];
-  refv_eqv[1] = gsp->drs[13];
-  refv_eqv[0] = gsp->drs[14];
+  float refv = float32(gsp->drs + 11);
   scale_e = si2(gsp->drs + 15);
   scale_d = si2(gsp->drs + 17);
   width = gsp->drs[19];
