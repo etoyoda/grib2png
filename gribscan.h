@@ -57,8 +57,7 @@ typedef struct bounding_t {
 extern gribscan_err_t
   argscan(int argc, const char **argv);
 
-extern time_t timegm6(unsigned y, unsigned m, unsigned d,
-  unsigned h, unsigned n, unsigned s);
+extern void adjust_scales(iparm_t param, int *scale_e, int *scale_d);
 
 extern gribscan_err_t
   checksec7(const grib2secs_t *gsp);

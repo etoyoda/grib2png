@@ -72,6 +72,32 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
     / (weight[0] + weight[1] + weight[2] + weight[3]);
 }
 
+  // 特定パラメタの場合十進尺度 scale_d を補正する
+  // 海面気圧: hPa 単位に変換
+  // 渦度または発散: 1e-6/s 単位に変換
+  // 気温または露点: 0.1 K 単位に変換
+  // 積算降水量: 0.1 mm 単位に変換
+  void
+adjust_scales(iparm_t param, int *scale_e, int *scale_d)
+{
+  switch (param) {
+case IPARM_Pmsl:
+    *scale_d += 2;
+    break;
+case IPARM_rDIV:
+case IPARM_rVOR:
+    *scale_d -= 6;
+    break;
+case IPARM_T:
+case IPARM_dT:
+case IPARM_RAIN:
+    *scale_d -= 1;
+    break;
+default:
+    break;
+  }
+}
+
   gribscan_err_t
 reproject(double *gbuf, const bounding_t *bp, const double *dbuf,
   const outframe_t *ofp)
