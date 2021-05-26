@@ -139,14 +139,23 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
     "https://github.com/etoyoda/grib2png",
     "https://www.wis-jma.go.jp/",
     NULL };
+  palette_t pal;
   onx = of.xz - of.xa + 1;
   ony = of.yz - of.ya + 1;
   r = decode_gds(gsp, &b);
   gbuf = malloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf, &of);
+  switch (get_parameter(gsp)) {
+  case IPARM_Pmsl:
+    pal = PALETTE_Pmsl;
+    break;
+  default:
+    pal = PALETTE_GSI;
+    break;
+  }
   mkfilename(filename, sizeof filename, gsp);
-  r = gridsave(gbuf, onx, ony, filename, textv);
+  r = gridsave(gbuf, onx, ony, pal, filename, textv);
   free(gbuf);
   return r;
 }

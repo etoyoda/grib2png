@@ -81,19 +81,51 @@ del_pngimg(png_bytep *ovector)
   free(ovector);
 }
 
+  void
+setpixel_pmsl(png_bytep pixel, double val)
+{
+  unsigned long ival = (unsigned long)(val / 40.0) * 40;
+  unsigned long frac = (val - ival) / 40.0 * 255;
+  pixel[0] = (ival <= 9490) ? 0xFF : (ival >= 10770) ? 0 : (10770 - ival) / 5;
+  pixel[1] = 0x80;
+  pixel[2] = (ival <= 9490) ? 0 : (ival >= 10770) ? 0xFF : (ival - 9490) / 5;
+  pixel[3] = frac;
+}
+
+  void
+setpixel_gsi(png_bytep pixel, double val)
+{
+  unsigned long ival;
+  if (val >= 0.0) {
+    ival = val + 0.5;
+    pixel[0] = (ival << 16) & 0x7F;
+    pixel[1] = (ival <<  8) & 0xFF;
+    pixel[2] =  ival        & 0xFF;
+    pixel[3] = 0xFF;
+  } else {
+    ival = -val + 0.5;
+    pixel[0] = ((ival << 16) & 0x7F) | 0x80;
+    pixel[1] = (ival <<  8) & 0xFF;
+    pixel[2] =  ival        & 0xFF;
+    pixel[3] = 0xFF;
+  }
+}
+
   int
 render(png_bytep *ovector, const double *gbuf,
-  size_t owidth, size_t oheight)
+  size_t owidth, size_t oheight, palette_t pal)
 {
   for (size_t j = 0; j < oheight; j++) {
     for (size_t i = 0; i < owidth; i++) {
-      size_t ij = i + j * owidth;
-      unsigned long ival = gbuf[ij];
       png_bytep pixel = ovector[j] + i * 4;
-      pixel[0] = (ival << 16) & 0xFF;
-      pixel[1] = (ival <<  8) & 0xFF;
-      pixel[2] =  ival        & 0xFF;
-      pixel[3] = 0xFF;
+      switch (pal) {
+      case PALETTE_Pmsl:
+        setpixel_pmsl(pixel, gbuf[i + j * owidth]);
+        break;
+      default:
+        setpixel_gsi(pixel, gbuf[i + j * owidth]);
+        break;
+      }
     }
   }
   return 0;
@@ -101,7 +133,7 @@ render(png_bytep *ovector, const double *gbuf,
 
 
   int
-gridsave(double *gbuf, size_t owidth, size_t oheight,
+gridsave(double *gbuf, size_t owidth, size_t oheight, palette_t pal,
   const char *filename, char **textv)
 {
   png_bytep *ovector;
@@ -110,7 +142,7 @@ gridsave(double *gbuf, size_t owidth, size_t oheight,
   ovector = new_pngimg(owidth, oheight);
   if (ovector == NULL) return 'M';
   // 2. データ変換（double値→RGBA）
-  r = render(ovector, gbuf, owidth, oheight);
+  r = render(ovector, gbuf, owidth, oheight, pal);
   if (r != 0) goto badend;
   // 3. PNG書き出し
   r = write_pngimg(ovector, owidth, oheight, filename, textv);
