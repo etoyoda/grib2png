@@ -73,24 +73,34 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
 }
 
   // 特定パラメタの場合十進尺度 scale_d を補正する
-  // 海面気圧: 0.1 hPa 単位に変換
-  // 渦度または発散: 1e-6/s 単位に変換
   // 気温または露点: 0.1 K 単位に変換
   // 積算降水量: 0.1 mm 単位に変換
   void
 adjust_scales(iparm_t param, int *scale_e, int *scale_d)
 {
   switch (param) {
-case IPARM_Pmsl:
+  // 海面気圧: 0.1 hPa 単位に変換
+  // 典型的値域: 9000..10900
+  case IPARM_Pmsl:
     *scale_d += 1;
     break;
-case IPARM_rDIV:
-case IPARM_rVOR:
+  // 渦度または発散: 1e-6/s 単位に変換
+  // 典型的値域: -1000..1000
+  case IPARM_rDIV:
+  case IPARM_rVOR:
     *scale_d -= 6;
     break;
-case IPARM_T:
-case IPARM_dT:
-case IPARM_RAIN:
+  // 気温または露点: 0.1 K 単位に変換
+  // 典型的値域: 2500..3200
+  case IPARM_T:
+  case IPARM_dT:
+  // 風速: 0.1 m/s 単位に変換
+  // 典型的値域: -1000..1000
+  case IPARM_U:
+  case IPARM_V:
+  // 積算降水量: 0.1 mm 単位に変換
+  // 典型的値域: 0..10000
+  case IPARM_RAIN:
     *scale_d -= 1;
     break;
 default:
