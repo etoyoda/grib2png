@@ -56,13 +56,17 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   if ((floor_ri = floor(ri)) > (bp->ni - 1)) { floor_ri = bp->ni - 1; }
   if ((ceil_ri = ceil(ri)) > (bp->ni - 1)) { ceil_ri = 0; }
   ijofs[0] = floor_ri + floor(rj) * bp->ni;
-  weight[0] = M_SQRT2 - hypot(fi, fj);
+  weight[0] = 1.0 - hypot(fi, fj);
+  if (weight[0] < 0.0) { weight[0] = 0.0; }
   ijofs[1] =  ceil_ri + floor(rj) * bp->ni;
-  weight[1] = M_SQRT2 - hypot(1 - fi, fj);
+  weight[1] = 1.0 - hypot(1 - fi, fj);
+  if (weight[1] < 0.0) { weight[1] = 0.0; }
   ijofs[2] = floor_ri +  ceil(rj) * bp->ni;
-  weight[2] = M_SQRT2 - hypot(fi, 1 - fj);
+  weight[2] = 1.0 - hypot(fi, 1 - fj);
+  if (weight[2] < 0.0) { weight[2] = 0.0; }
   ijofs[3] =  ceil_ri +  ceil(rj) * bp->ni;
-  weight[3] = M_SQRT2 - hypot(1 - fi, 1 - fj);
+  weight[3] = 1.0 - hypot(1 - fi, 1 - fj);
+  if (weight[3] < 0.0) { weight[3] = 0.0; }
   return (dbuf[ijofs[0]] * weight[0] + dbuf[ijofs[1]] * weight[1]
     + dbuf[ijofs[2]] * weight[2] + dbuf[ijofs[3]] * weight[3])
     / (weight[0] + weight[1] + weight[2] + weight[3]);
