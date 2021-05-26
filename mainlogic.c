@@ -73,7 +73,7 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
 }
 
   // 特定パラメタの場合十進尺度 scale_d を補正する
-  // 海面気圧: hPa 単位に変換
+  // 海面気圧: 0.1 hPa 単位に変換
   // 渦度または発散: 1e-6/s 単位に変換
   // 気温または露点: 0.1 K 単位に変換
   // 積算降水量: 0.1 mm 単位に変換
@@ -82,7 +82,7 @@ adjust_scales(iparm_t param, int *scale_e, int *scale_d)
 {
   switch (param) {
 case IPARM_Pmsl:
-    *scale_d += 2;
+    *scale_d += 1;
     break;
 case IPARM_rDIV:
 case IPARM_rVOR:
