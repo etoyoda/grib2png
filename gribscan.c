@@ -157,7 +157,7 @@ float32(const unsigned char *buf)
 // 0x000000FF: parameter
 // ~0: エラー
   unsigned long
-get_parameter(const struct grib2secs *gsp)
+get_parameter(const grib2secs_t *gsp)
 {
   unsigned pdst;
   unsigned long r;
@@ -178,7 +178,7 @@ get_parameter(const struct grib2secs *gsp)
 }
 
   long
-get_ftime(const struct grib2secs *gsp)
+get_ftime(const grib2secs_t *gsp)
 {
   long r;
   unsigned tunits;
@@ -211,7 +211,7 @@ get_ftime(const struct grib2secs *gsp)
 }
 
   long
-get_duration(const struct grib2secs *gsp)
+get_duration(const grib2secs_t *gsp)
 {
   long r;
   unsigned tunits;
@@ -251,7 +251,7 @@ get_duration(const struct grib2secs *gsp)
 }
 
   double
-get_vlevel(const struct grib2secs *gsp)
+get_vlevel(const grib2secs_t *gsp)
 {
   double r;
   unsigned pdst, vtype;
@@ -328,7 +328,7 @@ showtime(char *buf, size_t size, const struct tm *tp)
 }
 
   void
-get_reftime(struct tm *tp, const struct grib2secs *gsp)
+get_reftime(struct tm *tp, const grib2secs_t *gsp)
 {
   tp->tm_year = si2(gsp->ids + 12) - 1900;
   tp->tm_mon = gsp->ids[14] - 1;
@@ -340,7 +340,7 @@ get_reftime(struct tm *tp, const struct grib2secs *gsp)
 
 // エラーは 0
   size_t
-get_npixels(const struct grib2secs *gsp)
+get_npixels(const grib2secs_t *gsp)
 {
   if (gsp->drslen == 0)
     return 0;
@@ -348,7 +348,7 @@ get_npixels(const struct grib2secs *gsp)
 }
 
   gribscan_err_t
-decode_ds(const struct grib2secs *gsp, double *dbuf)
+decode_ds(const grib2secs_t *gsp, double *dbuf)
 {
   size_t npixels;
   unsigned drstempl;
@@ -398,10 +398,104 @@ default:
   return GSE_OKAY;
 }
 
+// GRIB2 GDSからデータの投影法パラメタを bp に抽出する。
+  gribscan_err_t
+decode_gds(const grib2secs_t *gsp, bounding_t *bp)
+{
+  size_t gpixels;
+  unsigned gsysno, gdt, unit;
+  size_t npixels = get_npixels(gsp);
+  // === 未サポートの状況の検知 ===
+  // GDS 欠損
+  if (gsp->gdslen == 0) {
+    fprintf(stderr, "GDS missing\n");
+    return ERR_BADGRIB;
+  }
+  // GDS に中身がなく既登録格子系番号で指示する場合 (obsolete)
+  if ((gsysno = gsp->gds[5]) != 0) {
+    fprintf(stderr, "Unsupported GDS#5 %u\n", gsysno);
+    return ERR_UNSUPPORTED;
+  }
+  // GDS 格子数が DRS 格子数と不一致の場合（= ビットマップ使用時）
+  if ((gpixels = ui4(gsp->gds + 6)) != npixels) {
+    fprintf(stderr, "Pixels unmatch DRS %zu != GDS %zu\n", npixels, gpixels);
+    return ERR_UNSUPPORTED;
+  }
+  // GDT が 5.0 (正距円筒図法) ではない場合
+  if ((gdt = ui2(gsp->gds + 12)) != 0) {
+    fprintf(stderr, "Unsupported GDT 5.%u\n", gdt);
+    return ERR_UNSUPPORTED;
+  }
+  // 経緯度の単位が 1e-6 deg ではない場合
+  if ((unit = ui4(gsp->gds + 38)) != 0) {
+    fprintf(stderr, "Unsupported unit dividend %u\n", unit);
+    return ERR_UNSUPPORTED;
+  }
+  if ((unit = ui4(gsp->gds + 42)) != 0xFFFFFFFF) {
+    fprintf(stderr, "Unsupported unit divisor %u\n", unit);
+    return ERR_UNSUPPORTED;
+  }
+  // GDS 格子数が ni*nj と不一致の場合 (thinned grid)
+  bp->ni = si4(gsp->gds + 30);
+  bp->nj = si4(gsp->gds + 34);
+  if (npixels != bp->ni * bp->nj) {
+    fprintf(stderr, "Unsupported npixels %zu != Ni %zu * Nj %zu\n", 
+      npixels, bp->ni, bp->nj);
+    return ERR_UNSUPPORTED;
+  }
+  // 主要要素デコード
+  bp->n = si4(gsp->gds + 46) / 1.0e6;
+  bp->w = si4(gsp->gds + 50) / 1.0e6;
+  bp->s = si4(gsp->gds + 55) / 1.0e6;
+  bp->e = si4(gsp->gds + 59) / 1.0e6;
+  // 東端 bp->e が西経表示で大小関係が不正常な場合補正
+  if (bp->e < bp->w) { bp->e += 360.0; }
+  // 格子長 di との整合性チェック
+  bp->di = si4(gsp->gds + 63) / 1.0e6;
+  if (fabs(fabs((bp->e - bp->w) / (bp->ni - 1)) - fabs(bp->di)) > 1.0e-6) {
+    fprintf(stderr, "GDS E %g - W %g != Ni %zu * Di %g\n",
+      bp->e, bp->w, bp->ni, bp->di);
+    return ERR_UNSUPPORTED;
+  }
+  // 格子長 dj との整合性チェック
+  bp->dj = si4(gsp->gds + 67) / 1.0e6;
+  if (fabs(fabs((bp->n - bp->s) / (bp->nj - 1)) - fabs(bp->dj)) > 1.0e-6) {
+    fprintf(stderr, "GDS N %g - S %g != Nj %zu * Dj %g\n",
+      bp->e, bp->w, bp->ni, bp->di);
+    return ERR_UNSUPPORTED;
+  }
+  // 緯度円全円周あるかチェック
+  if (fabs((bp->e - bp->w) * bp->ni / (bp->ni - 1) - 360.0) < 1.0e-6) {
+    bp->wraplon = 1;
+  } else {
+    bp->wraplon = 0;
+  }
+  
+  return GSE_OKAY;
+}
+
+  const char *
+level_name(double vlev)
+{
+  static char lvbuf[32];
+  if (vlev == 101325.0) {
+    return "sfc";
+  } else if (vlev == 101324.0) {
+    return "msl";
+  } else if (vlev == 101302.5) {
+    return "z2";
+  } else if (vlev == 101214.5) {
+    return "z10";
+  } else {
+    snprintf(lvbuf, sizeof lvbuf, "p%g", vlev / 100.0);
+    return lvbuf;
+  }
+}
+
 // GRIB2 の各節を fp から読み込んで、節の修飾関係に従って gsp に積み込んで、
 // 第7節（データ節）が読めるたびに checksec7() を呼び出す。
   gribscan_err_t
-grib2loopsecs(struct grib2secs *gsp, FILE *fp, const char *locator)
+grib2loopsecs(grib2secs_t *gsp, FILE *fp, const char *locator)
 {
   // 気象庁1.25度格子GSM予報値の場合 recl = 62645 であり、多少大きく設定
   const size_t RECLZERO = 64 * 1024;
@@ -477,11 +571,11 @@ default:
 
 /* 解読構造体 grib2secs を malloc() して初期化して返す。
  */
-  struct grib2secs *
+  grib2secs_t *
 new_grib2secs(const unsigned char ids[12])
 {
-  struct grib2secs *r;
-  r = malloc(sizeof(struct grib2secs));
+  grib2secs_t *r;
+  r = malloc(sizeof(grib2secs_t));
   if (r == NULL) { return NULL; }
   r->discipline = ids[2];
   r->msglen = ui4(ids + 4);
@@ -495,7 +589,7 @@ new_grib2secs(const unsigned char ids[12])
 /* 解読構造体 grib2secs を破棄、要すれば各節のメモリを破棄してから。
  */
   void
-del_grib2secs(struct grib2secs *gsp)
+del_grib2secs(grib2secs_t *gsp)
 {
   if (gsp->ids) { free(gsp->ids); }
   if (gsp->gds) { free(gsp->gds); }
@@ -518,7 +612,7 @@ grib2decode(FILE *fp, const char *locator)
   unsigned char ids[12];
   size_t zr;
   /* 解読結果を保持する構造体 */
-  struct grib2secs *gsp;
+  grib2secs_t *gsp;
   /* section 0 IDS */
   zr = fread(ids, 1, 12, fp);
   if (zr < 12) {
@@ -590,17 +684,4 @@ klose:
 error:
   perror(fnam);
   return ERR_IO;
-}
-
-  int
-main(int argc, const char **argv)
-{
-  gribscan_err_t r;
-  r = argscan(argc, argv);
-  if (r == ERR_NOINPUT) {
-    fprintf(stderr, "usage: %s data output ...\n", argv[0]);
-  } else if (r != GSE_OKAY) {
-    fprintf(stderr, "%s: exit(%u)\n", argv[0], r);
-  }
-  return r;
 }

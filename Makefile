@@ -21,7 +21,7 @@ mainlogic.o: gribscan.h visual.h
 visual.o: visual.h
 
 clean:
-	rm -f $(OBJS) grib2png
+	rm -f $(OBJS) grib2png *.png
 
 tags: mainlogic.c gribscan.c gribscan.h visual.c visual.h
 	ctags mainlogic.c gribscan.c gribscan.h visual.c visual.h

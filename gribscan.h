@@ -16,7 +16,7 @@ typedef enum gribscan_err_t {
   ERR_OVERRUN
 } gribscan_err_t;
 
-struct grib2secs {
+typedef struct grib2secs {
   // ISはここだけを保存している
   unsigned discipline;
   size_t msglen;
@@ -24,7 +24,7 @@ struct grib2secs {
   size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
   // デコード結果
   size_t npixels;
-};
+} grib2secs_t;
 
 typedef enum iparm_t {
   IPARM_T      = 0x000000,
@@ -44,6 +44,14 @@ typedef enum iparm_t {
   IPARM_Z      = 0x000305,
 } iparm_t;
 
+// 投影法パラメタ。とはいっても今のところは正距円筒図法だけ想定している。
+typedef struct bounding_t {
+  double n, w, s, e;
+  double di, dj;
+  size_t ni, nj;
+  int wraplon;
+} bounding_t;
+
 /* --- mainlogic.c --- */
 
 extern gribscan_err_t
@@ -53,39 +61,43 @@ extern time_t timegm6(unsigned y, unsigned m, unsigned d,
   unsigned h, unsigned n, unsigned s);
 
 extern gribscan_err_t
-  checksec7(const struct grib2secs *gsp);
+  checksec7(const grib2secs_t *gsp);
 
 /* --- gribscan.c --- */
 
 extern long si4(const unsigned char *buf);
-extern unsigned long
-  ui4(const unsigned char *buf);
-extern int
-  si2(const unsigned char *buf);
+extern unsigned long ui4(const unsigned char *buf);
+extern int si2(const unsigned char *buf);
+extern unsigned ui2(const unsigned char *buf);
+extern double float40(const unsigned char *buf);
+extern double float32(const unsigned char *buf);
 extern unsigned
-  ui2(const unsigned char *buf);
+  unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
+
+extern void
+  get_reftime(struct tm *tp, const grib2secs_t *gsp);
+extern long
+  get_ftime(const grib2secs_t *gsp);
+extern long
+  get_duration(const grib2secs_t *gsp);
+extern unsigned long
+  get_parameter(const grib2secs_t *gsp);
+extern double
+  get_vlevel(const grib2secs_t *gsp);
+extern size_t
+  get_npixels(const grib2secs_t *gsp);
+
+extern gribscan_err_t
+  decode_ds(const grib2secs_t *gsp, double *dbuf);
+extern gribscan_err_t
+  decode_gds(const grib2secs_t *gsp, bounding_t *bp);
+
 extern const char *
   showtime(char *buf, size_t size, const struct tm *t);
 extern const char *
   param_name(unsigned long iparm);
 
-extern void
-  get_reftime(struct tm *tp, const struct grib2secs *gsp);
-extern long
-  get_ftime(const struct grib2secs *gsp);
-extern long
-  get_duration(const struct grib2secs *gsp);
-extern unsigned long
-  get_parameter(const struct grib2secs *gsp);
-extern double
-  get_vlevel(const struct grib2secs *gsp);
-extern size_t
-  get_npixels(const struct grib2secs *gsp);
-extern gribscan_err_t
-  decode_ds(const struct grib2secs *gsp, double *dbuf);
-
-extern unsigned
-  unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
+extern const char *level_name(double vlev);
 
 extern gribscan_err_t
   grib2scan_by_filename(const char *fnam);
