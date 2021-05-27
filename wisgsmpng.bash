@@ -1,8 +1,6 @@
 #!/bin/bash
 set -Ceuo pipefail
 # (C) TOYODA Eizi, 2021
-# ナウキャストのレーダー実況画像をダウンロードする
-# 定期的に起動されることを想定している。時刻は細かくチューニングしなくてよい。
 #
 PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin
 LANG=C
@@ -17,11 +15,11 @@ cd /nwp/p1/jmagrib
 # just in case the script crashes and old one remains
 if lastrun=$(stat --format=%Z syn.txt 2>/dev/null) ; then
   limit=$(date --date='6 hour ago' '+%s')
-  if [[ $timestamp -lt $limit ]] ; then
+  if [[ $lastrun -lt $limit ]] ; then
     rm -f syn.txt
-    date --date="@${timestamp}" +'Lock file at %c - removed'
+    date --date="@${lastrun}" +'Lock file at %c - removed'
   else
-    date --date="@${timestamp}" +'Lock file at %c - aborted'
+    date --date="@${lastrun}" +'Lock file at %c - aborted'
     false
   fi
 fi
