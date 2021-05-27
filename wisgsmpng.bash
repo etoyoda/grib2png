@@ -22,7 +22,7 @@ test ! -d ${ymd}T${hh}Z
 
 # 作業中フォルダがロックとなる
 if timestamp=$(stat --format=%Z times.txt 2>/dev/null) ; then
-  limit=$(LANG=C TZ=UTC date --date='6 hour ago' '+%s')
+  limit=$(LANG=C TZ=UTC date --date='1 hour ago' '+%s')
   if [[ $timestamp -lt $limit ]] ; then
     date --date="@${timestamp}" +'Lock file at %c - removed'
     rm -rf work
