@@ -84,11 +84,15 @@ del_pngimg(png_bytep *ovector)
   void
 setpixel_pmsl(png_bytep pixel, double val)
 {
-  unsigned long ival = (unsigned long)(val / 40.0) * 40;
-  unsigned long frac = (val - ival) / 40.0 * 255;
-  pixel[0] = (ival <= 9490) ? 0xFF : (ival >= 10770) ? 0 : (10770 - ival) / 5;
+  // val は 0.1 hPa 単位、4 hPa 単位で縞々透過をつける
+  long istep = (long)(val / 40.0);
+  unsigned frac = (unsigned)((val - istep * 40.0) / 40.0) * 0x100u;
+  // 1013 hPa => istep=253 を中心に
+  int red = (1013/4 - istep) * 4 + 0x80;
+  int blue = (istep - 1013/4) * 4 + 0x80;
+  pixel[0] = (red < 0) ? 0 : (red > 0xFF) ? 0xFF : red;
   pixel[1] = 0x80;
-  pixel[2] = (ival <= 9490) ? 0 : (ival >= 10770) ? 0xFF : (ival - 9490) / 5;
+  pixel[2] = (blue < 0) ? 0 : (blue > 0xFF) ? 0xFF : blue;
   pixel[3] = frac;
 }
 
