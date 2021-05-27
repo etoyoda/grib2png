@@ -83,6 +83,38 @@ del_pngimg(png_bytep *ovector)
 }
 
   void
+setpixel_z(png_bytep pixel, double val)
+{
+  int blue;
+  double cycle = (val > 6360.0) ? 120.0 : 60.0;
+  // val は 1 m 単位、縞々透過は 60 m 単位 (6000 m 以上では 120 m 単位)
+  long istep = floor(val / cycle); 
+  unsigned frac = (unsigned)((val - istep * cycle) * 0x100u / cycle);
+  if (val < 1000.0) { // 925hPa用
+    blue = (istep - 720/60) * 24 + 0x80;
+  } else if (val < 2160.0) { // 850hPa用
+    blue = (istep - 1440/60) * 16 + 0x80;
+  } else if (val < 4200.0) { // 700hPa用
+    blue = (istep - 3000/60) * 16 + 0x80;
+  } else if (val < 6360.0) { // 500hPa用
+    blue = (istep - 5520/60) * 16 + 0x80;
+  } else if (val < 8160.0) { // 400hPa用
+    blue = (istep - 7200/120) * 24 + 0x80;
+  } else if (val < 9720.0) { // 300hPa用
+    blue = (istep - 9120/120) * 24 + 0x80;
+  } else if (val < 11040.0) { // 250hPa用
+    blue = (istep - 10320/120) * 24 + 0x80;
+  } else { // 200hPa用
+    blue = (istep - 11760/120) * 24 + 0x80;
+  }
+  int red = 0xFF - blue;
+  pixel[0] = (red < 0) ? 0 : (red > 0xFF) ? 0xFF : red;
+  pixel[1] = 0x80;
+  pixel[2] = (blue < 0) ? 0 : (blue > 0xFF) ? 0xFF : blue;
+  pixel[3] = frac;
+}
+
+  void
 setpixel_rh(png_bytep pixel, double val)
 {
   // val は 1 % 単位、10 % 単位で色を変えて、透過率は80%を境に大きく変える
@@ -205,6 +237,9 @@ render(png_bytep *ovector, const double *gbuf,
     for (size_t i = 0; i < owidth; i++) {
       png_bytep pixel = ovector[j] + i * 4;
       switch (pal) {
+      case PALETTE_Z:
+        setpixel_z(pixel, gbuf[i + j * owidth]);
+        break;
       case PALETTE_RH:
         setpixel_rh(pixel, gbuf[i + j * owidth]);
         break;
