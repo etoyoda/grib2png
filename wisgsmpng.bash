@@ -21,10 +21,19 @@ hh=$(printf '%02u' $hh)
 test ! -d ${ymd}T${hh}Z
 
 # 作業中フォルダがロックとなる
-
+if timestamp=$(stat --format=%Z times.txt 2>/dev/null) ; then
+  limit=$(LANG=C TZ=UTC date --date='6 hour ago' '+%s')
+  if [[ $timestamp -lt $limit ]] ; then
+    date --date="@${timestamp}" +'Lock file at %c - removed'
+    rm -rf work
+  else
+    date --date="@${timestamp}" +'Lock file at %c - aborted'
+    false
+  fi
+fi
 test ! -d work
 mkdir work
-
+cd work
 
 # syn がうまく動かないのでファイル決め打ちで攻める
 
