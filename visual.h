@@ -6,7 +6,8 @@ typedef enum palette_t {
   PALETTE_T,
   PALETTE_RAIN6,
   PALETTE_RAIN12,
-  PALETTE_RH
+  PALETTE_RH,
+  PALETTE_Z
 } palette_t;
 
   extern int

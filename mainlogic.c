@@ -147,9 +147,10 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf, &of);
   switch (get_parameter(gsp)) {
-  case IPARM_Pmsl:
-    pal = PALETTE_Pmsl;
-    break;
+  case IPARM_Z:    pal = PALETTE_Z;    break;
+  case IPARM_RH:   pal = PALETTE_RH;   break;
+  case IPARM_T:    pal = PALETTE_T;    break;
+  case IPARM_Pmsl: pal = PALETTE_Pmsl; break;
   default:
     pal = PALETTE_GSI;
     break;

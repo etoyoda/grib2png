@@ -83,6 +83,87 @@ del_pngimg(png_bytep *ovector)
 }
 
   void
+setpixel_rh(png_bytep pixel, double val)
+{
+  // val は 1 % 単位、10 % 単位で色を変えて、透過率は80%を境に大きく変える
+  long istep = floor(val / 10.0);
+  long ival = floor(val);
+  switch (istep * 10) {
+  default:
+  case 100: pixel[0] = 0; pixel[1] = 77; pixel[2] = 64; break;
+  case  90: pixel[0] = 0; pixel[1] = 153; pixel[2] = 128; break;
+  case  80: pixel[0] = 31; pixel[1] = 204; pixel[2] = 175; break;
+  case  70: pixel[0] = 73; pixel[1] = 243; pixel[2] = 214; break;
+  case  60: pixel[0] = 255; pixel[1] = 255; pixel[2] = 240; break;
+  case  50: pixel[0] = 255; pixel[1] = 229; pixel[2] = 191; break;
+  case  40: pixel[0] = 255; pixel[1] = 200; pixel[2] = 70; break;
+  case  30: pixel[0] = 245; pixel[1] = 120; pixel[2] = 15; break;
+  case  20: pixel[0] = 120; pixel[1] = 55; pixel[2] = 5; break;
+  case  10: pixel[0] = 60; pixel[1] = 30; pixel[2] = 5; break;
+  case   0: pixel[0] = 0; pixel[1] = 38; pixel[2] = 38; break;
+  }
+  pixel[3] = (ival > 100) ? 0xFF
+    : (ival >= 80) ? (255 - (100 - ival) * 2)
+    : (ival >= 0) ? ival * 2
+    : 0;
+}
+
+  void
+setpixel_t(png_bytep pixel, double val)
+{
+  // val は 0.1 K 単位、3 K 単位で縞々透過をつける
+  long istep = floor((val - 2731.5) / 30.0);
+  unsigned frac = (unsigned)(((val - 2731.5) - istep * 30.0) * 0x100u / 30.0);
+  switch (istep * 3) {
+  case 36:
+  case 35:
+  case 33:
+  case -33:
+  case -36:
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; break;
+  case 30:
+  case -39:
+  case -42:
+  case -45:
+  case -48:
+  case -51:
+  case -54:
+  case -57:
+  case -60:
+    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; break;
+  case 27:
+  case 25:
+  case 24:
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; break;
+  case 21:
+  case 20:
+  case 18:
+    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; break;
+  case 15:
+    pixel[0] = 255; pixel[1] = 255; pixel[2] = 150; break;
+  case 12:
+  case 10:
+  case 9:
+    pixel[0] = 255; pixel[1] = 255; pixel[2] = 240; break;
+  case 6:
+  case 5:
+  case 3:
+    pixel[0] = 185; pixel[1] = 235; pixel[2] = 255; break;
+  case 0:
+    pixel[0] = 0; pixel[1] = 150; pixel[2] = 255; break;
+  case -3:
+  case -5:
+  case -6:
+    pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; break;
+  case -9:
+  case -10:
+  default:
+    pixel[0] = 0; pixel[1] = 32; pixel[2] = 128; break;
+  }
+  pixel[3] = frac;
+}
+
+  void
 setpixel_pmsl(png_bytep pixel, double val)
 {
   // val は 0.1 hPa 単位、4 hPa 単位で縞々透過をつける
@@ -124,6 +205,12 @@ render(png_bytep *ovector, const double *gbuf,
     for (size_t i = 0; i < owidth; i++) {
       png_bytep pixel = ovector[j] + i * 4;
       switch (pal) {
+      case PALETTE_RH:
+        setpixel_rh(pixel, gbuf[i + j * owidth]);
+        break;
+      case PALETTE_T:
+        setpixel_t(pixel, gbuf[i + j * owidth]);
+        break;
       case PALETTE_Pmsl:
         setpixel_pmsl(pixel, gbuf[i + j * owidth]);
         break;
