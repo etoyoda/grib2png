@@ -20,8 +20,10 @@ hh=$(printf '%02u' $hh)
 # 推定最新時刻フォルダができていれば終了
 test ! -d ${ymd}T${hh}Z
 
-mkdir ${ymd}T${hh}Z
-cd ${ymd}T${hh}Z
+# 作業中フォルダがロックとなる
+
+test ! -d work
+mkdir work
 
 
 # syn がうまく動かないのでファイル決め打ちで攻める
@@ -33,3 +35,6 @@ _GSM_GPV_Rgl_Gll1p25deg_L-all_FD0000-0512_grib2.bin"
 wget -q -Obiggrib.bin ${URL}
 
 /nwp/bin/grib2png biggrib.bin > grib2png.log
+
+cd ..
+mv work ${ymd}T${hh}Z
