@@ -245,6 +245,7 @@ checksec7(const struct grib2secs *gsp)
     sreftime, param_name(iparm), ftime, dura, vlev);
   r = convsec7(gsp);
   goto END_NORMAL;
+
 END_SKIP:
   r = GSE_SKIP;
 END_NORMAL:
