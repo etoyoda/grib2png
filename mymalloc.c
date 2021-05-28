@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "mymalloc.h"
 
-int mymalloc_verbose = 0;
+int mymalloc_verbose = 1;
 static size_t asize = 0;
 static int acount = 0;
 

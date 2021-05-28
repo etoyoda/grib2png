@@ -190,10 +190,12 @@ convsec7(const struct grib2secs *gsp)
 
 /* 第1節〜第7節のセット gsp について、
  * 必要であれば convsec7() を呼び出す。
+ * この関数は gsp->ds を破棄または保存する。
  */
   gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
+  gribscan_err_t r;
   struct tm t;
   char sreftime[24];
   unsigned long iparm;
@@ -206,42 +208,48 @@ checksec7(const struct grib2secs *gsp)
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
   // 長すぎる予報時間は最初に捨ててしまう
-  if (ftime + dura > 360) return GSE_SKIP;
+  if (ftime + dura > 360) goto END_SKIP;
   // 要素と面の複合フィルタ
   switch (iparm) {
   case IPARM_T:
     if (!(vlev == 50000.0 || vlev == 85000.0 || vlev == 92500.0
     || vlev == 101302.5)) {
-      return GSE_SKIP;
+      goto END_SKIP;
     }
     break;
   case IPARM_RH:
     if (!(vlev == 70000.0 || vlev == 85000.0 || vlev == 92500.0)) {
-      return GSE_SKIP;
+      goto END_SKIP;
     }
     break;
   case IPARM_U:
   case IPARM_V:
-    if (vlev != 101214.5) return GSE_SKIP;
+    if (vlev != 101214.5) goto END_SKIP;
     break;
   case IPARM_RAIN:
-    if (vlev != 101325.0) return GSE_SKIP;
+    if (vlev != 101325.0) goto END_SKIP;
     break;
   case IPARM_Pmsl:
-    if (vlev != 101324.0) return GSE_SKIP;
+    if (vlev != 101324.0) goto END_SKIP;
     break;
   case IPARM_rVOR:
-    if (!(vlev == 50000.0)) return GSE_SKIP;
+    if (!(vlev == 50000.0)) goto END_SKIP;
     break;
   case IPARM_Z:
-    if (!(vlev == 30000.0 || vlev == 50000.0)) return GSE_SKIP;
+    if (!(vlev == 30000.0 || vlev == 50000.0)) goto END_SKIP;
     break;
   default:
-    return GSE_OKAY;
+    goto END_SKIP;
   }
   printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
     sreftime, param_name(iparm), ftime, dura, vlev);
-  return convsec7(gsp);
+  r = convsec7(gsp);
+  goto END_NORMAL;
+END_SKIP:
+  r = GSE_SKIP;
+END_NORMAL:
+  myfree(gsp->ds);
+  return r;
 }
 
 /* コマンドライン引数 argc, argv を左からチェックして、

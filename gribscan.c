@@ -535,10 +535,11 @@ case 6:
       gsp->bmslen = recl;
       break;
 case 7:
-      if (gsp->ds) { myfree(gsp->ds); }
+      // gsp->ds は checksec7() によって破棄されるから myfree しない
       gsp->ds = secbuf;
       gsp->dslen = recl;
       r = checksec7(gsp);
+      gsp->ds = NULL;
       if (!(r == GSE_OKAY || r == GSE_SKIP)) { return r; }
       break;
 default:
