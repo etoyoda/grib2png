@@ -15,14 +15,13 @@ set $(LANG=C TZ=UTC date --date='3 hours ago' +'%Y%m%d %H')
 : date $*
 ymd=$1
 hh=$2
-let 'hh = hh / 6 * 6' || :
-hh=$(printf '%02u' $hh)
+hh=$(ruby -e 'printf("%02u", ARGV.first.to_i / 6 * 6)' $hh)
 # 推定最新時刻フォルダができていれば終了
 test ! -d ${ymd}T${hh}Z
 
 # 作業中フォルダがロックとなる
-if timestamp=$(stat --format=%Z times.txt 2>/dev/null) ; then
-  limit=$(LANG=C TZ=UTC date --date='6 hour ago' '+%s')
+if timestamp=$(stat --format=%Z work 2>/dev/null) ; then
+  limit=$(LANG=C TZ=UTC date --date='1 hour ago' '+%s')
   if [[ $timestamp -lt $limit ]] ; then
     date --date="@${timestamp}" +'Lock file at %c - removed'
     rm -rf work
@@ -47,3 +46,6 @@ wget -q -Obiggrib.bin ${URL}
 
 cd ..
 mv work ${ymd}T${hh}Z
+
+keep_days=1
+find . -maxdepth 1 -ctime +${keep_days} | xargs -r rm -rf
