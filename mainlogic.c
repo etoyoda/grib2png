@@ -272,5 +272,6 @@ main(int argc, const char **argv)
   } else if (r != GSE_OKAY) {
     fprintf(stderr, "%s: exit(%u)\n", argv[0], r);
   }
+  mymemstat();
   return r;
 }

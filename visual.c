@@ -14,7 +14,7 @@
 new_pngimg(size_t owidth, size_t oheight)
 {
   png_bytep *r;
-  r = mymalloc(sizeof(png_bytep) * oheight + 1);
+  r = mymalloc(sizeof(png_bytep) * (oheight + 1));
   if (r == NULL) { return NULL; }
   for (int j = 0; j < oheight; j++) {
     r[j] = mymalloc(owidth * sizeof(png_byte) * 4);

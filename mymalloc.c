@@ -2,19 +2,38 @@
 #include <stdlib.h>
 #include "mymalloc.h"
 
+int mymalloc_verbose = 0;
+static size_t asize = 0;
+static int acount = 0;
+
   void *
 mymalloc(size_t size)
 {
   void *ptr;
   ptr = malloc(size);
-  fprintf(stderr, "#mymalloc %zu %p\n", size, ptr);
+  asize += size;
+  acount++;
+  if (mymalloc_verbose) {
+    fprintf(stderr, "#mymalloc %zu %p\n", size, ptr);
+  }
   return ptr;
 }
 
   void
 myfree(void *ptr)
 {
-  fprintf(stderr, "#myfree %p\n", ptr);
+  if (mymalloc_verbose) {
+    fprintf(stderr, "#myfree %p\n", ptr);
+  }
+  acount--;
   free(ptr);
 }
 
+  void
+mymemstat(void)
+{
+  if (mymalloc_verbose) {
+    fprintf(stderr, "#mymalloc remaining %d blocks total %zu bytes\n",
+      acount, asize);
+  }
+}
