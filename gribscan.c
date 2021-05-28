@@ -5,6 +5,7 @@
 #include <math.h>
 #include <limits.h>
 
+#include "mymalloc.h"
 #include "gribscan.h"
 
 //=== レプレゼンテーション層 ===
@@ -483,7 +484,7 @@ grib2loopsecs(grib2secs_t *gsp, FILE *fp, const char *locator)
   unsigned rectype;
   unsigned char *secbuf;
   for (;;) {
-    secbuf = malloc(RECLZERO);
+    secbuf = mymalloc(RECLZERO);
     if (secbuf == NULL) {
       return ERR_NOMEM;
     }
@@ -509,32 +510,32 @@ grib2loopsecs(grib2secs_t *gsp, FILE *fp, const char *locator)
     rectype = secbuf[4];
     switch (rectype) {
 case 1:
-      if (gsp->ids) { free(gsp->ids); }
+      if (gsp->ids) { myfree(gsp->ids); }
       gsp->ids = secbuf;
       gsp->idslen = recl;
       break;
 case 3:
-      if (gsp->gds) { free(gsp->gds); }
+      if (gsp->gds) { myfree(gsp->gds); }
       gsp->gds = secbuf;
       gsp->gdslen = recl;
       break;
 case 4:
-      if (gsp->pds) { free(gsp->pds); }
+      if (gsp->pds) { myfree(gsp->pds); }
       gsp->pds = secbuf;
       gsp->pdslen = recl;
       break;
 case 5:
-      if (gsp->drs) { free(gsp->drs); }
+      if (gsp->drs) { myfree(gsp->drs); }
       gsp->drs = secbuf;
       gsp->drslen = recl;
       break;
 case 6:
-      if (gsp->bms) { free(gsp->bms); }
+      if (gsp->bms) { myfree(gsp->bms); }
       gsp->bms = secbuf;
       gsp->bmslen = recl;
       break;
 case 7:
-      if (gsp->ds) { free(gsp->ds); }
+      if (gsp->ds) { myfree(gsp->ds); }
       gsp->ds = secbuf;
       gsp->dslen = recl;
       r = checksec7(gsp);
@@ -554,7 +555,7 @@ default:
 new_grib2secs(const unsigned char ids[12])
 {
   grib2secs_t *r;
-  r = malloc(sizeof(grib2secs_t));
+  r = mymalloc(sizeof(grib2secs_t));
   if (r == NULL) { return NULL; }
   r->discipline = ids[2];
   r->msglen = ui4(ids + 4);
@@ -570,13 +571,13 @@ new_grib2secs(const unsigned char ids[12])
   void
 del_grib2secs(grib2secs_t *gsp)
 {
-  if (gsp->ids) { free(gsp->ids); }
-  if (gsp->gds) { free(gsp->gds); }
-  if (gsp->pds) { free(gsp->pds); }
-  if (gsp->drs) { free(gsp->drs); }
-  if (gsp->bms) { free(gsp->bms); }
-  if (gsp->ds) { free(gsp->ds); }
-  free(gsp);
+  if (gsp->ids) { myfree(gsp->ids); }
+  if (gsp->gds) { myfree(gsp->gds); }
+  if (gsp->pds) { myfree(gsp->pds); }
+  if (gsp->drs) { myfree(gsp->drs); }
+  if (gsp->bms) { myfree(gsp->bms); }
+  if (gsp->ds) { myfree(gsp->ds); }
+  myfree(gsp);
 }
 
 /* GRIB2 電文の解読。

@@ -3,6 +3,7 @@
 #include <time.h>
 #include <limits.h>
 #include <math.h>
+#include "mymalloc.h"
 #include "gribscan.h"
 #include "visual.h"
 
@@ -143,7 +144,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   onx = of.xz - of.xa + 1;
   ony = of.yz - of.ya + 1;
   r = decode_gds(gsp, &b);
-  gbuf = malloc(sizeof(double) * onx * ony);
+  gbuf = mymalloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf, &of);
   switch (get_parameter(gsp)) {
@@ -157,7 +158,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   }
   mkfilename(filename, sizeof filename, gsp);
   r = gridsave(gbuf, onx, ony, pal, filename, textv);
-  free(gbuf);
+  myfree(gbuf);
   return r;
 }
 
@@ -172,7 +173,7 @@ convsec7(const struct grib2secs *gsp)
     return ERR_BADGRIB;
   }
   //--- begin memory commit
-  if ((dbuf = malloc(sizeof(double) * npixels)) == NULL) {
+  if ((dbuf = mymalloc(sizeof(double) * npixels)) == NULL) {
     fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
@@ -181,7 +182,7 @@ convsec7(const struct grib2secs *gsp)
     r = project_ds(gsp, dbuf);
   }
   //--- end memory commit
-  free(dbuf);
+  myfree(dbuf);
   return r;
 }
 

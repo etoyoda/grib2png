@@ -1,4 +1,4 @@
-OBJS=gribscan.o mainlogic.o visual.o
+OBJS=gribscan.o mainlogic.o visual.o mymalloc.o
 LIBS= -lm -lpng
 LFLAGS= -g
 CFLAGS= -g --pedantic -std=gnu99 -Wall 
@@ -16,9 +16,10 @@ testv: testv.c visual.o
 .c.o:
 	$(CC) -c $(CFLAGS) $<
 
-gribscan.o: gribscan.h
-mainlogic.o: gribscan.h visual.h
-visual.o: visual.h
+mymalloc.o: mymalloc.h
+gribscan.o: gribscan.h mymalloc.h
+mainlogic.o: gribscan.h visual.h mymalloc.h
+visual.o: visual.h mymalloc.h
 
 clean:
 	rm -f $(OBJS) grib2png *.png

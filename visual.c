@@ -5,6 +5,7 @@
 #include <string.h>
 #include <png.h>
 #include <math.h>
+#include "mymalloc.h"
 #include "visual.h"
 
 
@@ -13,10 +14,10 @@
 new_pngimg(size_t owidth, size_t oheight)
 {
   png_bytep *r;
-  r = malloc(sizeof(png_bytep) * oheight + 1);
+  r = mymalloc(sizeof(png_bytep) * oheight + 1);
   if (r == NULL) { return NULL; }
   for (int j = 0; j < oheight; j++) {
-    r[j] = calloc(owidth, sizeof(png_byte) * 4);
+    r[j] = mymalloc(owidth * sizeof(png_byte) * 4);
     if (r[j] == NULL) { return NULL; }
   }
   r[oheight] = NULL;
@@ -77,9 +78,9 @@ err_fclose:
 del_pngimg(png_bytep *ovector)
 {
   for (unsigned j = 0; ovector[j]; j++) {
-    free(ovector[j]);
+    myfree(ovector[j]);
   }
-  free(ovector);
+  myfree(ovector);
 }
 
   void
