@@ -23,7 +23,7 @@ mkfilename(char *filename, size_t fnlen, const struct grib2secs *gsp)
   showtime(vtbuf, sizeof vtbuf, gmtime(&itime));
   snprintf(filename, fnlen, "v%s_f%03lu_%s_%s.png", vtbuf, (ft+dt)/60,
     level_name(vlev), param_name(param));
-  printf("# %s\n", filename);
+  printf("writing %s\n", filename);
 }
 
 typedef struct outframe_t {
