@@ -19,6 +19,16 @@ mymalloc(size_t size)
   return ptr;
 }
 
+  void *
+myrealloc(void *ptr, size_t size)
+{
+  void *r = realloc(ptr, size);
+  if (mymalloc_verbose) {
+    fprintf(stderr, "#myrealloc %zu %p %p\n", size, ptr, r);
+  }
+  return r;
+}
+
   void
 myfree(void *ptr)
 {
