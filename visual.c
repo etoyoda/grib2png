@@ -141,6 +141,46 @@ setpixel_rh(png_bytep pixel, double val)
 }
 
   void
+setpixel_papt(png_bytep pixel, double val)
+{
+  // val は 0.1 K 単位、6 K 単位で縞々透過をつける
+  long istep = floor(val / 60.0);
+  unsigned frac = (unsigned)((val - istep * 60.0) * 0x100u / 60.0);
+  switch (istep * 6) {
+  case 354:
+  case 348:
+    pixel[0] = 145; pixel[1] = 0; pixel[2] = 83; break;
+  case 342:
+  case 336:
+    pixel[0] = 255; pixel[1] = 26; pixel[2] = 26; break;
+  case 330:
+  case 324:
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; break;
+  case 318:
+  case 312:
+    pixel[0] = 255; pixel[1] = 240; pixel[2] = 0; break;
+  case 306:
+  case 300:
+    pixel[0] = 255; pixel[1] = 240; pixel[2] = 180; break;
+  case 294:
+  case 288:
+    pixel[0] = 153; pixel[1] = 238; pixel[2] = 255; break;
+  case 282:
+  case 276:
+    pixel[0] = 0; pixel[1] = 191; pixel[2] = 255; break;
+  case 270:
+  case 264:
+    pixel[0] = 0; pixel[1] = 126; pixel[2] = 255; break;
+  case 258:
+  case 252:
+    pixel[0] = 33; pixel[1] = 33; pixel[2] = 255; break;
+  default:
+    pixel[0] = 0; pixel[1] = 0; pixel[2] = 112; break;
+  }
+  pixel[3] = frac;
+}
+
+  void
 setpixel_t(png_bytep pixel, double val)
 {
   // val は 0.1 K 単位、3 K 単位で縞々透過をつける
@@ -242,6 +282,9 @@ render(png_bytep *ovector, const double *gbuf,
         break;
       case PALETTE_RH:
         setpixel_rh(pixel, gbuf[i + j * owidth]);
+        break;
+      case PALETTE_papT:
+        setpixel_papt(pixel, gbuf[i + j * owidth]);
         break;
       case PALETTE_T:
         setpixel_t(pixel, gbuf[i + j * owidth]);

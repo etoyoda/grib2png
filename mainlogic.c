@@ -171,7 +171,7 @@ ept_bolton(double t, double rh, double p)
   double x = 0.622 * e / (p - e);
   double thdl = t * pow(1.0e3 / (p - e), 0.2854) * pow(t / tlcl, 0.28 * x);
   double ept = thdl * exp((3036.0 / tlcl - 1.78) * x * (1.0 + 0.448 * x));
-  return ept;
+  return ept * 10.0;
 }
 
   gribscan_err_t
