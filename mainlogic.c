@@ -171,11 +171,13 @@ ept_bolton(double t, double rh, double p)
   p *= 0.01;
   double es = 6.112 * exp(17.67 * (t - 273.15) / (t - 29.65));
   double e = es * rh * 0.01;
-  double td = t - (100.0 - rh) * 0.1; // fake
+  double ke = log(e/6.112) / 17.67;
+  double td = 0.05 * (-5463.0 + 593.0 * ke) / (-1.0 + ke);
   double tlcl = 1.0 / (1.0 / (td - 56.0) + log(t / td) / 800.0) + 56.0;
   double x = 0.622 * e / (p - e);
   double thdl = t * pow(1.0e3 / (p - e), 0.2854) * pow(t / tlcl, 0.28 * x);
-  return thdl * exp((3036.0 / tlcl - 1.78) * x * (1.0 + 0.448 * x));
+  double ept = thdl * exp((3036.0 / tlcl - 1.78) * x * (1.0 + 0.448 * x));
+  return ept;
 }
 
   gribscan_err_t
