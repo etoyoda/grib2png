@@ -224,6 +224,7 @@ convsec7(const struct grib2secs *gsp)
     fprintf(stderr, "DRS missing\n");
     return ERR_BADGRIB;
   }
+  iparm_t iparm_gsp = get_parameter(gsp);
   //--- begin memory section
   if ((dbuf = malloc(sizeof(double) * npixels)) == NULL) {
     fprintf(stderr, "malloc failed %zu\n", npixels);
@@ -231,10 +232,13 @@ convsec7(const struct grib2secs *gsp)
   }
   r = decode_ds(gsp, dbuf);
   if (r == GSE_OKAY) {
+    if (iparm_gsp == IPARM_RH) goto NOSAVE;
     r = project_ds(gsp, dbuf, &outf, textv);
+NOSAVE: ;
   }
-  // EPT850のための特例
-  if (get_parameter(gsp) == IPARM_T && get_vlevel(gsp) == 85000.0) {
+  // 相当温位のための特例
+  double vlev_gsp = get_vlevel(gsp);
+  if (iparm_gsp == IPARM_T && (vlev_gsp == 85000.0 || vlev_gsp == 92500.0)) {
     if (keep_t) {
       if (keep_t->omake) myfree(keep_t->omake);
       del_grib2secs(keep_t);
@@ -242,8 +246,7 @@ convsec7(const struct grib2secs *gsp)
     keep_t = dup_grib2secs(gsp);
     keep_t->omake = mydup(dbuf, sizeof(double) * npixels);
   }
-  if (keep_t && get_parameter(gsp) == IPARM_RH
-  && get_vlevel(gsp) == get_vlevel(keep_t)
+  if (keep_t && iparm_gsp == IPARM_RH && vlev_gsp == get_vlevel(keep_t)
   && get_ftime(gsp) == get_ftime(keep_t)) {
     // 相当温位の計算
     project_ept(gsp, dbuf, keep_t, keep_t->omake, &outf, textv);
@@ -290,9 +293,11 @@ checksec7(const struct grib2secs *gsp)
       goto END_SKIP;
     }
     break;
+#if 0
   case IPARM_U:
   case IPARM_V:
     if (vlev != 101214.5) goto END_SKIP;
+#endif
     break;
   case IPARM_RAIN:
     if (vlev != 101325.0) goto END_SKIP;
