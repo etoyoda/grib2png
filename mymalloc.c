@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "mymalloc.h"
 
 int mymalloc_verbose = 0;
@@ -17,6 +18,16 @@ mymalloc(size_t size)
     fprintf(stderr, "#mymalloc %zu %p\n", size, ptr);
   }
   return ptr;
+}
+
+  void *
+mydup(const void *ptr, size_t size)
+{
+  void *r;
+  r = mymalloc(size);
+  if (r == NULL) return NULL;
+  memcpy(r, ptr, size);
+  return r;
 }
 
   void *

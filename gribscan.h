@@ -22,8 +22,6 @@ typedef struct grib2secs {
   size_t msglen;
   unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
   size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
-  // デコード結果
-  size_t npixels;
 } grib2secs_t;
 
 typedef enum iparm_t {

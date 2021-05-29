@@ -567,6 +567,43 @@ new_grib2secs(const unsigned char ids[12])
   return r;
 }
 
+/* 解読構造体を保存用に複写。
+ */
+  grib2secs_t *
+dup_grib2secs(const grib2secs_t *gsp)
+{
+  grib2secs_t *r = mymalloc(sizeof(grib2secs_t));
+  if (r == NULL) { return NULL; }
+  r->discipline = gsp->discipline;
+  r->msglen = 0;
+  r->ids = r->gds = r->pds = r->drs = r->bms = r->ds = NULL;
+  if (gsp->ids) {
+    if (!(r->ids = mydup(gsp->ids, gsp->idslen))) return NULL;
+    r->idslen = gsp->idslen;
+  }
+  if (gsp->gds) {
+    if (!(r->gds = mydup(gsp->gds, gsp->gdslen))) return NULL;
+    r->gdslen = gsp->gdslen;
+  }
+  if (gsp->pds) {
+    if (!(r->pds = mydup(gsp->pds, gsp->pdslen))) return NULL;
+    r->pdslen = gsp->pdslen;
+  }
+  if (gsp->drs) {
+    if (!(r->drs = mydup(gsp->drs, gsp->drslen))) return NULL;
+    r->drslen = gsp->drslen;
+  }
+  if (gsp->bms) {
+    if (!(r->bms = mydup(gsp->bms, gsp->bmslen))) return NULL;
+    r->pdslen = gsp->bmslen;
+  }
+  if (gsp->ds) {
+    if (!(r->ds = mydup(gsp->ds, gsp->dslen))) return NULL;
+    r->pdslen = gsp->dslen;
+  }
+  return r;
+}
+
 /* 解読構造体 grib2secs を破棄、要すれば各節のメモリを破棄してから。
  */
   void
