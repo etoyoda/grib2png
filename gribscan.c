@@ -178,6 +178,24 @@ get_parameter(const grib2secs_t *gsp)
   return r;
 }
 
+  gribscan_err_t
+set_parameter(grib2secs_t *gsp, iparm_t iparm)
+{
+  gsp->discipline = (iparm & 0xFF0000) >> 24;
+  if (gsp->pdslen == 0) return ERR_BADGRIB;
+  unsigned pdst = ui2(gsp->pds + 7);
+  switch (pdst) {
+  case 0:
+  case 8:
+    gsp->pds[9] = (iparm & 0xFF00) >> 8;
+    gsp->pds[10] = iparm & 0xFF;
+    break;
+  default:
+    return ERR_BADGRIB;
+  }
+  return GSE_OKAY;
+}
+
   long
 get_ftime(const grib2secs_t *gsp)
 {
@@ -299,6 +317,7 @@ param_name(unsigned long iparm)
   static char buf[32];
   switch (iparm) {
   case 0x000000: return "T";
+  case IPARM_papT: return "papT";
   case 0x000006: return "dT";
   case 0x000101: return "RH";
   case 0x000107: return "RR1H";

@@ -27,6 +27,7 @@ typedef struct grib2secs {
 
 typedef enum iparm_t {
   IPARM_T      = 0x000000,
+  IPARM_papT   = 0x000003,
   IPARM_dT     = 0x000006,
   IPARM_RH     = 0x000101,
   IPARM_RR1H   = 0x000107,
@@ -84,6 +85,9 @@ extern double
   get_vlevel(const grib2secs_t *gsp);
 extern size_t
   get_npixels(const grib2secs_t *gsp);
+
+gribscan_err_t
+  set_parameter(grib2secs_t *gsp, iparm_t iparm);
 
 extern gribscan_err_t
   decode_ds(const grib2secs_t *gsp, double *dbuf);

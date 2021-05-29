@@ -179,30 +179,31 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
   grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv)
 {
   // dbuf と同じ（GRIB格子の）配列で相当温位を計算
-  size_t npixels = get_npixels(gsp_rh);
+  size_t npixels = get_npixels(gsp_t);
+  //--- begin memory section 1
   double *dbuf_ept = malloc(sizeof(double) * npixels);
   if (dbuf_ept == NULL) return ERR_NOMEM;
   for (size_t i = 0; i < npixels; i++) {
-    dbuf_ept[i] = ept_bolton(dbuf_t[i], dbuf_rh[i], get_vlevel(gsp_rh));
+    dbuf_ept[i] = ept_bolton(dbuf_t[i], dbuf_rh[i], get_vlevel(gsp_t));
   }
-  free(dbuf_ept);
-  //
+  // 出力格子に補間
   bounding_t b;
   double *gbuf;
   char filename[256];
-  palette_t pal;
   size_t onx = ofp->xz - ofp->xa + 1;
   size_t ony = ofp->yz - ofp->ya + 1;
   gribscan_err_t r = decode_gds(gsp_t, &b);
-  //--- begin memory section
+  //--- begin memory section 2
   gbuf = malloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf_ept, ofp);
-  pal = PALETTE_T;
+  set_parameter(gsp_t, IPARM_papT);
   mkfilename(filename, sizeof filename, gsp_t);
-  r = gridsave(gbuf, onx, ony, pal, filename, textv);
+  r = gridsave(gbuf, onx, ony, PALETTE_papT, filename, textv);
   free(gbuf);
-  //--- end memory section
+  //--- end memory section 2
+  free(dbuf_ept);
+  //--- end memory section 1
   return r;
 }
 

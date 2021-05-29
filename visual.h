@@ -4,8 +4,8 @@ typedef enum palette_t {
   PALETTE_GSI,
   PALETTE_Pmsl,
   PALETTE_T,
+  PALETTE_papT,
   PALETTE_RAIN6,
-  PALETTE_RAIN12,
   PALETTE_RH,
   PALETTE_Z
 } palette_t;
