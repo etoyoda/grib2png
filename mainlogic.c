@@ -164,6 +164,8 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   return r;
 }
 
+static grib2secs_t *keep_t850 = NULL;
+
   gribscan_err_t
 convsec7(const struct grib2secs *gsp)
 {
@@ -182,6 +184,19 @@ convsec7(const struct grib2secs *gsp)
   r = decode_ds(gsp, dbuf);
   if (r == GSE_OKAY) {
     r = project_ds(gsp, dbuf);
+  }
+  // EPT850のための特例
+  if (get_parameter(gsp) == IPARM_T && get_vlevel(gsp) == 85000.0) {
+    keep_t850 = dup_grib2secs(gsp);
+    keep_t850->omake = mydup(dbuf, sizeof(double) * npixels);
+  }
+  if (keep_t850 && get_parameter(gsp) == IPARM_RH
+  && get_vlevel(gsp) == get_vlevel(keep_t850)
+  && get_ftime(gsp) == get_ftime(keep_t850)) {
+    // なんかする
+    myfree(keep_t850->omake);
+    del_grib2secs(keep_t850);
+    keep_t850 = NULL;
   }
   //--- end memory section
   free(dbuf);

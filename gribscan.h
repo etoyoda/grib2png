@@ -22,6 +22,7 @@ typedef struct grib2secs {
   size_t msglen;
   unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
   size_t idslen, gdslen, pdslen, drslen, bmslen, dslen;
+  void *omake;
 } grib2secs_t;
 
 typedef enum iparm_t {
@@ -95,6 +96,9 @@ extern const char *
   param_name(unsigned long iparm);
 
 extern const char *level_name(double vlev);
+
+extern grib2secs_t *dup_grib2secs(const grib2secs_t *gsp);
+extern void del_grib2secs(grib2secs_t *gsp);
 
 extern gribscan_err_t
   grib2scan_by_filename(const char *fnam);
