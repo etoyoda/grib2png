@@ -164,7 +164,14 @@ project_ds(const struct grib2secs *gsp, double *dbuf)
   return r;
 }
 
-static grib2secs_t *keep_t850 = NULL;
+  gribscan_err_t
+project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
+  const grib2secs_t *gsp_t, double *dbuf_t)
+{
+  return GSE_OKAY;
+}
+
+static grib2secs_t *keep_t = NULL;
 
   gribscan_err_t
 convsec7(const struct grib2secs *gsp)
@@ -187,16 +194,21 @@ convsec7(const struct grib2secs *gsp)
   }
   // EPT850のための特例
   if (get_parameter(gsp) == IPARM_T && get_vlevel(gsp) == 85000.0) {
-    keep_t850 = dup_grib2secs(gsp);
-    keep_t850->omake = mydup(dbuf, sizeof(double) * npixels);
+    if (keep_t) {
+      if (keep_t->omake) myfree(keep_t->omake);
+      del_grib2secs(keep_t);
+    }
+    keep_t = dup_grib2secs(gsp);
+    keep_t->omake = mydup(dbuf, sizeof(double) * npixels);
   }
-  if (keep_t850 && get_parameter(gsp) == IPARM_RH
-  && get_vlevel(gsp) == get_vlevel(keep_t850)
-  && get_ftime(gsp) == get_ftime(keep_t850)) {
-    // なんかする
-    myfree(keep_t850->omake);
-    del_grib2secs(keep_t850);
-    keep_t850 = NULL;
+  if (keep_t && get_parameter(gsp) == IPARM_RH
+  && get_vlevel(gsp) == get_vlevel(keep_t)
+  && get_ftime(gsp) == get_ftime(keep_t)) {
+    // 相当温位の計算
+    project_ept(gsp, dbuf, keep_t, keep_t->omake);
+    myfree(keep_t->omake);
+    del_grib2secs(keep_t);
+    keep_t = NULL;
   }
   //--- end memory section
   free(dbuf);
