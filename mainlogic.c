@@ -128,26 +128,20 @@ reproject(double *gbuf, const bounding_t *bp, const double *dbuf,
 
 // GPVデータから投影法パラメタを抽出して再投影する
   gribscan_err_t
-project_ds(const struct grib2secs *gsp, double *dbuf)
+project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
+  char **textv)
 {
-  gribscan_err_t r;
   bounding_t b;
-  outframe_t of = { 2, 0, 1023, 0, 1023 };
   double *gbuf;
-  size_t onx, ony;
   char filename[256];
-  char *textv[] = {
-    "https://github.com/etoyoda/grib2png",
-    "https://www.wis-jma.go.jp/",
-    NULL };
   palette_t pal;
-  onx = of.xz - of.xa + 1;
-  ony = of.yz - of.ya + 1;
-  r = decode_gds(gsp, &b);
+  size_t onx = ofp->xz - ofp->xa + 1;
+  size_t ony = ofp->yz - ofp->ya + 1;
+  gribscan_err_t r = decode_gds(gsp, &b);
   //--- begin memory section
   gbuf = malloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
-  reproject(gbuf, &b, dbuf, &of);
+  reproject(gbuf, &b, dbuf, ofp);
   switch (get_parameter(gsp)) {
   case IPARM_Z:    pal = PALETTE_Z;    break;
   case IPARM_RH:   pal = PALETTE_RH;   break;
@@ -182,8 +176,9 @@ ept_bolton(double t, double rh, double p)
 
   gribscan_err_t
 project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
-  const grib2secs_t *gsp_t, double *dbuf_t)
+  grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv)
 {
+  // dbuf と同じ（GRIB格子の）配列で相当温位を計算
   size_t npixels = get_npixels(gsp_rh);
   double *dbuf_ept = malloc(sizeof(double) * npixels);
   if (dbuf_ept == NULL) return ERR_NOMEM;
@@ -191,7 +186,24 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
     dbuf_ept[i] = ept_bolton(dbuf_t[i], dbuf_rh[i], get_vlevel(gsp_rh));
   }
   free(dbuf_ept);
-  return GSE_OKAY;
+  //
+  bounding_t b;
+  double *gbuf;
+  char filename[256];
+  palette_t pal;
+  size_t onx = ofp->xz - ofp->xa + 1;
+  size_t ony = ofp->yz - ofp->ya + 1;
+  gribscan_err_t r = decode_gds(gsp_t, &b);
+  //--- begin memory section
+  gbuf = malloc(sizeof(double) * onx * ony);
+  if (gbuf == NULL) { return ERR_NOMEM; }
+  reproject(gbuf, &b, dbuf_ept, ofp);
+  pal = PALETTE_T;
+  mkfilename(filename, sizeof filename, gsp_t);
+  r = gridsave(gbuf, onx, ony, pal, filename, textv);
+  free(gbuf);
+  //--- end memory section
+  return r;
 }
 
 static grib2secs_t *keep_t = NULL;
@@ -202,6 +214,11 @@ convsec7(const struct grib2secs *gsp)
   size_t npixels;
   double *dbuf;
   gribscan_err_t r;
+  outframe_t outf = { 2, 0, 1023, 0, 1023 };
+  char *textv[] = {
+    "https://github.com/etoyoda/grib2png",
+    "https://www.wis-jma.go.jp/",
+    NULL };
   if ((npixels = get_npixels(gsp)) == 0) {
     fprintf(stderr, "DRS missing\n");
     return ERR_BADGRIB;
@@ -213,7 +230,7 @@ convsec7(const struct grib2secs *gsp)
   }
   r = decode_ds(gsp, dbuf);
   if (r == GSE_OKAY) {
-    r = project_ds(gsp, dbuf);
+    r = project_ds(gsp, dbuf, &outf, textv);
   }
   // EPT850のための特例
   if (get_parameter(gsp) == IPARM_T && get_vlevel(gsp) == 85000.0) {
@@ -228,7 +245,7 @@ convsec7(const struct grib2secs *gsp)
   && get_vlevel(gsp) == get_vlevel(keep_t)
   && get_ftime(gsp) == get_ftime(keep_t)) {
     // 相当温位の計算
-    project_ept(gsp, dbuf, keep_t, keep_t->omake);
+    project_ept(gsp, dbuf, keep_t, keep_t->omake, &outf, textv);
     myfree(keep_t->omake);
     del_grib2secs(keep_t);
     keep_t = NULL;
