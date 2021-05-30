@@ -295,6 +295,34 @@ setpixel_pmsl(png_bytep pixel, double val)
 }
 
   void
+setpixel_rvor(png_bytep pixel, double val)
+{
+  int ival = floor(val);
+  // val は 1e-6/s 単位
+  if (ival < -128) {
+    pixel[0] = 0;
+    pixel[1] = 0x60;
+    pixel[2] = 0x80;
+    pixel[3] = 0x80;
+  } else if (ival < 0) {
+    pixel[0] = 0;
+    pixel[1] = 0x80 + ival/4;
+    pixel[2] = 0xFF + ival;
+    pixel[3] = (ival > -16) ? -ival * 8 : 0x80;
+  } else if (ival < 128) {
+    pixel[0] = 0xFF - ival;
+    pixel[1] = 0x80 - ival/4;
+    pixel[2] = 0;
+    pixel[3] = (ival < 16) ? ival * 8 : 0x80;
+  } else {
+    pixel[0] = 0x80;
+    pixel[1] = 0x60;
+    pixel[2] = 0;
+    pixel[3] = 0x80;
+  }
+}
+
+  void
 setpixel_gsi(png_bytep pixel, double val)
 {
   unsigned long ival;
@@ -340,7 +368,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_rain6(pixel, gbuf[i + j * owidth]);
         break;
       case PALETTE_rVOR:
-        setpixel_gsi(pixel, gbuf[i + j * owidth]);
+        setpixel_rvor(pixel, gbuf[i + j * owidth]);
         break;
       default:
         setpixel_gsi(pixel, gbuf[i + j * owidth]);
