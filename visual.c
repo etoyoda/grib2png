@@ -234,6 +234,33 @@ setpixel_t(png_bytep pixel, double val)
 }
 
   void
+setpixel_rain6(png_bytep pixel, double val)
+{
+  // 通報値 (0.1mm/6h) を降水強度 (mm/h) に換算するならば
+  // 素朴には 1/60 倍する。かなり弱すぎる表現になるが
+  const double factor = 1.0/60.0;
+  int mmh = floor(val * factor);
+  if (mmh < 1) {
+    pixel[0] = 242; pixel[1] = 242; pixel[2] = 255;
+    pixel[3] = floor(val * factor * 255);
+  } else if (mmh < 5) {
+    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 255;
+  } else if (mmh < 10) {
+    pixel[0] = 33; pixel[1] = 140; pixel[2] = 255; pixel[3] = 255;
+  } else if (mmh < 20) {
+    pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; pixel[3] = 255;
+  } else if (mmh < 30) {
+    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 255;
+  } else if (mmh < 50) {
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 255;
+  } else if (mmh < 80) {
+    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 255;
+  } else {
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 255;
+  }
+}
+
+  void
 setpixel_pmsl(png_bytep pixel, double val)
 {
   // val は 0.1 hPa 単位、4 hPa 単位で縞々透過をつける
@@ -308,7 +335,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_pmsl(pixel, gbuf[i + j * owidth]);
         break;
       case PALETTE_RAIN6:
-        setpixel_gsi(pixel, gbuf[i + j * owidth]);
+        setpixel_rain6(pixel, gbuf[i + j * owidth]);
         break;
       case PALETTE_rVOR:
         setpixel_gsi(pixel, gbuf[i + j * owidth]);
