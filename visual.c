@@ -175,7 +175,7 @@ setpixel_papt(png_bytep pixel, double val)
   default:
     pixel[0] = 0; pixel[1] = 0; pixel[2] = 112; break;
   }
-  pixel[3] = frac;
+  pixel[3] = (frac < 0xC0) ? frac / 3 : frac * 3 - 0xFF * 2;
 }
 
   void
