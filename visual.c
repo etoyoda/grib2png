@@ -240,8 +240,8 @@ setpixel_pmsl(png_bytep pixel, double val)
   long istep = floor(val / 40.0);
   unsigned frac = (unsigned)((val - istep * 40.0) * 0x100u / 40.0);
   // 1013 hPa => istep=253 を中心に
-  int red = (1013/4 - istep) * 24 + 0x80;
-  int blue = (istep - 1013/4) * 24 + 0x80;
+  int red = (1013/4 - istep) * 32 + 0x80;
+  int blue = (istep - 1013/4) * 32 + 0x80;
   pixel[0] = (red < 0) ? 0 : (red > 0xFF) ? 0xFF : red;
   pixel[1] = 0x80;
   pixel[2] = (blue < 0) ? 0 : (blue > 0xFF) ? 0xFF : blue;
