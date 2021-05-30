@@ -241,8 +241,11 @@ setpixel_rain6(png_bytep pixel, double val)
   const double factor = 1.0/60.0;
   int mmh = floor(val * factor);
   if (mmh < 1) {
-    pixel[0] = 242; pixel[1] = 242; pixel[2] = 255;
+    pixel[0] = 80; pixel[1] = 105; pixel[2] = 255;
     pixel[3] = floor(val * factor * 255);
+    if (pixel[3] < 0xC0) { pixel[0] = pixel[1] = 0; }
+  } else if (mmh < 2) {
+    pixel[0] = 242; pixel[1] = 242; pixel[2] = 255; pixel[3] = 255;
   } else if (mmh < 5) {
     pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 255;
   } else if (mmh < 10) {
