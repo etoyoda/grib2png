@@ -132,10 +132,9 @@ setpixel_rh(png_bytep pixel, double val)
   case  10: pixel[0] = 60; pixel[1] = 30; pixel[2] = 5; break;
   case   0: pixel[0] = 0; pixel[1] = 38; pixel[2] = 38; break;
   }
-  pixel[3] = (ival > 100) ? 0xFF
-    : (ival >= 80) ? (255 - (100 - ival) * 2)
-    : (ival >= 0) ? ival * 2
-    : 0;
+  pixel[3] = (ival > 80) ? 0xFF
+    : (ival < 30) ? 0x80
+    : 0x40;
 }
 
   void
@@ -369,6 +368,9 @@ render(png_bytep *ovector, const double *gbuf,
         break;
       case PALETTE_rVOR:
         setpixel_rvor(pixel, gbuf[i + j * owidth]);
+        break;
+      case PALETTE_VVPa:
+        setpixel_rvor(pixel, gbuf[i + j * owidth] * -50.0);
         break;
       default:
         setpixel_gsi(pixel, gbuf[i + j * owidth]);

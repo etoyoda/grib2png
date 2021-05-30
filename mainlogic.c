@@ -148,6 +148,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
   case IPARM_T:    pal = PALETTE_T;    break;
   case IPARM_Pmsl: pal = PALETTE_Pmsl; break;
   case IPARM_rVOR: pal = PALETTE_rVOR; break;
+  case IPARM_VVPa: pal = PALETTE_VVPa; break;
   case IPARM_RAIN:
     if (get_duration(gsp) == 360) {
       pal = PALETTE_RAIN6;
@@ -239,14 +240,15 @@ convsec7(const struct grib2secs *gsp)
     return ERR_NOMEM;
   }
   r = decode_ds(gsp, dbuf);
+  double vlev_gsp = get_vlevel(gsp);
   if (r == GSE_OKAY) {
-    if (iparm_gsp == IPARM_RH) goto NOSAVE;
+    if (iparm_gsp == IPARM_RH && vlev_gsp != 700.e2) goto NOSAVE;
+    if (iparm_gsp == IPARM_T && vlev_gsp == 925.e2) goto NOSAVE;
     r = project_ds(gsp, dbuf, &outf, textv);
 NOSAVE: ;
   }
   // 相当温位のための特例
-  double vlev_gsp = get_vlevel(gsp);
-  if (iparm_gsp == IPARM_T && (vlev_gsp == 85000.0 || vlev_gsp == 92500.0)) {
+  if (iparm_gsp == IPARM_T && (vlev_gsp == 850.e2 || vlev_gsp == 925.e2)) {
     if (keep_t) {
       if (keep_t->omake) myfree(keep_t->omake);
       del_grib2secs(keep_t);
@@ -294,7 +296,8 @@ checksec7(const struct grib2secs *gsp)
   switch (iparm) {
   case IPARM_T:
     if (!(vlev == 50000.0 || vlev == 85000.0 || vlev == 92500.0
-    || vlev == 101302.5)) {
+    || vlev == 101302.5
+    )) {
       goto END_SKIP;
     }
     break;
@@ -309,6 +312,9 @@ checksec7(const struct grib2secs *gsp)
     if (vlev != 101214.5) goto END_SKIP;
 #endif
     break;
+  case IPARM_VVPa:
+    if (vlev != 70000.0) goto END_SKIP;
+    break;
   case IPARM_RAIN:
     if (vlev != 101325.0) goto END_SKIP;
     break;
@@ -319,7 +325,7 @@ checksec7(const struct grib2secs *gsp)
     if (!(vlev == 50000.0)) goto END_SKIP;
     break;
   case IPARM_Z:
-    if (!(vlev == 30000.0 || vlev == 50000.0)) goto END_SKIP;
+    if (!(vlev == 300.e2 || vlev == 500.e2 || vlev == 925.e2)) goto END_SKIP;
     break;
   default:
     goto END_SKIP;
