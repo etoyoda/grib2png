@@ -147,6 +147,14 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
   case IPARM_RH:   pal = PALETTE_RH;   break;
   case IPARM_T:    pal = PALETTE_T;    break;
   case IPARM_Pmsl: pal = PALETTE_Pmsl; break;
+  case IPARM_rVOR: pal = PALETTE_rVOR; break;
+  case IPARM_RAIN:
+    if (get_duration(gsp) == 360) {
+      pal = PALETTE_RAIN6;
+    } else {
+      pal = PALETTE_GSI;
+    }
+    break;
   default:
     pal = PALETTE_GSI;
     break;
