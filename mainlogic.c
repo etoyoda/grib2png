@@ -280,6 +280,8 @@ checksec7(const struct grib2secs *gsp)
   dura = get_duration(gsp);
   // 長すぎる予報時間は最初に捨ててしまう
   if (ftime + dura > 360) goto END_SKIP;
+  // 解析値も今の所使わないので捨てる
+  if (ftime + dura == 0) goto END_SKIP;
   // 要素と面の複合フィルタ
   switch (iparm) {
   case IPARM_T:
