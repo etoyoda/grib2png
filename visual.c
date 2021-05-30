@@ -143,7 +143,6 @@ setpixel_papt(png_bytep pixel, double val)
 {
   // val は 0.1 K 単位、6 K 単位で縞々透過をつける
   long istep = floor(val / 60.0);
-  unsigned frac = (unsigned)((val - istep * 60.0) * 0x100u / 60.0);
   switch (istep * 6) {
   case 354:
   case 348:
@@ -175,7 +174,7 @@ setpixel_papt(png_bytep pixel, double val)
   default:
     pixel[0] = 0; pixel[1] = 0; pixel[2] = 112; break;
   }
-  pixel[3] = (frac < 0xC0) ? frac / 3 : frac * 3 - 0xFF * 2;
+  pixel[3] = 0x80;
 }
 
   void
