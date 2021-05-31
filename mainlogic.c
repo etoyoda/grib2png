@@ -216,6 +216,26 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
   return r;
 }
 
+typedef struct trap_t {
+  grib2secs_t *keep_gsp;
+  iparm_t keep_parm;
+  iparm_t wait_parm;
+  double keep_vlev;
+  double wait_vlev;
+  long keep_ftime;
+  long wait_ftime;
+  enum gribscan_err_t
+    (*projecter)(const grib2secs_t *gsp_wait, double *dbuf_wait,
+      grib2secs_t *gsp_keep, double *dbuf_keep,
+      const outframe_t *ofp, char **textv);
+} trap_t;
+
+enum { N_TRAPS = 2 };
+static trap_t traps[N_TRAPS] = {
+  { NULL, IPARM_T, IPARM_RH, 925.e2, 925.e2, 360, 360, project_ept },
+  { NULL, IPARM_T, IPARM_RH, 850.e2, 850.e2, 360, 360, project_ept }
+};
+
 static grib2secs_t *keep_t = NULL;
 
   gribscan_err_t
