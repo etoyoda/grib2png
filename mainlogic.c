@@ -239,7 +239,7 @@ convsec7(const struct grib2secs *gsp)
     fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
-  r = decode_ds(gsp, dbuf);
+  r = decode_ds(gsp, dbuf, adjust_scales);
   double vlev_gsp = get_vlevel(gsp);
   if (r == GSE_OKAY) {
     if (iparm_gsp == IPARM_RH && vlev_gsp != 700.e2) goto NOSAVE;

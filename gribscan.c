@@ -368,7 +368,9 @@ get_npixels(const grib2secs_t *gsp)
 }
 
   gribscan_err_t
-decode_ds(const grib2secs_t *gsp, double *dbuf)
+decode_ds(const grib2secs_t *gsp, double *dbuf,
+  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d)
+  )
 {
   size_t npixels;
   unsigned drstempl;

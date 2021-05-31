@@ -1,4 +1,5 @@
 OBJS=gribscan.o mainlogic.o visual.o mymalloc.o
+OBJS2=gribscan.o mainslim.o mymalloc.o
 LIBS= -lm -lpng
 LFLAGS= -g
 CFLAGS= -g --pedantic -std=gnu99 -Wall 
@@ -7,8 +8,13 @@ CC=cc
 .SUFFIXES:
 .SUFFIXES: .c .o
 
+all: grib2png gribslim
+
 grib2png: $(OBJS)
 	$(CC) $(LFLAGS) -o grib2png $(OBJS) $(LIBS)
+
+gribslim: $(OBJS2)
+	$(CC) $(LFLAGS) -o gribslim $(OBJS2) $(LIBS)
 
 testv: testv.c visual.o
 	$(CC) $(LFLAGS) -o testv testv.c visual.o $(LIBS)
