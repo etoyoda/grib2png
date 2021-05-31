@@ -7,6 +7,66 @@
 #include "visual.h"
 #include "mymalloc.h" // only for mymemstat();
 
+static struct ofile_t {
+  const char *fnam;
+  FILE *ofp;
+  size_t pos;
+  unsigned char *ids;
+  unsigned char *gds;
+  unsigned char *pds;
+  unsigned char *drs;
+  unsigned char *bms;
+} ofile = {
+  "distilled.bin",
+  NULL, 0,
+  NULL, NULL, NULL, NULL, NULL
+};
+
+  gribscan_err_t
+save_open(const char *ofnam)
+{
+  unsigned char sec0[16] = { 'G','R','I','B',
+    0,0,0,2,
+    0,0,0,0, 0,0,0,0  // size of msg
+  };
+  if (ofnam) { ofile.fnam = ofnam; };
+  if (NULL == (ofile.ofp = fopen(ofile.fnam, "wb"))) {
+    return ERR_IO;
+  }
+  if (1 != fwrite(sec0, sizeof sec0, 1, ofile.ofp)) {
+    return ERR_IO;
+  }
+  ofile.pos = sizeof sec0;
+  return GSE_OKAY;
+}
+
+  gribscan_err_t
+save_data(const struct grib2secs *gsp)
+{
+  //--- IDS
+  if (ofile.ids == NULL) {
+    if (1 != fwrite(gsp->ids, gsp->idslen, 1, ofile.ofp)) {
+      return ERR_IO;
+    }
+    ofile.ids = gsp->ids;
+    ofile.pos += gsp->idslen;
+  } else {
+    if (gsp->ids != ofile.ids) {
+      fprintf(stderr, "inconsistent ids\n");
+      return ERR_BADGRIB;
+    }
+  }
+  //--- GDS
+  return GSE_OKAY;
+}
+
+  gribscan_err_t
+save_close(void)
+{
+  fclose(ofile.ofp);
+  return 0;
+}
+
 /* 第1節〜第7節のセット gsp について、
  * 必要であれば convsec7() を呼び出す。
  * この関数は gsp->ds を破棄または保存する。
@@ -58,8 +118,7 @@ checksec7(const struct grib2secs *gsp)
 SAVE:
   printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
     sreftime, param_name(iparm), ftime, dura, vlev);
-  //r = convsec7(gsp);
-  r = 0;
+  r = save_data(gsp);
   goto END_NORMAL;
 
 END_SKIP:
@@ -78,11 +137,22 @@ END_NORMAL:
 argscan(int argc, const char **argv)
 {
   gribscan_err_t r = ERR_NOINPUT;
+  const char *ofnam = NULL;
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
-      r = GSE_OKAY;
+      if (argv[i][1] == 'o') {
+        ofnam = argv[i] + 2;
+      } else {
+        fprintf(stderr, "%s: unknown option\n", argv[i]);
+        r = GSE_JUSTWARN;
+        break;
+      }
     } else {
+      r = save_open(ofnam);
+      if (r != GSE_OKAY) break;
       r = grib2scan_by_filename(argv[i]);
+      if (r != GSE_OKAY) break;
+      r = save_close();
       if (r != GSE_OKAY) break;
     }
   }
