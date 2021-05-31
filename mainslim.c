@@ -19,55 +19,43 @@ checksec7(const struct grib2secs *gsp)
   char sreftime[24];
   unsigned long iparm;
   double vlev;
-  long ftime, dura;
+  long ftime, dura, ftime2;
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
   iparm = get_parameter(gsp);
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
-  // 長すぎる予報時間は最初に捨ててしまう
-  if (ftime + dura > 360) goto END_SKIP;
-  // 解析値も今の所使わないので捨てる
-  if (ftime + dura == 0) goto END_SKIP;
+  ftime2 = ftime + dura;
   // 要素と面の複合フィルタ
   switch (iparm) {
-  case IPARM_T:
-    if (!(vlev == 50000.0 || vlev == 85000.0 || vlev == 92500.0
-    || vlev == 101302.5
-    )) {
-      goto END_SKIP;
-    }
+  case IPARM_Z:
+  case IPARM_RAIN:
+  case IPARM_Pmsl:
+    // 最重要面(500, 地上)の最重要要素は予報時間にかかわらず保存
+    if ((vlev == 500.e2 || vlev > 1000.e2)
+    && (ftime2 > 360 && (ftime2 % 720 == 0))) goto SAVE;
     break;
-  case IPARM_RH:
-    if (!(vlev == 70000.0 || vlev == 85000.0 || vlev == 92500.0)) {
-      goto END_SKIP;
-    }
-    break;
-#if 0
   case IPARM_U:
   case IPARM_V:
-    if (vlev != 101214.5) goto END_SKIP;
-#endif
+  case IPARM_RH:
     break;
   case IPARM_VVPa:
-    if (vlev != 70000.0) goto END_SKIP;
+    if (!(vlev == 700.e2 || vlev == 300.e2)) goto END_SKIP;
     break;
-  case IPARM_RAIN:
-    if (vlev != 101325.0) goto END_SKIP;
-    break;
-  case IPARM_Pmsl:
-    if (vlev != 101324.0) goto END_SKIP;
+  case IPARM_rDIV:
+    if (!(vlev == 850.e2 || vlev == 250.e2)) goto END_SKIP;
     break;
   case IPARM_rVOR:
-    if (!(vlev == 50000.0)) goto END_SKIP;
-    break;
-  case IPARM_Z:
-    if (!(vlev == 300.e2 || vlev == 500.e2 || vlev == 925.e2)) goto END_SKIP;
+    if (!(vlev == 500.e2)) goto END_SKIP;
     break;
   default:
     goto END_SKIP;
   }
+  // 基本 ft6h まで保存
+  if (ftime2 > 360) goto END_SKIP;
+
+SAVE:
   printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
     sreftime, param_name(iparm), ftime, dura, vlev);
   //r = convsec7(gsp);
