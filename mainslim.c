@@ -13,13 +13,10 @@ static struct ofile_t {
   size_t pos;
   unsigned char *ids;
   unsigned char *gds;
-  unsigned char *pds;
-  unsigned char *drs;
-  unsigned char *bms;
 } ofile = {
   "distilled.bin",
   NULL, 0,
-  NULL, NULL, NULL, NULL, NULL
+  NULL, NULL
 };
 
   gribscan_err_t
@@ -57,12 +54,57 @@ save_data(const struct grib2secs *gsp)
     }
   }
   //--- GDS
+  if (ofile.gds == NULL) {
+    if (1 != fwrite(gsp->gds, gsp->gdslen, 1, ofile.ofp)) {
+      return ERR_IO;
+    }
+    ofile.gds = gsp->gds;
+    ofile.pos += gsp->gdslen;
+  } else {
+    if (gsp->gds != ofile.gds) {
+      fprintf(stderr, "inconsistent gds\n");
+      return ERR_BADGRIB;
+    }
+  }
+  //--- PDS
+  if (1 != fwrite(gsp->pds, gsp->pdslen, 1, ofile.ofp)) {
+    return ERR_IO;
+  }
+  ofile.pos += gsp->pdslen;
+  //--- DRS
+  if (1 != fwrite(gsp->drs, gsp->drslen, 1, ofile.ofp)) {
+    return ERR_IO;
+  }
+  ofile.pos += gsp->drslen;
+  //--- BMS
+  if (1 != fwrite(gsp->bms, gsp->bmslen, 1, ofile.ofp)) {
+    return ERR_IO;
+  }
+  ofile.pos += gsp->bmslen;
+  //--- DS
+  if (1 != fwrite(gsp->ds, gsp->dslen, 1, ofile.ofp)) {
+    return ERR_IO;
+  }
+  ofile.pos += gsp->dslen;
   return GSE_OKAY;
 }
 
   gribscan_err_t
 save_close(void)
 {
+  unsigned char sz[8];
+  fwrite("7777", 4, 1, ofile.ofp);
+  size_t msgsize = ftell(ofile.ofp);
+  sz[0] = (msgsize >> 56) & 0xFF;
+  sz[1] = (msgsize >> 48) & 0xFF;
+  sz[2] = (msgsize >> 40) & 0xFF;
+  sz[3] = (msgsize >> 32) & 0xFF;
+  sz[4] = (msgsize >> 24) & 0xFF;
+  sz[5] = (msgsize >> 16) & 0xFF;
+  sz[6] = (msgsize >>  8) & 0xFF;
+  sz[7] =  msgsize        & 0xFF;
+  fseek(ofile.ofp, 8, SEEK_SET);
+  fwrite(sz, 8, 1, ofile.ofp);
   fclose(ofile.ofp);
   return 0;
 }
