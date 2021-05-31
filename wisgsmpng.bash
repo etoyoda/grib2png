@@ -46,7 +46,9 @@ tend=$(date +%s)
 let 'elapsed = tend - tbegin'
 logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
 
+/nwp/bin/gribslim -ogsm${ymd}T${hh}.bin biggrib.bin > /dev/null
 /nwp/bin/grib2png biggrib.bin > grib2png.log
+rm -f biggrib.bin
 
 cd ..
 mv work ${ymd}T${hh}Z
