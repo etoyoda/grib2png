@@ -239,6 +239,34 @@ static trap_t traps[N_TRAPS] = {
 static grib2secs_t *keep_t = NULL;
 
   gribscan_err_t
+check_traps(const struct grib2secs *gsp, double *dbuf,
+  outframe_t *ofp, char **textv)
+{
+  size_t npixels = get_npixels(gsp);
+  iparm_t iparm_gsp = get_parameter(gsp);
+  double vlev_gsp = get_vlevel(gsp);
+  gribscan_err_t r = GSE_OKAY;
+  // 相当温位のための特例
+  if (iparm_gsp == IPARM_T && (vlev_gsp == 850.e2 || vlev_gsp == 925.e2)) {
+    if (keep_t) {
+      if (keep_t->omake) myfree(keep_t->omake);
+      del_grib2secs(keep_t);
+    }
+    keep_t = dup_grib2secs(gsp);
+    keep_t->omake = mydup(dbuf, sizeof(double) * npixels);
+  }
+  if (keep_t && iparm_gsp == IPARM_RH && vlev_gsp == get_vlevel(keep_t)
+  && get_ftime(gsp) == get_ftime(keep_t)) {
+    // 相当温位の計算
+    project_ept(gsp, dbuf, keep_t, keep_t->omake, ofp, textv);
+    myfree(keep_t->omake);
+    del_grib2secs(keep_t);
+    keep_t = NULL;
+  }
+  return r;
+}
+
+  gribscan_err_t
 convsec7(const struct grib2secs *gsp)
 {
   size_t npixels;
@@ -267,22 +295,8 @@ convsec7(const struct grib2secs *gsp)
     r = project_ds(gsp, dbuf, &outf, textv);
 NOSAVE: ;
   }
-  // 相当温位のための特例
-  if (iparm_gsp == IPARM_T && (vlev_gsp == 850.e2 || vlev_gsp == 925.e2)) {
-    if (keep_t) {
-      if (keep_t->omake) myfree(keep_t->omake);
-      del_grib2secs(keep_t);
-    }
-    keep_t = dup_grib2secs(gsp);
-    keep_t->omake = mydup(dbuf, sizeof(double) * npixels);
-  }
-  if (keep_t && iparm_gsp == IPARM_RH && vlev_gsp == get_vlevel(keep_t)
-  && get_ftime(gsp) == get_ftime(keep_t)) {
-    // 相当温位の計算
-    project_ept(gsp, dbuf, keep_t, keep_t->omake, &outf, textv);
-    myfree(keep_t->omake);
-    del_grib2secs(keep_t);
-    keep_t = NULL;
+  if (r == GSE_OKAY) {
+    r = check_traps(gsp, dbuf, &outf, textv);
   }
   //--- end memory section
   free(dbuf);
