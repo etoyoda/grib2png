@@ -25,7 +25,7 @@ typedef struct grib2secs {
   void *omake;
 } grib2secs_t;
 
-#define VLEVEL_Z10M 101302.5
+#define VLEVEL_Z2M 101302.5
 #define VLEVEL_Z10M 101214.5
 
 typedef enum iparm_t {
