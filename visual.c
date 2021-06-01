@@ -389,6 +389,9 @@ render(png_bytep *ovector, const double *gbuf,
       case PALETTE_Pmsl:
         setpixel_pmsl(pixel, gbuf[i + j * owidth]);
         break;
+      case PALETTE_WINDS_SFC:
+        setpixel_winds(pixel, gbuf[i + j * owidth] * 2.0);
+        break;
       case PALETTE_WINDS:
         setpixel_winds(pixel, gbuf[i + j * owidth]);
         break;

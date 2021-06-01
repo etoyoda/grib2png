@@ -228,8 +228,10 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
 project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
 {
+  palette_t pal = (get_vlevel(gsp_u) == 101214.5)
+    ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
   return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
-    IPARM_WINDS, PALETTE_WINDS, windspeed);
+    IPARM_WINDS, pal, windspeed);
 }
 
   gribscan_err_t
