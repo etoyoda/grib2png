@@ -204,7 +204,7 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
   gribscan_err_t r = decode_gds(gsp_t, &b);
   //--- begin memory section 2
   gbuf = malloc(sizeof(double) * onx * ony);
-  if (gbuf == NULL) { return ERR_NOMEM; }
+  if (gbuf == NULL) { free(dbuf_ept); return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf_ept, ofp);
   set_parameter(gsp_t, IPARM_papT);
   mkfilename(filename, sizeof filename, gsp_t);
