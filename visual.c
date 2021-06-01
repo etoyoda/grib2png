@@ -262,6 +262,32 @@ setpixel_rain6(png_bytep pixel, double val)
 }
 
   void
+setpixel_winds(png_bytep pixel, double val)
+{
+  // 通報値 (0.1 m/s)
+  int mmh = floor(val * 0.1);
+  if (mmh < 5) {
+    pixel[0] = pixel[1] = pixel[2] = pixel[3] = 0;
+  } else if (mmh < 10) {
+    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0x80;
+  } else if (mmh < 20) {
+    pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; pixel[3] = 0x80;
+  } else if (mmh < 30) {
+    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0x80;
+  } else if (mmh < 40) {
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0x80;
+  } else if (mmh < 50) {
+    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 0x80;
+  } else if (mmh < 100) {
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0x80;
+  } else if (mmh < 150) {
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0xC0;
+  } else {
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0xFF;
+  }
+}
+
+  void
 setpixel_pmsl(png_bytep pixel, double val)
 {
   // val は 0.1 hPa 単位、4 hPa 単位で縞々透過をつける
@@ -362,6 +388,9 @@ render(png_bytep *ovector, const double *gbuf,
         break;
       case PALETTE_Pmsl:
         setpixel_pmsl(pixel, gbuf[i + j * owidth]);
+        break;
+      case PALETTE_WINDS:
+        setpixel_winds(pixel, gbuf[i + j * owidth]);
         break;
       case PALETTE_RAIN6:
         setpixel_rain6(pixel, gbuf[i + j * owidth]);

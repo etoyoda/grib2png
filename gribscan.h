@@ -32,6 +32,7 @@ typedef enum iparm_t {
   IPARM_RH     = 0x000101,
   IPARM_RR1H   = 0x000107,
   IPARM_RAIN   = 0x000108,
+  IPARM_WINDS  = 0x000201,
   IPARM_U      = 0x000202,
   IPARM_V      = 0x000203,
   IPARM_PSI    = 0x000204,
