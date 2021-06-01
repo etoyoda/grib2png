@@ -9,6 +9,7 @@ typedef enum palette_t {
   PALETTE_RH,
   PALETTE_rVOR,
   PALETTE_VVPa,
+  PALETTE_WINDS,
   PALETTE_Z
 } palette_t;
 

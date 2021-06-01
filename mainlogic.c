@@ -168,6 +168,12 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
 }
 
   double
+windspeed(double u, double v, double p)
+{
+  return hypot(u, v);
+}
+
+  double
 ept_bolton(double t, double rh, double p)
 {
   t *= 0.1;
@@ -184,16 +190,18 @@ ept_bolton(double t, double rh, double p)
 }
 
   gribscan_err_t
-project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
-  grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv)
+project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
+  grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv,
+  iparm_t iparm, palette_t pal,
+  double (*element_conv)(double t, double rh, double p))
 {
-  // dbuf と同じ（GRIB格子の）配列で相当温位を計算
+  // dbuf と同じ（GRIB格子の）配列長
   size_t npixels = get_npixels(gsp_t);
   //--- begin memory section 1
   double *dbuf_ept = malloc(sizeof(double) * npixels);
   if (dbuf_ept == NULL) return ERR_NOMEM;
   for (size_t i = 0; i < npixels; i++) {
-    dbuf_ept[i] = ept_bolton(dbuf_t[i], dbuf_rh[i], get_vlevel(gsp_t));
+    dbuf_ept[i] = element_conv(dbuf_t[i], dbuf_rh[i], get_vlevel(gsp_t));
   }
   // 出力格子に補間
   bounding_t b;
@@ -206,14 +214,30 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
   gbuf = malloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { free(dbuf_ept); return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf_ept, ofp);
-  set_parameter(gsp_t, IPARM_papT);
+  set_parameter(gsp_t, iparm);
   mkfilename(filename, sizeof filename, gsp_t);
-  r = gridsave(gbuf, onx, ony, PALETTE_papT, filename, textv);
+  r = gridsave(gbuf, onx, ony, pal, filename, textv);
   free(gbuf);
   //--- end memory section 2
   free(dbuf_ept);
   //--- end memory section 1
   return r;
+}
+
+  gribscan_err_t
+project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
+  grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
+{
+  return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
+    IPARM_WINDS, PALETTE_WINDS, windspeed);
+}
+
+  gribscan_err_t
+project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
+  grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv)
+{
+  return project_binop(gsp_rh, dbuf_rh, gsp_t, dbuf_t, ofp, textv,
+    IPARM_papT, PALETTE_papT, ept_bolton);
 }
 
 typedef struct trap_t {
@@ -233,10 +257,14 @@ typedef struct trap_t {
       const outframe_t *ofp, char **textv);
 } trap_t;
 
-enum { N_TRAPS = 2 };
+enum { N_TRAPS = 6 };
 static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_T, 925.e2, 360L, IPARM_RH, 925.e2, 360L, project_ept },
   { NULL, IPARM_T, 850.e2, 360L, IPARM_RH, 850.e2, 360L, project_ept },
+  { NULL, IPARM_U, 101214.5, 360L, IPARM_V, 101214.5, 360L, project_winds },
+  { NULL, IPARM_U, 850.e2, 360L, IPARM_V, 850.e2, 360L, project_winds },
+  { NULL, IPARM_U, 300.e2, 360L, IPARM_V, 300.e2, 360L, project_winds },
+  { NULL, IPARM_U, 200.e2, 360L, IPARM_V, 200.e2, 360L, project_winds }
 };
 
   gribscan_err_t
@@ -261,8 +289,8 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
     if (traps[i].keep_gsp && iparm_gsp == traps[i].wait_parm
     && vlev_gsp == traps[i].wait_vlev
     && ftime2_gsp == traps[i].wait_ftime2) {
-      project_ept(gsp, dbuf, traps[i].keep_gsp, traps[i].keep_gsp->omake,
-        ofp, textv);
+      traps[i].projecter(gsp, dbuf, traps[i].keep_gsp,
+        traps[i].keep_gsp->omake, ofp, textv);
       myfree(traps[i].keep_gsp->omake);
       del_grib2secs(traps[i].keep_gsp);
       traps[i].keep_gsp = NULL;
@@ -297,6 +325,8 @@ convsec7(const struct grib2secs *gsp)
   if (r == GSE_OKAY) {
     if (iparm_gsp == IPARM_RH && vlev_gsp != 700.e2) goto NOSAVE;
     if (iparm_gsp == IPARM_T && vlev_gsp == 925.e2) goto NOSAVE;
+    if (iparm_gsp == IPARM_U) goto NOSAVE;
+    if (iparm_gsp == IPARM_V) goto NOSAVE;
     r = project_ds(gsp, dbuf, &outf, textv);
 NOSAVE: ;
   }
@@ -345,11 +375,10 @@ checksec7(const struct grib2secs *gsp)
       goto END_SKIP;
     }
     break;
-#if 0
   case IPARM_U:
   case IPARM_V:
-    if (vlev != 101214.5) goto END_SKIP;
-#endif
+    if (!(vlev == 101214.5 || vlev == 850.e2 || vlev == 300.e2
+    || vlev == 200.e2)) goto END_SKIP;
     break;
   case IPARM_VVPa:
     if (vlev != 70000.0) goto END_SKIP;

@@ -324,6 +324,7 @@ param_name(unsigned long iparm)
   case 0x000108: return "RAIN";
   case 0x000202: return "U";
   case 0x000203: return "V";
+  case IPARM_WINDS: return "WINDS";
   case 0x000204: return "PSI";
   case 0x000205: return "CHI";
   case 0x000208: return "VVPa";
