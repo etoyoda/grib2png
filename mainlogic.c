@@ -248,12 +248,9 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
   double vlev_gsp = get_vlevel(gsp);
   long ftime2_gsp = get_ftime(gsp) + get_duration(gsp);
   gribscan_err_t r = GSE_OKAY;
-  printf("check_traps %6s f%-+5ld v%-8.1lf\n",
-    param_name(iparm_gsp), ftime2_gsp, vlev_gsp);
   for (int i = 0; i < N_TRAPS; i++) {
     if (iparm_gsp == traps[i].keep_parm && vlev_gsp == traps[i].keep_vlev
     && ftime2_gsp == traps[i].keep_ftime2) {
-      printf("#trap%d keep\n", i);
       if (traps[i].keep_gsp) {
         if (traps[i].keep_gsp->omake) myfree(traps[i].keep_gsp->omake);
         del_grib2secs(traps[i].keep_gsp);
@@ -264,7 +261,6 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
     if (traps[i].keep_gsp && iparm_gsp == traps[i].wait_parm
     && vlev_gsp == traps[i].wait_vlev
     && ftime2_gsp == traps[i].wait_ftime2) {
-      printf("#trap%d wait\n", i);
       project_ept(gsp, dbuf, traps[i].keep_gsp, traps[i].keep_gsp->omake,
         ofp, textv);
       myfree(traps[i].keep_gsp->omake);
