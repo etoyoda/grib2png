@@ -217,13 +217,16 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
 }
 
 typedef struct trap_t {
-  grib2secs_t *keep_gsp;
+  // 先に保存せねばならないデータ
+  grib2secs_t *keep_gsp; // 変数
   iparm_t keep_parm;
-  iparm_t wait_parm;
   double keep_vlev;
+  long keep_ftime2;
+  // あとで来るはずのデータ
+  iparm_t wait_parm;
   double wait_vlev;
-  long keep_ftime;
-  long wait_ftime;
+  long wait_ftime2;
+  // 両方揃ったらこの関数を呼ぶ
   enum gribscan_err_t
     (*projecter)(const grib2secs_t *gsp_wait, double *dbuf_wait,
       grib2secs_t *gsp_keep, double *dbuf_keep,
@@ -232,11 +235,9 @@ typedef struct trap_t {
 
 enum { N_TRAPS = 2 };
 static trap_t traps[N_TRAPS] = {
-  { NULL, IPARM_T, IPARM_RH, 925.e2, 925.e2, 360, 360, project_ept },
-  { NULL, IPARM_T, IPARM_RH, 850.e2, 850.e2, 360, 360, project_ept }
+  { NULL, IPARM_T, 925.e2, 360L, IPARM_RH, 925.e2, 360L, project_ept },
+  { NULL, IPARM_T, 850.e2, 360L, IPARM_RH, 850.e2, 360L, project_ept },
 };
-
-static grib2secs_t *keep_t = NULL;
 
   gribscan_err_t
 check_traps(const struct grib2secs *gsp, double *dbuf,
@@ -245,23 +246,31 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
   size_t npixels = get_npixels(gsp);
   iparm_t iparm_gsp = get_parameter(gsp);
   double vlev_gsp = get_vlevel(gsp);
+  long ftime2_gsp = get_ftime(gsp) + get_duration(gsp);
   gribscan_err_t r = GSE_OKAY;
-  // 相当温位のための特例
-  if (iparm_gsp == IPARM_T && (vlev_gsp == 850.e2 || vlev_gsp == 925.e2)) {
-    if (keep_t) {
-      if (keep_t->omake) myfree(keep_t->omake);
-      del_grib2secs(keep_t);
+  printf("check_traps %6s f%-+5ld v%-8.1lf\n",
+    param_name(iparm_gsp), ftime2_gsp, vlev_gsp);
+  for (int i = 0; i < N_TRAPS; i++) {
+    if (iparm_gsp == traps[i].keep_parm && vlev_gsp == traps[i].keep_vlev
+    && ftime2_gsp == traps[i].keep_ftime2) {
+      printf("#trap%d keep\n", i);
+      if (traps[i].keep_gsp) {
+        if (traps[i].keep_gsp->omake) myfree(traps[i].keep_gsp->omake);
+        del_grib2secs(traps[i].keep_gsp);
+      }
+      traps[i].keep_gsp = dup_grib2secs(gsp);
+      traps[i].keep_gsp->omake = mydup(dbuf, sizeof(double) * npixels);
     }
-    keep_t = dup_grib2secs(gsp);
-    keep_t->omake = mydup(dbuf, sizeof(double) * npixels);
-  }
-  if (keep_t && iparm_gsp == IPARM_RH && vlev_gsp == get_vlevel(keep_t)
-  && get_ftime(gsp) == get_ftime(keep_t)) {
-    // 相当温位の計算
-    project_ept(gsp, dbuf, keep_t, keep_t->omake, ofp, textv);
-    myfree(keep_t->omake);
-    del_grib2secs(keep_t);
-    keep_t = NULL;
+    if (traps[i].keep_gsp && iparm_gsp == traps[i].wait_parm
+    && vlev_gsp == traps[i].wait_vlev
+    && ftime2_gsp == traps[i].wait_ftime2) {
+      printf("#trap%d wait\n", i);
+      project_ept(gsp, dbuf, traps[i].keep_gsp, traps[i].keep_gsp->omake,
+        ofp, textv);
+      myfree(traps[i].keep_gsp->omake);
+      del_grib2secs(traps[i].keep_gsp);
+      traps[i].keep_gsp = NULL;
+    }
   }
   return r;
 }
