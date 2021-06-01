@@ -228,8 +228,10 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
 project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
 {
+  palette_t pal = (get_vlevel(gsp_u) == VLEVEL_Z10M)
+    ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
   return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
-    IPARM_WINDS, PALETTE_WINDS, windspeed);
+    IPARM_WINDS, pal, windspeed);
 }
 
   gribscan_err_t
@@ -261,7 +263,7 @@ enum { N_TRAPS = 6 };
 static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_T, 925.e2, 360L, IPARM_RH, 925.e2, 360L, project_ept },
   { NULL, IPARM_T, 850.e2, 360L, IPARM_RH, 850.e2, 360L, project_ept },
-  { NULL, IPARM_U, 101214.5, 360L, IPARM_V, 101214.5, 360L, project_winds },
+  { NULL, IPARM_U, VLEVEL_Z10M, 360L, IPARM_V, VLEVEL_Z10M, 360L, project_winds },
   { NULL, IPARM_U, 850.e2, 360L, IPARM_V, 850.e2, 360L, project_winds },
   { NULL, IPARM_U, 300.e2, 360L, IPARM_V, 300.e2, 360L, project_winds },
   { NULL, IPARM_U, 200.e2, 360L, IPARM_V, 200.e2, 360L, project_winds }
@@ -365,7 +367,7 @@ checksec7(const struct grib2secs *gsp)
   switch (iparm) {
   case IPARM_T:
     if (!(vlev == 50000.0 || vlev == 85000.0 || vlev == 92500.0
-    || vlev == 101302.5
+    || vlev == VLEVEL_Z2M
     )) {
       goto END_SKIP;
     }
@@ -377,7 +379,7 @@ checksec7(const struct grib2secs *gsp)
     break;
   case IPARM_U:
   case IPARM_V:
-    if (!(vlev == 101214.5 || vlev == 850.e2 || vlev == 300.e2
+    if (!(vlev == VLEVEL_Z10M || vlev == 850.e2 || vlev == 300.e2
     || vlev == 200.e2)) goto END_SKIP;
     break;
   case IPARM_VVPa:

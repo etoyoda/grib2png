@@ -484,9 +484,9 @@ level_name(double vlev)
     return "sfc";
   } else if (vlev == 101324.0) {
     return "msl";
-  } else if (vlev == 101302.5) {
+  } else if (vlev == VLEVEL_Z2M) {
     return "z2";
-  } else if (vlev == 101214.5) {
+  } else if (vlev == VLEVEL_Z10M) {
     return "z10";
   } else {
     snprintf(lvbuf, sizeof lvbuf, "p%g", vlev / 100.0);
