@@ -262,28 +262,50 @@ setpixel_rain6(png_bytep pixel, double val)
 }
 
   void
+setpixel_windsfc(png_bytep pixel, double val)
+{
+  // 通報値 (0.1 m/s)
+  int mps = floor(val * 0.1);
+  if (mps < 1) {
+    pixel[0] = 242; pixel[1] = 242; pixel[2] = 255; pixel[3] = 0x80;
+  } else if (mps < 5) {
+    pixel[0] = pixel[1] = pixel[2] = pixel[3] = 0;
+  } else if (mps < 10) {
+    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0x80;
+  } else if (mps < 15) {
+    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0x80;
+  } else if (mps < 20) {
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0x80;
+  } else if (mps < 25) {
+    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 0x80;
+  } else if (mps < 30) {
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0x80;
+  } else {
+    pixel[0] = 100; pixel[1] = 0; pixel[2] = 80; pixel[3] = 0xC0;
+  }
+}
+
+  void
 setpixel_winds(png_bytep pixel, double val)
 {
   // 通報値 (0.1 m/s)
-  int mmh = floor(val * 0.1);
-  if (mmh < 5) {
+  int mps = floor(val * 0.1);
+  if (mps < 1) {
+    pixel[0] = 242; pixel[1] = 242; pixel[2] = 255; pixel[3] = 0x80;
+  } else if (mps < 25) {
     pixel[0] = pixel[1] = pixel[2] = pixel[3] = 0;
-  } else if (mmh < 10) {
+  } else if (mps < 30) {
     pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0x80;
-  } else if (mmh < 20) {
-    pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; pixel[3] = 0x80;
-  } else if (mmh < 30) {
+  } else if (mps < 40) {
     pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0x80;
-  } else if (mmh < 40) {
+  } else if (mps < 50) {
     pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0x80;
-  } else if (mmh < 50) {
+  } else if (mps < 70) {
     pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 0x80;
-  } else if (mmh < 100) {
+  } else if (mps < 100) {
     pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0x80;
-  } else if (mmh < 150) {
-    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0xC0;
   } else {
-    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0xFF;
+    pixel[0] = 100; pixel[1] = 0; pixel[2] = 80; pixel[3] = 0xC0;
   }
 }
 
@@ -390,7 +412,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_pmsl(pixel, gbuf[i + j * owidth]);
         break;
       case PALETTE_WINDS_SFC:
-        setpixel_winds(pixel, gbuf[i + j * owidth] * 2.0);
+        setpixel_windsfc(pixel, gbuf[i + j * owidth]);
         break;
       case PALETTE_WINDS:
         setpixel_winds(pixel, gbuf[i + j * owidth]);
