@@ -140,6 +140,7 @@ checksec7(const struct grib2secs *gsp)
     break;
   case IPARM_U:
   case IPARM_V:
+  case IPARM_T:
   case IPARM_RH:
     break;
   case IPARM_VVPa:
