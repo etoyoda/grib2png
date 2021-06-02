@@ -11,10 +11,11 @@ test -d /nwp/p1/jmagrib || mkdir /nwp/p1/jmagrib
 cd /nwp/p1/jmagrib
 
 # 推定最新時刻
-set $(LANG=C TZ=UTC date --date='3 hours ago' +'%Y%m%d %H')
+set $(LANG=C TZ=UTC date --date='3 hours ago' +'%Y%m%d %H %Y-%m')
 : date $*
 ymd=$1
 hh=$2
+ym=$3
 hh=$(ruby -e 'printf("%02u", ARGV.first.to_i / 6 * 6)' $hh)
 # 推定最新時刻フォルダができていれば終了
 test ! -d ${ymd}T${hh}Z
@@ -47,11 +48,13 @@ let 'elapsed = tend - tbegin'
 logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
 
 /nwp/bin/gribslim -ogsm${ymd}T${hh}.bin biggrib.bin > /dev/null
-/nwp/bin/grib2png biggrib.bin > grib2png.log
-rm -f biggrib.bin
+/nwp/bin/grib2png   gsm${ymd}T${hh}.bin > grib2png.log
+(sleep 18000 ; rm -f biggrib.bin) &
 
 cd ..
 mv work ${ymd}T${hh}Z
+test ! -d /nwp/a1/$ym || mkdir -f /nwp/a1/$ym
+ln -f ${ymd}T${hh}Z/gsm${ymd}T${hh}.bin /nwp/a1/$ym/gsm${ymd}T${hh}.bin
 
 keep_days=1
 find . -maxdepth 1 -ctime +${keep_days} | xargs -r rm -rf
