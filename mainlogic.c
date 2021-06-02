@@ -8,7 +8,8 @@
 #include "mymalloc.h" // only for mymemstat();
 
   void
-mkfilename(char *filename, size_t fnlen, const struct grib2secs *gsp)
+mkfilename(char *filename, size_t fnlen, const struct grib2secs *gsp,
+  const char *suffix)
 {
   struct tm time;
   unsigned long param = get_parameter(gsp);
@@ -17,12 +18,13 @@ mkfilename(char *filename, size_t fnlen, const struct grib2secs *gsp)
   time_t itime;
   double vlev = get_vlevel(gsp);
   char vtbuf[32];
+  if (suffix == NULL) { suffix = ".png"; }
   get_reftime(&time, gsp);
   itime = timegm(&time);
   itime += (ft + dt) * 60;
   showtime(vtbuf, sizeof vtbuf, gmtime(&itime));
-  snprintf(filename, fnlen, "v%s_f%03lu_%s_%s.png", vtbuf, (ft+dt)/60,
-    level_name(vlev), param_name(param));
+  snprintf(filename, fnlen, "v%s_f%03lu_%s_%s%s", vtbuf, (ft+dt)/60,
+    level_name(vlev), param_name(param), suffix);
   printf("writing %s\n", filename);
 }
 
@@ -160,7 +162,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
     pal = PALETTE_GSI;
     break;
   }
-  mkfilename(filename, sizeof filename, gsp);
+  mkfilename(filename, sizeof filename, gsp, NULL);
   r = gridsave(gbuf, onx, ony, pal, filename, textv);
   free(gbuf);
   //--- end memory section
@@ -215,7 +217,7 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   if (gbuf == NULL) { free(dbuf_ept); return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf_ept, ofp);
   set_parameter(gsp_t, iparm);
-  mkfilename(filename, sizeof filename, gsp_t);
+  mkfilename(filename, sizeof filename, gsp_t, NULL);
   r = gridsave(gbuf, onx, ony, pal, filename, textv);
   free(gbuf);
   //--- end memory section 2
@@ -224,10 +226,25 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   return r;
 }
 
+  void
+textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
+  grib2secs_t *gsp_v, double *dbuf_v)
+{
+  char filename[256];
+  bounding_t b;
+  decode_gds(gsp_t, &b);
+  set_parameter(gsp_v, IPARM_WINDS);
+  mkfilename(filename, sizeof filename, gsp_v, ".txt");
+  FILE *tfp = fopen(filename, "wt");
+
+  fclose(tfp);
+}
+
   gribscan_err_t
 project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
 {
+  textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
   palette_t pal = (get_vlevel(gsp_u) == VLEVEL_Z10M)
     ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
   return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
