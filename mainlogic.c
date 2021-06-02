@@ -259,14 +259,16 @@ typedef struct trap_t {
       const outframe_t *ofp, char **textv);
 } trap_t;
 
-enum { N_TRAPS = 6 };
+enum { N_TRAPS = 8 };
 static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_T, 925.e2, 360L, IPARM_RH, 925.e2, 360L, project_ept },
   { NULL, IPARM_T, 850.e2, 360L, IPARM_RH, 850.e2, 360L, project_ept },
   { NULL, IPARM_U, VLEVEL_Z10M, 360L, IPARM_V, VLEVEL_Z10M, 360L, project_winds },
   { NULL, IPARM_U, 850.e2, 360L, IPARM_V, 850.e2, 360L, project_winds },
+  { NULL, IPARM_U, 500.e2, 360L, IPARM_V, 500.e2, 360L, project_winds },
   { NULL, IPARM_U, 300.e2, 360L, IPARM_V, 300.e2, 360L, project_winds },
-  { NULL, IPARM_U, 200.e2, 360L, IPARM_V, 200.e2, 360L, project_winds }
+  { NULL, IPARM_U, 200.e2, 360L, IPARM_V, 200.e2, 360L, project_winds },
+  { NULL, IPARM_U, 100.e2, 360L, IPARM_V, 100.e2, 360L, project_winds }
 };
 
   gribscan_err_t
@@ -379,8 +381,8 @@ checksec7(const struct grib2secs *gsp)
     break;
   case IPARM_U:
   case IPARM_V:
-    if (!(vlev == VLEVEL_Z10M || vlev == 850.e2 || vlev == 300.e2
-    || vlev == 200.e2)) goto END_SKIP;
+    if (!(vlev == VLEVEL_Z10M || vlev == 850.e2 || vlev == 500.e2
+    || vlev == 300.e2 || vlev == 200.e2 || vlev == 100.e2)) goto END_SKIP;
     break;
   case IPARM_VVPa:
     if (vlev != 70000.0) goto END_SKIP;
@@ -395,7 +397,8 @@ checksec7(const struct grib2secs *gsp)
     if (!(vlev == 50000.0)) goto END_SKIP;
     break;
   case IPARM_Z:
-    if (!(vlev == 300.e2 || vlev == 500.e2 || vlev == 925.e2)) goto END_SKIP;
+    if (!(vlev == 200.e2 || vlev == 300.e2
+    || vlev == 500.e2 || vlev == 850.e2 || vlev == 925.e2)) goto END_SKIP;
     break;
   default:
     goto END_SKIP;
