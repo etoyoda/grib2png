@@ -53,7 +53,7 @@ logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
 
 cd ..
 mv work ${ymd}T${hh}Z
-test ! -d /nwp/a1/$ym || mkdir -f /nwp/a1/$ym
+test ! -d /nwp/a1/$ym || mkdir /nwp/a1/$ym
 ln -f ${ymd}T${hh}Z/gsm${ymd}T${hh}.bin /nwp/a1/$ym/gsm${ymd}T${hh}.bin
 
 keep_days=1
