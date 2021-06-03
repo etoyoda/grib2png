@@ -230,7 +230,7 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
 double
 wdir(double u, double v)
 {
-  return atan2(u, v) / M_PI * 180.0 + 180.0;
+  return atan2(v, u) / M_PI * 180.0 + 180.0;
 }
 
 static FILE *text_fp = NULL;
