@@ -233,43 +233,44 @@ wdir(double u, double v)
   return atan2(u, v) / M_PI * 180.0 + 180.0;
 }
 
+static FILE *text_fp = NULL;
+
   void
 textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v)
 {
   bounding_t b;
   struct tm time;
-  char filename[256];
   char ftvl[256];
+  if (text_fp == NULL) return;
   get_reftime(&time, gsp_u);
   time_t itime = timegm(&time);
   itime += get_ftime(gsp_u) * 60;
   strftime(ftvl, sizeof ftvl, "%Y-%m-%dT%H:%MZ", gmtime(&itime));
   double vlev = get_vlevel(gsp_u);
   if (vlev == VLEVEL_Z10M) {
-    strncat(ftvl, "/sfc/", sizeof ftvl - strlen("/sfc/") - 1);
+    strncat(ftvl, "/sfc", sizeof ftvl - strlen("/sfc") - 1);
   } else {
     char *endp = ftvl + strlen(ftvl);
-    snprintf(endp, sizeof ftvl - 10, "/p%u/", (unsigned)(vlev / 100.0));
+    enum { SMARGIN = 10 };
+    snprintf(endp, sizeof ftvl - SMARGIN, "/p%u", (unsigned)(vlev / 100.0));
   }
   decode_gds(gsp_v, &b);
-  set_parameter(gsp_v, IPARM_WINDS);
-  mkfilename(filename, sizeof filename, gsp_v, ".txt");
-  FILE *tfp = fopen(filename, "wt");
-  enum { ISTEP = 4, JSTEP = 4 };
-  for (unsigned j = 32; j <= (b.nj - 32); j += JSTEP) {
+  enum { ISTEP = 8, JSTEP = 8, JMARGIN = 16 };
+  for (unsigned j = JMARGIN; j <= (b.nj - JMARGIN); j += JSTEP) {
     double lat = b.n + (b.s - b.n) * j / (b.nj - 1);
     for (unsigned i = 0; i < b.ni; i += ISTEP) {
       double lon = b.w + (b.e - b.w) * i / (b.ni - 1);
       unsigned ij = i + j * b.ni;
       double wsp = hypot(dbuf_u[ij], dbuf_v[ij]) * 0.1;
       double wd = wdir(dbuf_u[ij], dbuf_v[ij]);
-      fprintf(tfp, "%s/gpv%+d%+d {\"@\":\"gpv%+d%+d\","
-        "\"La\":%3.1f,\"Lo\":%3.1f,\"d\":%3.0f,\"f\":%3.0f,\"ahl\":\"GSM\"}\n",
+      fprintf(text_fp,
+        "%s/gpv%+d%+d {\"@\":\"gpv%+d%+d\","
+        "\"La\":%3.1f,\"Lo\":%3.1f,"
+        "\"d\":%3.0f,\"f\":%3.0f,\"ahl\":\"GSM\"}\n",
         ftvl, (int)lat, (int)lon, (int)lat, (int)lon, lat, lon, wd, wsp);
     }
   }
-  fclose(tfp);
 }
 
   gribscan_err_t
@@ -475,12 +476,20 @@ argscan(int argc, const char **argv)
   gribscan_err_t r = ERR_NOINPUT;
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
-      r = GSE_OKAY;
+      switch (argv[i][1]) {
+      case 't':
+        text_fp = fopen(argv[i] + 2, "w");
+        break;
+      default:
+        fprintf(stderr, "%s: unknown option\n", argv[i]);
+        break;
+      }
     } else {
       r = grib2scan_by_filename(argv[i]);
       if (r != GSE_OKAY) break;
     }
   }
+  if (text_fp) { fclose(text_fp); text_fp = NULL; }
   return r;
 }
 
