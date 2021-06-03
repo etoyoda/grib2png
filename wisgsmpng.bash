@@ -52,6 +52,7 @@ logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
 (sleep 18000 ; rm -f biggrib.bin) &
 
 cd ..
+test ! -d ${ymd}T${hh}Z || rm -rf ${ymd}T${hh}Z
 mv work ${ymd}T${hh}Z
 test ! -d /nwp/a1/$ym || mkdir /nwp/a1/$ym
 ln -f ${ymd}T${hh}Z/gsm${ymd}T${hh}.bin /nwp/a1/$ym/gsm${ymd}T${hh}.bin
