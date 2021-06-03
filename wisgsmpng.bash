@@ -48,7 +48,8 @@ let 'elapsed = tend - tbegin'
 logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
 
 /nwp/bin/gribslim -ogsm${ymd}T${hh}.bin biggrib.bin > /dev/null
-/nwp/bin/grib2png   gsm${ymd}T${hh}.bin > grib2png.log
+/nwp/bin/grib2png -tgsm${ymd}T${hh}.txt \
+                    gsm${ymd}T${hh}.bin > grib2png.log
 (sleep 18000 ; rm -f biggrib.bin) &
 
 cd ..
