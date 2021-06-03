@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <limits.h>
+#include <string.h>
 #include <math.h>
 #include "gribscan.h"
 #include "visual.h"
@@ -226,17 +227,48 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   return r;
 }
 
+double
+wdir(double u, double v)
+{
+  return atan2(u, v) / M_PI * 180.0 + 180.0;
+}
+
   void
 textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v)
 {
-  char filename[256];
   bounding_t b;
-  decode_gds(gsp_t, &b);
+  struct tm time;
+  char filename[256];
+  char ftvl[256];
+  get_reftime(&time, gsp_u);
+  time_t itime = timegm(&time);
+  itime += get_ftime(gsp_u) * 60;
+  strftime(ftvl, sizeof ftvl, "%Y-%m-%dT%H:%MZ", gmtime(&itime));
+  double vlev = get_vlevel(gsp_u);
+  if (vlev == VLEVEL_Z10M) {
+    strncat(ftvl, "/sfc/", sizeof ftvl - strlen("/sfc/") - 1);
+  } else {
+    char *endp = ftvl + strlen(ftvl);
+    snprintf(endp, sizeof ftvl - 10, "/p%u/", (unsigned)(vlev / 100.0));
+  }
+  decode_gds(gsp_v, &b);
   set_parameter(gsp_v, IPARM_WINDS);
   mkfilename(filename, sizeof filename, gsp_v, ".txt");
   FILE *tfp = fopen(filename, "wt");
-
+  enum { ISTEP = 4, JSTEP = 4 };
+  for (unsigned j = 32; j <= (b.nj - 32); j += JSTEP) {
+    double lat = b.n + (b.s - b.n) * j / (b.nj - 1);
+    for (unsigned i = 0; i < b.ni; i += ISTEP) {
+      double lon = b.w + (b.e - b.w) * i / (b.ni - 1);
+      unsigned ij = i + j * b.ni;
+      double wsp = hypot(dbuf_u[ij], dbuf_v[ij]) * 0.1;
+      double wd = wdir(dbuf_u[ij], dbuf_v[ij]);
+      fprintf(tfp, "%s/gpv%+d%+d {\"@\":\"gpv%+d%+d\","
+        "\"La\":%3.1f,\"Lo\":%3.1f,\"d\":%3.0f,\"f\":%3.0f,\"ahl\":\"GSM\"}\n",
+        ftvl, (int)lat, (int)lon, (int)lat, (int)lon, lat, lon, wd, wsp);
+    }
+  }
   fclose(tfp);
 }
 
