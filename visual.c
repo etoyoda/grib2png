@@ -82,6 +82,7 @@ del_pngimg(png_bytep *ovector)
   free(ovector);
 }
 
+// コンター用なので pixel[3] を上書きしない
   void
 setpixel_z(png_bytep pixel, double val)
 {
@@ -89,7 +90,6 @@ setpixel_z(png_bytep pixel, double val)
   double cycle = (val > 6360.0) ? 120.0 : 60.0;
   // val は 1 m 単位、縞々透過は 60 m 単位 (6000 m 以上では 120 m 単位)
   long istep = floor(val / cycle); 
-  unsigned frac = (unsigned)((val - istep * cycle) * 0x100u / cycle);
   if (val < 1000.0) { // 925hPa用
     blue = (istep - 720/60) * 24 + 0x80;
   } else if (val < 2160.0) { // 850hPa用
@@ -109,7 +109,6 @@ setpixel_z(png_bytep pixel, double val)
   pixel[0] = (red < 0) ? 0 : (red > 0xFF) ? 0xFF : red;
   pixel[1] = 0x80;
   pixel[2] = (blue < 0) ? 0 : (blue > 0xFF) ? 0xFF : blue;
-  pixel[3] = frac;
 }
 
   void
@@ -388,8 +387,8 @@ setpixel_gsi(png_bytep pixel, double val)
 }
 
   int
-render_cont(png_bytep *ovector, const double *gbuf,
-  size_t owidth, size_t oheight, palette_t pal)
+contour_pmsl(png_bytep *ovector, const double *gbuf,
+  size_t owidth, size_t oheight)
 {
   // 段階1: 全格子 pixel[0] に段彩番号を打つ
   for (size_t j = 0; j < oheight; j++) {
@@ -443,18 +442,73 @@ render_cont(png_bytep *ovector, const double *gbuf,
 }
 
   int
+contour_z(png_bytep *ovector, const double *gbuf,
+  size_t owidth, size_t oheight)
+{
+  // 最初の格子で決めてしまう
+  double cycle = (gbuf[0] > 6360.0) ? 120.0 : 60.0;
+  // 段階1: 全格子 pixel[0] に段彩番号を打つ
+  for (size_t j = 0; j < oheight; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      png_bytep pixel = ovector[j] + i * 4;
+      double val = gbuf[i + j * owidth];
+      // Z は 1 m 単位、縞々透過は 60 m 単位 (6000 m 以上では 120 m 単位)
+      // 念の為 250 の剰余にしているが、50 hPa 程度までなら、250 未満
+      unsigned istep = (unsigned)floor(val / cycle) % 250; 
+      pixel[0] = pixel[1] = pixel[2] = istep;
+      pixel[3] = 0xFF;
+    }
+  }
+  // 段階2: 隣接格子が同値な場合透明化する
+  for (size_t j = 1; j < (oheight-1); j++) {
+    for (size_t i = 1; i < (owidth-1); i++) {
+      png_bytep pixel = ovector[j] + i * 4;
+      unsigned istep = pixel[0];
+      // 隣接4格子が同値な場合
+      if ( ovector[j-1][(i  )*4] == istep
+        && ovector[j  ][(i-1)*4] == istep
+        && ovector[j  ][(i+1)*4] == istep
+        && ovector[j+1][ i   *4] == istep) {
+        pixel[3] = 0;
+      }
+      if (istep % 5) {
+        if ((ovector[j-1][(i  )*4] == istep
+          || ovector[j-1][(i  )*4] == istep+1)
+          &&(ovector[j  ][(i-1)*4] == istep
+          || ovector[j  ][(i-1)*4] == istep+1)
+          &&(ovector[j  ][(i+1)*4] == istep
+          || ovector[j  ][(i+1)*4] == istep+1)
+          &&(ovector[j+1][ i   *4] == istep
+          || ovector[j+1][ i   *4] == istep+1)){
+          pixel[3] = 0;
+        }
+      }
+    }
+  }
+  for (size_t j = 0; j < oheight; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      png_bytep pixel = ovector[j] + i * 4;
+      if (pixel[3] == 0) {
+        pixel[0] = pixel[1] = pixel[2] = 0;
+      } else {
+        setpixel_z(pixel, gbuf[i + j * owidth]);
+      }
+    }
+  }
+  return 0;
+}
+
+  int
 render(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
 {
   int r = 0;
   switch (pal) {
   case PALETTE_Z:
-    for (size_t j = 0; j < oheight; j++) {
-      for (size_t i = 0; i < owidth; i++) {
-        png_bytep pixel = ovector[j] + i * 4;
-        setpixel_z(pixel, gbuf[i + j * owidth]);
-      }
-    }
+    r = contour_z(ovector, gbuf, owidth, oheight);
+    break;
+  case PALETTE_Pmsl:
+    r = contour_pmsl(ovector, gbuf, owidth, oheight);
     break;
   case PALETTE_RH:
     for (size_t j = 0; j < oheight; j++) {
@@ -479,9 +533,6 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_t(pixel, gbuf[i + j * owidth]);
       }
     }
-    break;
-  case PALETTE_Pmsl:
-    r = render_cont(ovector, gbuf, owidth, oheight, pal);
     break;
   case PALETTE_WINDS_SFC:
     for (size_t j = 0; j < oheight; j++) {
