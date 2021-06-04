@@ -50,11 +50,11 @@ logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
 /nwp/bin/gribslim -ogsm${ymd}T${hh}.bin biggrib.bin > /dev/null
 /nwp/bin/grib2png -tgsm${ymd}T${hh}.txt \
                     gsm${ymd}T${hh}.bin > grib2png.log
-echo rm -f $(/bin/pwd)/biggrib.bin | at now + 5 hours 2>/dev/null
 
 cd ..
 test ! -d ${ymd}T${hh}Z || rm -rf ${ymd}T${hh}Z
 mv work ${ymd}T${hh}Z
+echo rm -f $(/bin/pwd)/${ymd}T${hh}Z/biggrib.bin | at now + 5 hours 2>/dev/null
 test -d /nwp/a1/$ym || mkdir /nwp/a1/$ym
 ln -f ${ymd}T${hh}Z/gsm${ymd}T${hh}.bin /nwp/a1/$ym/gsm${ymd}T${hh}.bin
 
