@@ -389,9 +389,55 @@ setpixel_gsi(png_bytep pixel, double val)
 }
 
   int
+render_cont(png_bytep *ovector, const double *gbuf,
+  size_t owidth, size_t oheight, palette_t pal)
+{
+  // 段階1: 全格子 pixel[0] に段彩番号を打つ
+  for (size_t j = 0; j < oheight; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      png_bytep pixel = ovector[j] + i * 4;
+      double val = gbuf[i + j * owidth];
+      // Pmsl は 0.1 hPa 単位、4 hPa 単位で等値線を引く
+      // 500...1500 hPa -> istep 0...250
+      unsigned istep = ((unsigned)floor(val / 40.0) - 125u) % 250u;
+      pixel[0] = istep;
+      pixel[3] = 255;
+    }
+  }
+  // 段階2: 周囲８格子の段彩番号が同じ格子は透明化する 
+  for (size_t j = 1; j < (oheight-1); j++) {
+    for (size_t i = 1; i < (owidth-1); i++) {
+      unsigned istep = gbuf[i + j * owidth];
+      if ( ovector[j-1][(i-1)*4] == istep
+        && ovector[j-1][(i  )*4] == istep
+        && ovector[j-1][(i+1)*4] == istep
+        && ovector[j  ][(i-1)*4] == istep
+        && ovector[j  ][(i+1)*4] == istep
+        && ovector[j+1][(i-1)*4] == istep
+        && ovector[j+1][(i  )*4] == istep
+        && ovector[j+1][i+1] == istep) {
+        ovector[j+1][i*4+3] = 0;
+      }
+    }
+  }
+  // 段階3: 全格子 pixel[0] に基づいて色塗り
+  for (size_t j = 0; j < oheight; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      png_bytep pixel = ovector[j] + i * 4;
+      unsigned istep = pixel[0];
+      pixel[0] = 255-istep;
+      pixel[1] = 0x80;
+      pixel[2] = istep;
+    }
+  }
+  return 0;
+}
+
+  int
 render(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
 {
+  int r = 0;
   switch (pal) {
   case PALETTE_Z:
     for (size_t j = 0; j < oheight; j++) {
@@ -426,12 +472,15 @@ render(png_bytep *ovector, const double *gbuf,
     }
     break;
   case PALETTE_Pmsl:
+    r = render_cont(ovector, gbuf, owidth, oheight, pal);
+#if 0
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
         setpixel_pmsl(pixel, gbuf[i + j * owidth]);
       }
     }
+#endif
     break;
   case PALETTE_WINDS_SFC:
     for (size_t j = 0; j < oheight; j++) {
@@ -482,7 +531,7 @@ render(png_bytep *ovector, const double *gbuf,
     }
     break;
   }
-  return 0;
+  return r;
 }
 
 
