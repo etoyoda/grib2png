@@ -392,45 +392,95 @@ setpixel_gsi(png_bytep pixel, double val)
 render(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
 {
-  for (size_t j = 0; j < oheight; j++) {
-    for (size_t i = 0; i < owidth; i++) {
-      png_bytep pixel = ovector[j] + i * 4;
-      switch (pal) {
-      case PALETTE_Z:
+  switch (pal) {
+  case PALETTE_Z:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
         setpixel_z(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_RH:
-        setpixel_rh(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_papT:
-        setpixel_papt(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_T:
-        setpixel_t(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_Pmsl:
-        setpixel_pmsl(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_WINDS_SFC:
-        setpixel_windsfc(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_WINDS:
-        setpixel_winds(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_RAIN6:
-        setpixel_rain6(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_rVOR:
-        setpixel_rvor(pixel, gbuf[i + j * owidth]);
-        break;
-      case PALETTE_VVPa:
-        setpixel_rvor(pixel, gbuf[i + j * owidth] * -50.0);
-        break;
-      default:
-        setpixel_gsi(pixel, gbuf[i + j * owidth]);
-        break;
       }
     }
+    break;
+  case PALETTE_RH:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_rh(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_papT:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_papt(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_T:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_t(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_Pmsl:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_pmsl(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_WINDS_SFC:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_windsfc(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_WINDS:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_winds(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_RAIN6:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_rain6(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_rVOR:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_rvor(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_VVPa:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_rvor(pixel, gbuf[i + j * owidth] * -50.0);
+      }
+    }
+    break;
+  default:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_gsi(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
   }
   return 0;
 }
