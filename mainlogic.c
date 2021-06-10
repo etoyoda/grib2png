@@ -151,6 +151,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
   case IPARM_T:    pal = PALETTE_T;    break;
   case IPARM_Pmsl: pal = PALETTE_Pmsl; break;
   case IPARM_rVOR: pal = PALETTE_rVOR; break;
+  case IPARM_rDIV: pal = PALETTE_rVOR; break;
   case IPARM_VVPa: pal = PALETTE_VVPa; break;
   case IPARM_RAIN:
     if (get_duration(gsp) == 360) {
@@ -443,8 +444,11 @@ checksec7(const struct grib2secs *gsp)
   case IPARM_Pmsl:
     if (vlev != 101324.0) goto END_SKIP;
     break;
+  case IPARM_rDIV:
+    if (!(vlev == 250.e2)) goto END_SKIP;
+    break;
   case IPARM_rVOR:
-    if (!(vlev == 50000.0)) goto END_SKIP;
+    if (!(vlev == 500.e2)) goto END_SKIP;
     break;
   case IPARM_Z:
     if (!(vlev == 200.e2 || vlev == 300.e2
