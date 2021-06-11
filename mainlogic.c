@@ -279,7 +279,7 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
 {
   textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
-  palette_t pal = (get_vlevel(gsp_u) == VLEVEL_Z10M)
+  palette_t pal = (get_vlevel(gsp_u) >= 850.e2)
     ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
   return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
     IPARM_WINDS, pal, windspeed);
