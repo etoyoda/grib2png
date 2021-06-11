@@ -313,24 +313,18 @@ setpixel_winds(png_bytep pixel, double val)
 setpixel_pmsl(png_bytep pixel, double val)
 {
   // val は 0.1 hPa 単位、4 hPa 単位で縞々透過をつける
-  long istep = floor(val / 40.0);
-  // 1013 hPa => istep=253 を中心に
-  int blue = (istep - 1013/4) * 32 + 0x80;
-  if (blue >= 768) {
+  long ival = (long)floor(val / 40.0) * 4;
+  if (ival >= 1040) {
     pixel[0] = 0;
     pixel[1] = 0;
     pixel[2] = 0xFF;
-  } else if (blue >= 256) { // 256...768, 1028...1094hPa
+  } else if (ival > 1012) {
     pixel[0] = 0;
-    pixel[1] = 0x80 - (blue - 256) / 4;
-    pixel[2] = 0xFF;
-  } else if (blue >= 0) { // 0...255, 996...1028hPa
-    pixel[0] = 0xFF - blue;
     pixel[1] = 0x80;
-    pixel[2] = blue;
-  } else if (blue >= -512) { // -512...-1, 934...996ha
+    pixel[2] = 0xFF;
+  } else if (ival > 980) {
     pixel[0] = 0xFF;
-    pixel[1] = 128 + blue / 4;
+    pixel[1] = 0x80;
     pixel[2] = 0;
   } else {
     pixel[0] = 0xFF;
