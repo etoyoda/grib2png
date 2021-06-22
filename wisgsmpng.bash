@@ -45,7 +45,7 @@ _GSM_GPV_Rgl_Gll1p25deg_L-all_FD0000-0512_grib2.bin"
 wget -q -Obiggrib.bin ${URL}
 tend=$(date +%s)
 let 'elapsed = tend - tbegin'
-logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>100}'
+logger -tsyndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
 
 /nwp/bin/gribslim -ogsm${ymd}T${hh}.bin biggrib.bin > /dev/null
 /nwp/bin/grib2png -tgsm${ymd}T${hh}.txt \
