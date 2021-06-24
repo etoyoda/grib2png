@@ -406,7 +406,7 @@ contour_pmsl(png_bytep *ovector, const double *gbuf,
         && ovector[j+1][ i   *4] == istep) {
         pixel[3] = 0;
       }
-      if (istep % 5) {
+      if (4 == istep % 5) {
         if ((ovector[j-1][(i  )*4] == istep
           || ovector[j-1][(i  )*4] == istep+1)
           &&(ovector[j  ][(i-1)*4] == istep
@@ -463,7 +463,7 @@ contour_z(png_bytep *ovector, const double *gbuf,
         && ovector[j+1][ i   *4] == istep) {
         pixel[3] = 0;
       }
-      if (istep % 5) {
+      if (4 == istep % 5) {
         if ((ovector[j-1][(i  )*4] == istep
           || ovector[j-1][(i  )*4] == istep+1)
           &&(ovector[j  ][(i-1)*4] == istep
