@@ -399,14 +399,16 @@ contour_pmsl(png_bytep *ovector, const double *gbuf,
     for (size_t i = 1; i < (owidth-1); i++) {
       png_bytep pixel = ovector[j] + i * 4;
       unsigned istep = pixel[0];
-      // 隣接4格子が同値な場合
+      // 隣接4格子が同値な場合（等圧線の間）を透明に抜く
       if ( ovector[j-1][(i  )*4] == istep
         && ovector[j  ][(i-1)*4] == istep
         && ovector[j  ][(i+1)*4] == istep
         && ovector[j+1][ i   *4] == istep) {
         pixel[3] = 0;
       }
-      if (4 == istep % 5) {
+      // istep 値を 5 で割った余りが 4 以外の場合
+      // 隣接4格子が同値または1増な場合（等圧線の間）を透明に抜く
+      if (4 != istep % 5) {
         if ((ovector[j-1][(i  )*4] == istep
           || ovector[j-1][(i  )*4] == istep+1)
           &&(ovector[j  ][(i-1)*4] == istep
@@ -456,14 +458,16 @@ contour_z(png_bytep *ovector, const double *gbuf,
     for (size_t i = 1; i < (owidth-1); i++) {
       png_bytep pixel = ovector[j] + i * 4;
       unsigned istep = pixel[0];
-      // 隣接4格子が同値な場合
+      // 隣接4格子が同値な場合（等圧線の間）を透明に抜く
       if ( ovector[j-1][(i  )*4] == istep
         && ovector[j  ][(i-1)*4] == istep
         && ovector[j  ][(i+1)*4] == istep
         && ovector[j+1][ i   *4] == istep) {
         pixel[3] = 0;
       }
-      if (4 == istep % 5) {
+      // istep 値を 5 で割った余りが 4 以外の場合
+      // 隣接4格子が同値または1増な場合（等圧線の間）を透明に抜く
+      if (4 != istep % 5) {
         if ((ovector[j-1][(i  )*4] == istep
           || ovector[j-1][(i  )*4] == istep+1)
           &&(ovector[j  ][(i-1)*4] == istep
