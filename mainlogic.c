@@ -265,6 +265,7 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
       unsigned ij = i + j * b.ni;
       double wsp = hypot(dbuf_u[ij], dbuf_v[ij]) * 0.1;
       double wd = wdir(dbuf_u[ij], dbuf_v[ij]);
+      if (lon > 180.0) { lon -= 360.0; }
       fprintf(text_fp,
         "%s/gpv%+d%+d {\"@\":\"gpv%+d%+d\","
         "\"La\":%3.1f,\"Lo\":%3.1f,"
