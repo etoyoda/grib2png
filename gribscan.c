@@ -552,6 +552,9 @@ case 5:
       gsp->drslen = recl;
       break;
 case 6:
+      // BMS オクテット6の値が 254 なら読み飛ばす
+      // gsp->bms は直近の bms のままになるので、それが 254 の意味である
+      if (secbuf[5] == 254) { break; }
       if (gsp->bms) { myfree(gsp->bms); }
       gsp->bms = secbuf;
       gsp->bmslen = recl;
