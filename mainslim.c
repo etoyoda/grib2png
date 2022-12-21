@@ -198,6 +198,8 @@ argscan(int argc, const char **argv)
         ofnam = argv[i] + 2;
       } else if (argv[i][1] == 'f') {
         sfilter = argv[i] + 2;
+      } else if (argv[i][1] == 'a') {
+        sfilter = "all";
       } else {
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         r = GSE_JUSTWARN;
@@ -221,7 +223,7 @@ main(int argc, const char **argv)
   gribscan_err_t r;
   r = argscan(argc, argv);
   if (r == ERR_NOINPUT) {
-    fprintf(stderr, "usage: %s [-oFILENAME] input ...\n", argv[0]);
+    fprintf(stderr, "usage: %s [-af] [-oFILENAME] input ...\n", argv[0]);
   } else if (r != GSE_OKAY) {
     fprintf(stderr, "%s: exit(%u)\n", argv[0], r);
   }
