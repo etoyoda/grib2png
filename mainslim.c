@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <limits.h>
 #include <math.h>
 #include "gribscan.h"
 #include "visual.h"
 #include "mymalloc.h" // only for mymemstat();
+
+#define streq(a, b) (strcmp((a),(b))==0)
 
 static struct ofile_t {
   const char *fnam;
@@ -18,6 +21,8 @@ static struct ofile_t {
   NULL, 0,
   NULL, NULL
 };
+
+static const char *sfilter = NULL;
 
   gribscan_err_t
 save_open(const char *ofnam)
@@ -130,33 +135,39 @@ checksec7(const struct grib2secs *gsp)
   dura = get_duration(gsp);
   ftime2 = ftime + dura;
   // 要素と面の複合フィルタ
-  switch (iparm) {
-  case IPARM_Z:
-  case IPARM_RAIN:
-  case IPARM_Pmsl:
-    // 最重要面(500, 地上)の最重要要素は予報時間にかかわらず保存
-    if ((vlev == 500.e2 || vlev > 1000.e2)
-    && (ftime2 > 360 && (ftime2 % 720 == 0))) goto SAVE;
-    break;
-  case IPARM_U:
-  case IPARM_V:
-  case IPARM_T:
-  case IPARM_RH:
-    break;
-  case IPARM_VVPa:
-    if (!(vlev == 700.e2 || vlev == 300.e2)) goto END_SKIP;
-    break;
-  case IPARM_rDIV:
-    if (!(vlev == 850.e2 || vlev == 250.e2)) goto END_SKIP;
-    break;
-  case IPARM_rVOR:
-    if (!(vlev == 500.e2)) goto END_SKIP;
-    break;
-  default:
+  if (sfilter) {
+    if (streq(sfilter, "all")) goto SAVE;
+    // とりあえず
+    if (iparm == IPARM_RAIN) goto SAVE;
     goto END_SKIP;
+  } else {
+    // デフォルトフィルタ(歴史的経緯)
+    switch (iparm) {
+    case IPARM_Z:
+    case IPARM_RAIN:
+    case IPARM_Pmsl:
+      if ((vlev == 500.e2 || vlev > 1000.e2)
+      && (ftime2 > 360 && (ftime2 % 720 == 0))) goto SAVE;
+      break;
+    case IPARM_U:
+    case IPARM_V:
+    case IPARM_T:
+    case IPARM_RH:
+      break;
+    case IPARM_VVPa:
+      if (!(vlev == 700.e2 || vlev == 300.e2)) goto END_SKIP;
+      break;
+    case IPARM_rDIV:
+      if (!(vlev == 850.e2 || vlev == 250.e2)) goto END_SKIP;
+      break;
+    case IPARM_rVOR:
+      if (!(vlev == 500.e2)) goto END_SKIP;
+      break;
+    default:
+      goto END_SKIP;
+    }
+    if (ftime2 > 360) goto END_SKIP;
   }
-  // 基本 ft6h まで保存
-  if (ftime2 > 360) goto END_SKIP;
 
 SAVE:
   printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
@@ -185,6 +196,8 @@ argscan(int argc, const char **argv)
     if (argv[i][0] == '-') {
       if (argv[i][1] == 'o') {
         ofnam = argv[i] + 2;
+      } else if (argv[i][1] == 'f') {
+        sfilter = argv[i] + 2;
       } else {
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         r = GSE_JUSTWARN;
