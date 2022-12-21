@@ -169,6 +169,7 @@ get_parameter(const grib2secs_t *gsp)
   switch (pdst) {
   case 0:
   case 8:
+  case 11:
     r |= ui2(gsp->pds + 9);
     break;
   default:
@@ -187,6 +188,7 @@ set_parameter(grib2secs_t *gsp, iparm_t iparm)
   switch (pdst) {
   case 0:
   case 8:
+  case 11:
     gsp->pds[9] = (iparm & 0xFF00) >> 8;
     gsp->pds[10] = iparm & 0xFF;
     break;
@@ -208,6 +210,7 @@ get_ftime(const grib2secs_t *gsp)
   switch (pdst) {
   case 0:
   case 8:
+  case 11:
     tunits = gsp->pds[17];
     r = ui4(gsp->pds + 18);
     break;
@@ -247,6 +250,11 @@ get_duration(const grib2secs_t *gsp)
     tunits = gsp->pds[48];
     r = ui4(gsp->pds + 49);
     break;
+  case 11:
+    nranges = gsp->pds[44];
+    tunits = gsp->pds[51];
+    r = ui4(gsp->pds + 52);
+    break;
   default:
     fprintf(stderr, "unsupported PDS template 4.%u\n", pdst);
     return LONG_MAX;
@@ -281,6 +289,7 @@ get_vlevel(const grib2secs_t *gsp)
   switch (pdst) {
   case 0:
   case 8:
+  case 11:
     vtype = gsp->pds[22];
     vlevptr = gsp->pds + 23;
     break;
