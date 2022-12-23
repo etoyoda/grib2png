@@ -13,7 +13,8 @@ typedef enum gribscan_err_t {
   ERR_NOMEM = 'M',
   ERR_NOINPUT,
   ERR_TOOMANYCFG,
-  ERR_OVERRUN
+  ERR_OVERRUN,
+  ERR_FSTACK
 } gribscan_err_t;
 
 typedef struct grib2secs {
@@ -109,3 +110,10 @@ extern void del_grib2secs(grib2secs_t *gsp);
 
 extern gribscan_err_t
   grib2scan_by_filename(const char *fnam);
+
+extern gribscan_err_t
+  gribscan_filter(const char *sfilter,
+  iparm_t param,
+  long ftime,
+  long dura,
+  double vlev);
