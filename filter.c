@@ -48,31 +48,47 @@ gribscan_filter(const char *sfilter,
       *tos = ftime + dura;
       break;
     case '&':
-    case 'E':
-      dbuf = (tos[0] != 0.0) && (tos[1] != 0.0);
+    case 'A':
+      dbuf = (tos[0] != 0.0) && (tos[-1] != 0.0);
 #define POP {if (tos > (stack + 1)) { tos--; }}
       POP
       *tos = dbuf;
       break;
     case '|':
     case 'V':
-      dbuf = (tos[0] != 0.0) || (tos[1] != 0.0);
+      dbuf = (tos[0] != 0.0) || (tos[-1] != 0.0);
+      POP
+      *tos = dbuf;
+      break;
+    case '=':
+    case 'E':
+      dbuf = (tos[0] == tos[-1]);
       POP
       *tos = dbuf;
       break;
     case '<':
     case 'L':
+      dbuf = (tos[0] < tos[-1]);
+      POP
+      *tos = dbuf;
       break;
     case '>':
     case 'G':
-      break;
-    case '/':
+      dbuf = (tos[0] > tos[-1]);
+      POP
+      *tos = dbuf;
       break;
     case ':':
+      PUSH
+      tos[0] = tos[-1];
+      break;
+#if 0
+    case '/':
       break;
     case '_':
       break;
-    case ',':
+#endif
+    case ',': // NO-OP
       break;
     default:
       fprintf(stderr, "<%c>", c);
