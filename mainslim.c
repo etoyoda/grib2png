@@ -136,10 +136,12 @@ checksec7(const struct grib2secs *gsp)
   ftime2 = ftime + dura;
   // 要素と面の複合フィルタ
   if (sfilter) {
-    if (streq(sfilter, "all")) goto SAVE;
-    // とりあえず
-    if (iparm == IPARM_RAIN) goto SAVE;
-    goto END_SKIP;
+    switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev)) {
+    case ERR_FSTACK: 
+    case GSE_SKIP: goto END_SKIP; break;
+    default:
+    case GSE_OKAY: goto SAVE; break;
+    }
   } else {
     // デフォルトフィルタ(歴史的経緯)
     switch (iparm) {
@@ -199,7 +201,7 @@ argscan(int argc, const char **argv)
       } else if (argv[i][1] == 'f') {
         sfilter = argv[i] + 2;
       } else if (argv[i][1] == 'a') {
-        sfilter = "all";
+        sfilter = "";
       } else {
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         r = GSE_JUSTWARN;

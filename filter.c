@@ -20,8 +20,8 @@ gribscan_filter(const char *sfilter,
   double stack[GSF_STACKSIZE];
   // のりしろ: 置数しないで二項演算子を発行しても死なないように2つ積む
   double *tos = stack + 1;
-  tos[0] = 0.0;
-  tos[1] = 0.0;
+  tos[0] = 1.0;
+  tos[1] = 1.0;
 #define PUSH { if (tos >= stack + GSF_STACKSIZE) { goto OVERFLOW; } }
   while (!!(c = *(sptr++))) {
     switch (c) {
