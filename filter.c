@@ -22,7 +22,7 @@ gribscan_filter(const char *sfilter,
   double *tos = stack + 1;
   tos[0] = 1.0;
   tos[1] = 1.0;
-#define PUSH { if (tos >= stack + GSF_STACKSIZE) { goto OVERFLOW; } }
+#define PUSH { if (tos >= stack + GSF_STACKSIZE) { goto OVERFLOW; } else { tos++; } }
   while (!!(c = *(sptr++))) {
     switch (c) {
     case '-':
