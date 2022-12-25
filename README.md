@@ -9,3 +9,8 @@ simple converter from WMO GRIB Edition 2 to PNG
 データソースについては長くなるので datasource.rd に分けて書きます。
 日量 700 メガバイトとかなりデカいので、
 画像化したものだけを保存しようと思います。
+
+# おまけプログラム gribslim
+
+GRIB2 のファイルから一部を抽出するプログラム。
+詳細は gribslim.md に書いておきます。
