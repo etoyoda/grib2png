@@ -11,6 +11,7 @@ syntaxsugar(const char *sptr, const char **sptrptr)
   eptr = strchr(sptr, ']');
   if (eptr == NULL) { goto BARF; }
   *sptrptr = eptr + 1;
+  // parameter names
   if (strncmp(sptr, "T", eptr-sptr)==0) { return IPARM_T; }
   if (strncmp(sptr, "papT", eptr-sptr)==0) { return IPARM_papT; }
   if (strncmp(sptr, "dT", eptr-sptr)==0) { return IPARM_dT; }
@@ -28,6 +29,11 @@ syntaxsugar(const char *sptr, const char **sptrptr)
   if (strncmp(sptr, "Pres", eptr-sptr)==0) { return IPARM_Pres; }
   if (strncmp(sptr, "Pmsl", eptr-sptr)==0) { return IPARM_Pmsl; }
   if (strncmp(sptr, "Z", eptr-sptr)==0) { return IPARM_Z; }
+  // vertical levels
+  if (strncmp(sptr, "SURF", eptr-sptr)==0) { return 101325.0; }
+  if (strncmp(sptr, "MSL", eptr-sptr)==0) { return 101324.0; }
+  if (strncmp(sptr, "2m", eptr-sptr)==0) { return VLEVEL_Z2M; }
+  if (strncmp(sptr, "10m", eptr-sptr)==0) { return VLEVEL_Z10M; }
 BARF:
   return strtod("NaN", NULL);
 }
