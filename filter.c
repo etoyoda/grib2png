@@ -73,13 +73,13 @@ gribscan_filter(const char *sfilter,
       break;
     case '<':
     case 'L':
-      dbuf = (tos[0] < tos[-1]);
+      dbuf = (tos[-1] < tos[0]);
       POP
       *tos = dbuf;
       break;
     case '>':
     case 'G':
-      dbuf = (tos[0] > tos[-1]);
+      dbuf = (tos[-1] > tos[0]);
       POP
       *tos = dbuf;
       break;

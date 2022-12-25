@@ -601,3 +601,11 @@ b20221220T1200Z   RAIN f+0    d+7920 v101325.0
 EOF
 
 rm -f z.log
+./gribslim -fpx108=,d1440.L,A -o/dev/null sample.gsm > z.log
+diff -- z.log - <<EOF
+b20221220T1200Z   RAIN f+0    d+360  v101325.0
+b20221220T1200Z   RAIN f+0    d+720  v101325.0
+b20221220T1200Z   RAIN f+0    d+1080 v101325.0
+EOF
+
+rm -f z.log
