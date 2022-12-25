@@ -225,7 +225,7 @@ main(int argc, const char **argv)
   gribscan_err_t r;
   r = argscan(argc, argv);
   if (r == ERR_NOINPUT) {
-    fprintf(stderr, "usage: %s [-af] [-oFILENAME] input ...\n", argv[0]);
+    fprintf(stderr, "usage: %s [-a][-fFILTER][-oFILENAME] input ...\n", argv[0]);
   } else if (r != GSE_OKAY) {
     fprintf(stderr, "%s: exit(%u)\n", argv[0], r);
   }

@@ -1,9 +1,36 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include "gribscan.h"
 
-#define streq(a, b) (strcmp((a),(b))==0)
+  double
+syntaxsugar(const char *sptr, const char **sptrptr)
+{
+  const char *eptr;
+  eptr = strchr(sptr, ']');
+  if (eptr == NULL) { goto BARF; }
+  *sptrptr = eptr + 1;
+  if (strncmp(sptr, "T", eptr-sptr)==0) { return IPARM_T; }
+  if (strncmp(sptr, "papT", eptr-sptr)==0) { return IPARM_papT; }
+  if (strncmp(sptr, "dT", eptr-sptr)==0) { return IPARM_dT; }
+  if (strncmp(sptr, "RH", eptr-sptr)==0) { return IPARM_RH; }
+  if (strncmp(sptr, "RR1H", eptr-sptr)==0) { return IPARM_RR1H; }
+  if (strncmp(sptr, "RAIN", eptr-sptr)==0) { return IPARM_RAIN; }
+  if (strncmp(sptr, "WINDS", eptr-sptr)==0) { return IPARM_WINDS; }
+  if (strncmp(sptr, "U", eptr-sptr)==0) { return IPARM_U; }
+  if (strncmp(sptr, "V", eptr-sptr)==0) { return IPARM_V; }
+  if (strncmp(sptr, "PSI", eptr-sptr)==0) { return IPARM_PSI; }
+  if (strncmp(sptr, "CHI", eptr-sptr)==0) { return IPARM_CHI; }
+  if (strncmp(sptr, "VVPa", eptr-sptr)==0) { return IPARM_VVPa; }
+  if (strncmp(sptr, "rVOR", eptr-sptr)==0) { return IPARM_rVOR; }
+  if (strncmp(sptr, "rDIV", eptr-sptr)==0) { return IPARM_rDIV; }
+  if (strncmp(sptr, "Pres", eptr-sptr)==0) { return IPARM_Pres; }
+  if (strncmp(sptr, "Pmsl", eptr-sptr)==0) { return IPARM_Pmsl; }
+  if (strncmp(sptr, "Z", eptr-sptr)==0) { return IPARM_Z; }
+BARF:
+  return strtod("NaN", NULL);
+}
 
 #define GSF_STACKSIZE 1024
 
@@ -25,17 +52,24 @@ gribscan_filter(const char *sfilter,
 #define PUSH { if (tos >= stack + GSF_STACKSIZE) { goto OVERFLOW; } else { tos++; } }
   while (!!(c = *(sptr++))) {
     switch (c) {
-    // immediate double precision
+    // === CONSTANTS AND VARIABLES ===
+    // double precision
     case '-':
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
       PUSH
       *tos = strtod(sptr-1, (char **)&sptr);
       break;
-    // immediate hexadecimal integer
+    // hexadecimal integer
     case 'x':
       PUSH
       *tos = (double)strtoul(sptr, (char **)&sptr, 16);
+      break;
+    // syntax sugar
+    case '[':
+      PUSH
+      *tos = syntaxsugar(sptr, &sptr);
+      break;
     case 'p': // p for parameter
       PUSH
       *tos = param;
@@ -48,10 +82,15 @@ gribscan_filter(const char *sfilter,
       PUSH
       *tos = dura;
       break;
-    case 'F': // f for (end of) forecast time
+    case 'g': // f for (end of) forecast time
       PUSH
       *tos = ftime + dura;
       break;
+    case 'v': // vertical level
+      PUSH
+      *tos = vlev;
+      break;
+    // === BINARY OPERATORS ===
     case '&':
     case 'A':
       dbuf = (tos[0] != 0.0) && (tos[-1] != 0.0);
@@ -83,6 +122,7 @@ gribscan_filter(const char *sfilter,
       POP
       *tos = dbuf;
       break;
+    // === OTHER OPERATOR ===
     case ':':
       PUSH
       tos[0] = tos[-1];
