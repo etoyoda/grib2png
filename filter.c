@@ -25,12 +25,17 @@ gribscan_filter(const char *sfilter,
 #define PUSH { if (tos >= stack + GSF_STACKSIZE) { goto OVERFLOW; } else { tos++; } }
   while (!!(c = *(sptr++))) {
     switch (c) {
+    // immediate double precision
     case '-':
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
       PUSH
       *tos = strtod(sptr, (char **)&sptr);
       break;
+    // immediate hexadecimal integer
+    case 'x':
+      PUSH
+      *tos = (double)strtoul(sptr, (char **)&sptr, 16);
     case 'p': // p for parameter
       PUSH
       *tos = param;
