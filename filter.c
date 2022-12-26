@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include <time.h>
 #include "gribscan.h"
 
@@ -35,7 +36,7 @@ syntaxsugar(const char *sptr, const char **sptrptr)
   if (strncmp(sptr, "2m", eptr-sptr)==0) { return VLEVEL_Z2M; }
   if (strncmp(sptr, "10m", eptr-sptr)==0) { return VLEVEL_Z10M; }
 BARF:
-  return strtod("NaN", NULL);
+  return nan("");
 }
 
 #define GSF_STACKSIZE 1024
@@ -55,7 +56,7 @@ gribscan_filter(const char *sfilter,
   double *tos = stack + 1;
   tos[0] = 1.0;
   tos[1] = 1.0;
-#define PUSH { if (tos >= stack + GSF_STACKSIZE) { goto OVERFLOW; } else { tos++; } }
+#define PUSH { if (tos >= stack + GSF_STACKSIZE) { goto STKOVFL; } else { tos++; } }
   while (!!(c = *(sptr++))) {
     switch (c) {
     // === CONSTANTS AND VARIABLES ===
@@ -98,20 +99,20 @@ gribscan_filter(const char *sfilter,
       break;
     // === BINARY OPERATORS ===
     case '&':
-    case 'A':
+    case 'K': // Polish
       dbuf = (tos[0] != 0.0) && (tos[-1] != 0.0);
 #define POP {if (tos > (stack + 1)) { tos--; }}
       POP
       *tos = dbuf;
       break;
     case '|':
-    case 'V':
+    case 'A': // Polish
       dbuf = (tos[0] != 0.0) || (tos[-1] != 0.0);
       POP
       *tos = dbuf;
       break;
     case '=':
-    case 'E':
+    case 'E': // Polish
       dbuf = (tos[0] == tos[-1]);
       POP
       *tos = dbuf;
@@ -128,17 +129,32 @@ gribscan_filter(const char *sfilter,
       POP
       *tos = dbuf;
       break;
+    case '%':
+    case 'R':
+      dbuf = remainder(tos[-1], tos[0]);
+      POP
+      *tos = dbuf;
+      break;
+    case '*':
+    case 'M':
+      dbuf = tos[-1] * tos[0];
+      POP
+      *tos = dbuf;
+      break;
     // === OTHER OPERATOR ===
+    case '!':
+    case 'N': // Polish
+      *tos = ((*tos == 0.0) ? 1.0 : 0.0);
+      break;
     case ':':
       PUSH
       tos[0] = tos[-1];
       break;
-#if 0
-    case '/':
+    case '^':
+      dbuf = tos[0];
+      tos[0] = tos[-1];
+      tos[-1] = dbuf;
       break;
-    case '_':
-      break;
-#endif
     case ',': // NO-OP
       break;
     default:
@@ -151,6 +167,6 @@ gribscan_filter(const char *sfilter,
   } else {
     return GSE_SKIP;
   }
-OVERFLOW:
+STKOVFL:
   return ERR_FSTACK;
 }
