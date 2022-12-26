@@ -22,7 +22,7 @@ static struct ofile_t {
   NULL, NULL
 };
 
-static const char *sfilter = NULL;
+static const char *sfilter = "p[VVPa]=v70000=v30000=|&,p[rDIV]=v85000=v25000=|&,p[rVOR]=v50000=&,p[U]=p[V]=p[T]=p[RH]=p[Z]=||||,|||,g361<&,p[Z]=v50000=&p[RAIN]=p[Pmsl]=||,g720%0=g360=|&,|";
 
   gribscan_err_t
 save_open(const char *ofnam)
@@ -126,49 +126,19 @@ checksec7(const struct grib2secs *gsp)
   char sreftime[24];
   unsigned long iparm;
   double vlev;
-  long ftime, dura, ftime2;
+  long ftime, dura;
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
   iparm = get_parameter(gsp);
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
-  ftime2 = ftime + dura;
   // 要素と面の複合フィルタ
-  if (sfilter) {
-    switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev)) {
+  switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev)) {
     case ERR_FSTACK: 
     case GSE_SKIP: goto END_SKIP; break;
     default:
     case GSE_OKAY: goto SAVE; break;
-    }
-  } else {
-    // デフォルトフィルタ(歴史的経緯)
-    switch (iparm) {
-    case IPARM_Z:
-    case IPARM_RAIN:
-    case IPARM_Pmsl:
-      if ((vlev == 500.e2 || vlev > 1000.e2)
-      && (ftime2 > 360 && (ftime2 % 720 == 0))) goto SAVE;
-      break;
-    case IPARM_U:
-    case IPARM_V:
-    case IPARM_T:
-    case IPARM_RH:
-      break;
-    case IPARM_VVPa:
-      if (!(vlev == 700.e2 || vlev == 300.e2)) goto END_SKIP;
-      break;
-    case IPARM_rDIV:
-      if (!(vlev == 850.e2 || vlev == 250.e2)) goto END_SKIP;
-      break;
-    case IPARM_rVOR:
-      if (!(vlev == 500.e2)) goto END_SKIP;
-      break;
-    default:
-      goto END_SKIP;
-    }
-    if (ftime2 > 360) goto END_SKIP;
   }
 
 SAVE:
