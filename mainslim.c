@@ -15,7 +15,7 @@ static struct ofile_t {
   unsigned char *ids;
   unsigned char *gds;
 } ofile = {
-  "distilled.bin",
+  NULL,
   NULL, 0,
   NULL, NULL
 };
@@ -29,7 +29,14 @@ save_open(const char *ofnam)
     0,0,0,2,
     0,0,0,0, 0,0,0,0  // size of msg
   };
-  if (ofnam) { ofile.fnam = ofnam; };
+  if (ofnam) {
+    ofile.fnam = ofnam;
+  } else {
+    if (ofile.fnam) {
+      return GSE_OKAY;
+    }
+    ofile.fnam = "distilled.bin";
+  }
   if (NULL == (ofile.ofp = fopen(ofile.fnam, "wb"))) {
     return ERR_IO;
   }
@@ -161,11 +168,12 @@ END_NORMAL:
 argscan(int argc, const char **argv)
 {
   gribscan_err_t r = ERR_NOINPUT;
-  const char *ofnam = NULL;
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
       if (argv[i][1] == 'o') {
-        ofnam = argv[i] + 2;
+        // explicit open
+        r = save_open(argv[i] + 2);
+        if (r != GSE_OKAY) break;
       } else if (argv[i][1] == 'f') {
         sfilter = argv[i] + 2;
       } else if (argv[i][1] == 'a') {
@@ -176,7 +184,8 @@ argscan(int argc, const char **argv)
         break;
       }
     } else {
-      r = save_open(ofnam);
+      // implicit open
+      r = save_open(NULL);
       if (r != GSE_OKAY) break;
       r = grib2scan_by_filename(argv[i]);
       if (r != GSE_OKAY) break;
