@@ -8,8 +8,6 @@
 #include "visual.h"
 #include "mymalloc.h" // only for mymemstat();
 
-#define streq(a, b) (strcmp((a),(b))==0)
-
 static struct ofile_t {
   const char *fnam;
   FILE *ofp;
