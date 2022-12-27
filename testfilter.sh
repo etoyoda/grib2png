@@ -551,7 +551,7 @@ b20221220T1200Z   RAIN f+0    d+7920 v101325.0
 EOF
 
 rm -f z.log
-./gribslim -ff0=d0=p0=AA -o/dev/null sample.gsm > z.log
+./gribslim -ff0=d0=p0=KK -o/dev/null sample.gsm > z.log
 diff -- z.log - <<EOF
 b20221220T1200Z      T f+0    d+0    v101302.5
 b20221220T1200Z      T f+0    d+0    v100000.0
@@ -601,7 +601,7 @@ b20221220T1200Z   RAIN f+0    d+7920 v101325.0
 EOF
 
 rm -f z.log
-./gribslim -fpx108=,d1440.L,A -o/dev/null sample.gsm > z.log
+./gribslim -fpx108=,d1440.L,K -o/dev/null sample.gsm > z.log
 diff -- z.log - <<EOF
 b20221220T1200Z   RAIN f+0    d+360  v101325.0
 b20221220T1200Z   RAIN f+0    d+720  v101325.0
