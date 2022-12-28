@@ -58,7 +58,7 @@ save_data(const struct grib2secs *gsp)
     ofile.ids = gsp->ids;
     ofile.pos += gsp->idslen;
   } else {
-    if (gsp->ids != ofile.ids) {
+    if ((gsp->ids != ofile.ids) && memcmp(gsp->ids, ofile.ids, 21)) {
       fprintf(stderr, "inconsistent ids\n");
       return ERR_BADGRIB;
     }

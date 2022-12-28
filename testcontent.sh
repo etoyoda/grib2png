@@ -69,4 +69,11 @@ diff -- z.sum - <<EOF
 EOF
 rm -f z.sum
 
-rm -f z.log z2.log z.grib z2.grib
+rm -f z.log
+./gribslim -oz.grib -f'p[T]=v85000<!g0=&&' sample.gsm
+./gribslim -oz2.grib -f'p[T]=v85000<!g360=&&' sample.gsm
+./gribslim -oz3.grib -a z.grib z2.grib
+./gribslim -o/dev/null z3.grib
+
+rm -f z*.log z*.grib
+
