@@ -55,11 +55,15 @@ save_data(const struct grib2secs *gsp)
     if (1 != fwrite(gsp->ids, gsp->idslen, 1, ofile.ofp)) {
       return ERR_IO;
     }
-    ofile.ids = gsp->ids;
+    ofile.ids = mydup(gsp->ids, gsp->idslen);
     ofile.pos += gsp->idslen;
   } else {
-    if ((gsp->ids != ofile.ids) && memcmp(gsp->ids, ofile.ids, 21)) {
+    if (memcmp(gsp->ids, ofile.ids, gsp->idslen)) {
       fprintf(stderr, "inconsistent ids\n");
+      fprintf(stderr, "\t%p\t%p\n", gsp->ids, ofile.ids);
+      for (int i = 0; i < 21; i++) {
+        fprintf(stderr, "\t%02x\t%02x\n", gsp->ids[i], ofile.ids[i]);
+      }
       return ERR_BADGRIB;
     }
   }
@@ -68,10 +72,10 @@ save_data(const struct grib2secs *gsp)
     if (1 != fwrite(gsp->gds, gsp->gdslen, 1, ofile.ofp)) {
       return ERR_IO;
     }
-    ofile.gds = gsp->gds;
+    ofile.gds = mydup(gsp->gds, gsp->gdslen);
     ofile.pos += gsp->gdslen;
   } else {
-    if (gsp->gds != ofile.gds) {
+    if (memcmp(gsp->gds, ofile.gds, gsp->gdslen)) {
       fprintf(stderr, "inconsistent gds\n");
       return ERR_BADGRIB;
     }
