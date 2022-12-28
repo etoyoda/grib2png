@@ -173,7 +173,7 @@ argscan(int argc, const char **argv)
       if (argv[i][1] == 'o') {
         // explicit open
         r = save_open(argv[i] + 2);
-        if (r != GSE_OKAY) break;
+        if (r != GSE_OKAY) goto BARF;
       } else if (argv[i][1] == 'f') {
         sfilter = argv[i] + 2;
       } else if (argv[i][1] == 'a') {
@@ -181,18 +181,19 @@ argscan(int argc, const char **argv)
       } else {
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         r = GSE_JUSTWARN;
-        break;
+        goto BARF;
       }
     } else {
       // implicit open
       r = save_open(NULL);
-      if (r != GSE_OKAY) break;
+      if (r != GSE_OKAY) goto BARF;
       r = grib2scan_by_filename(argv[i]);
-      if (r != GSE_OKAY) break;
-      r = save_close();
-      if (r != GSE_OKAY) break;
+      if (r != GSE_OKAY) goto BARF;
     }
   }
+BARF:
+  if (r != GSE_OKAY) return r;
+  r = save_close();
   return r;
 }
 
