@@ -319,6 +319,28 @@ get_vlevel(const grib2secs_t *gsp)
   return r;
 }
 
+  long
+get_perturb(const grib2secs_t *gsp)
+{
+  unsigned pdst;
+  if (gsp->pdslen == 0)
+    return LONG_MAX;
+  pdst = ui2(gsp->pds + 7);
+  switch (pdst) {
+  case 0:
+  case 8:
+    return -1;
+    break;
+  case 1:
+  case 11:
+    return gsp->pds[36];
+    break;
+  default:
+    fprintf(stderr, "unsupported PDS template 4.%u\n", pdst);
+    return LONG_MAX;
+  }
+}
+
 // 引数を iparm_t にするためには次のケースを全部列挙しなければならない
   const char *
 param_name(unsigned long iparm)

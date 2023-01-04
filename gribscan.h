@@ -86,6 +86,8 @@ extern unsigned long
   get_parameter(const grib2secs_t *gsp);
 extern double
   get_vlevel(const grib2secs_t *gsp);
+extern long
+  get_perturb(const grib2secs_t *gsp);
 extern size_t
   get_npixels(const grib2secs_t *gsp);
 

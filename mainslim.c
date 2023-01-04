@@ -135,13 +135,14 @@ checksec7(const struct grib2secs *gsp)
   char sreftime[24];
   unsigned long iparm;
   double vlev;
-  long ftime, dura;
+  long ftime, dura, imemb;
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
   iparm = get_parameter(gsp);
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
+  imemb = get_perturb(gsp);
   // 要素と面の複合フィルタ
   switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev)) {
     case ERR_FSTACK: 
@@ -151,8 +152,8 @@ checksec7(const struct grib2secs *gsp)
   }
 
 SAVE:
-  printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf\n",
-    sreftime, param_name(iparm), ftime, dura, vlev);
+  printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf m%-+3ld\n",
+    sreftime, param_name(iparm), ftime, dura, vlev, imemb);
   r = save_data(gsp);
   goto END_NORMAL;
 
