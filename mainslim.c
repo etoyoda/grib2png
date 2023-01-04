@@ -144,7 +144,7 @@ checksec7(const struct grib2secs *gsp)
   dura = get_duration(gsp);
   imemb = get_perturb(gsp);
   // 要素と面の複合フィルタ
-  switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev)) {
+  switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev, imemb)) {
     case ERR_FSTACK: 
     case GSE_SKIP: goto END_SKIP; break;
     default:

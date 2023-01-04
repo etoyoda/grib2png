@@ -118,4 +118,5 @@ extern gribscan_err_t
   iparm_t param,
   long ftime,
   long dura,
-  double vlev);
+  double vlev,
+  long memb);

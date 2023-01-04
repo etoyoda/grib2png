@@ -46,7 +46,8 @@ gribscan_filter(const char *sfilter,
   iparm_t param,
   long ftime,
   long dura,
-  double vlev)
+  double vlev,
+  long memb)
 {
   const char *sptr = sfilter;
   char c;
@@ -96,6 +97,10 @@ gribscan_filter(const char *sfilter,
     case 'v': // vertical level
       PUSH
       *tos = vlev;
+      break;
+    case 'm': // member number (i.e. perturbation number)
+      PUSH
+      *tos = memb;
       break;
     // === BINARY OPERATORS ===
     case '&':
