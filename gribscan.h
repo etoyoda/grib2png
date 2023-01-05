@@ -18,7 +18,7 @@ typedef enum gribscan_err_t {
 } gribscan_err_t;
 
 typedef struct grib2secs {
-  // ISはここだけを保存している
+  // comes from IS (indicator section) of the GRIB message
   unsigned discipline;
   size_t msglen;
   unsigned char *ids, *gds, *pds, *drs, *bms, *ds;
@@ -49,7 +49,8 @@ typedef enum iparm_t {
   IPARM_Z      = 0x000305,
 } iparm_t;
 
-// 投影法パラメタ。とはいっても今のところは正距円筒図法だけ想定している。
+// map projection parameters
+// currently only equidistant cylindrical is supported.
 typedef struct bounding_t {
   double n, w, s, e;
   double di, dj;
@@ -86,7 +87,7 @@ extern unsigned long
   get_parameter(const grib2secs_t *gsp);
 extern double
   get_vlevel(const grib2secs_t *gsp);
-extern long
+extern double
   get_perturb(const grib2secs_t *gsp);
 extern size_t
   get_npixels(const grib2secs_t *gsp);
@@ -119,4 +120,4 @@ extern gribscan_err_t
   long ftime,
   long dura,
   double vlev,
-  long memb);
+  double memb);

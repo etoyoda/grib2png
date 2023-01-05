@@ -47,7 +47,7 @@ gribscan_filter(const char *sfilter,
   long ftime,
   long dura,
   double vlev,
-  long memb)
+  double memb)
 {
   const char *sptr = sfilter;
   char c;

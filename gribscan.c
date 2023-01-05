@@ -168,6 +168,7 @@ get_parameter(const grib2secs_t *gsp)
   pdst = ui2(gsp->pds + 7);
   switch (pdst) {
   case 0:
+  case 1:
   case 8:
   case 11:
     r |= ui2(gsp->pds + 9);
@@ -187,6 +188,7 @@ set_parameter(grib2secs_t *gsp, iparm_t iparm)
   unsigned pdst = ui2(gsp->pds + 7);
   switch (pdst) {
   case 0:
+  case 1:
   case 8:
   case 11:
     gsp->pds[9] = (iparm & 0xFF00) >> 8;
@@ -209,6 +211,7 @@ get_ftime(const grib2secs_t *gsp)
   pdst = ui2(gsp->pds + 7);
   switch (pdst) {
   case 0:
+  case 1:
   case 8:
   case 11:
     tunits = gsp->pds[17];
@@ -244,6 +247,7 @@ get_duration(const grib2secs_t *gsp)
   pdst = ui2(gsp->pds + 7);
   switch (pdst) {
   case 0:
+  case 1:
     return 0;
   case 8:
     nranges = gsp->pds[41];
@@ -288,6 +292,7 @@ get_vlevel(const grib2secs_t *gsp)
   pdst = ui2(gsp->pds + 7);
   switch (pdst) {
   case 0:
+  case 1:
   case 8:
   case 11:
     vtype = gsp->pds[22];
@@ -319,25 +324,50 @@ get_vlevel(const grib2secs_t *gsp)
   return r;
 }
 
-  long
+  double
 get_perturb(const grib2secs_t *gsp)
 {
   unsigned pdst;
+  unsigned ptype;
+  unsigned pnum;
   if (gsp->pdslen == 0)
     return LONG_MAX;
   pdst = ui2(gsp->pds + 7);
   switch (pdst) {
   case 0:
   case 8:
-    return -1;
+    return -0.0;
     break;
   case 1:
   case 11:
-    return gsp->pds[36];
+    ptype = gsp->pds[34];
+    pnum = gsp->pds[35];
     break;
   default:
     fprintf(stderr, "unsupported PDS template 4.%u\n", pdst);
-    return LONG_MAX;
+    return nan("");
+  }
+  switch (ptype) {
+  case 0:
+    return 0.0;
+    break;
+  case 1:
+    return -0.0;
+    break;
+  case 2:
+    return -(double)pnum;
+    break;
+  case 3:
+    return +(double)pnum;
+    break;
+  case 4:
+    return 0.5;
+    break;
+  default:
+    fprintf(stderr, "unsupported PDS 4.%u perturbation type %u\n",
+      pdst, ptype);
+    return nan("");
+    break;
   }
 }
 

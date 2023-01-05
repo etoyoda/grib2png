@@ -134,17 +134,17 @@ checksec7(const struct grib2secs *gsp)
   struct tm t;
   char sreftime[24];
   unsigned long iparm;
-  double vlev;
-  long ftime, dura, imemb;
+  double vlev, memb;
+  long ftime, dura;
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
   iparm = get_parameter(gsp);
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
-  imemb = get_perturb(gsp);
+  memb = get_perturb(gsp);
   // 要素と面の複合フィルタ
-  switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev, imemb)) {
+  switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev, memb)) {
     case ERR_FSTACK: 
     case GSE_SKIP: goto END_SKIP; break;
     default:
@@ -152,8 +152,8 @@ checksec7(const struct grib2secs *gsp)
   }
 
 SAVE:
-  printf("b%s %6s f%-+5ld d%-+5ld v%-8.1lf m%-+3ld\n",
-    sreftime, param_name(iparm), ftime, dura, vlev, imemb);
+  printf("b%s %6s f%-+5ld d%-+5ld v%-8.1f m%-+4.3g\n",
+    sreftime, param_name(iparm), ftime, dura, vlev, memb);
   r = save_data(gsp);
   goto END_NORMAL;
 
@@ -178,6 +178,9 @@ argscan(int argc, const char **argv)
       if (argv[i][1] == 'o') {
         // explicit open
         r = save_open(argv[i] + 2);
+        if (r != GSE_OKAY) goto BARF;
+      } else if (argv[i][1] == 'q') {
+        r = save_open("/dev/null");
         if (r != GSE_OKAY) goto BARF;
       } else if (argv[i][1] == 'f') {
         sfilter = argv[i] + 2;
