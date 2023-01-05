@@ -50,7 +50,12 @@ save_open(const char *ofnam)
   gribscan_err_t
 save_data(const struct grib2secs *gsp)
 {
-  //--- IDS
+  //--- check IS (discipline number)
+  if (gsp->discipline != 0) {
+    fprintf(stderr, "discipline number %u not supported\n", gsp->discipline);
+    return ERR_BADGRIB;
+  }
+  //--- write or check IDS
   if (ofile.ids == NULL) {
     if (1 != fwrite(gsp->ids, gsp->idslen, 1, ofile.ofp)) {
       return ERR_IO;
@@ -67,7 +72,7 @@ save_data(const struct grib2secs *gsp)
       return ERR_BADGRIB;
     }
   }
-  //--- GDS
+  //--- write or check GDS
   if (ofile.gds == NULL) {
     if (1 != fwrite(gsp->gds, gsp->gdslen, 1, ofile.ofp)) {
       return ERR_IO;
