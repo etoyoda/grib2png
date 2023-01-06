@@ -168,8 +168,8 @@ checksec7(const struct grib2secs *gsp)
   }
 
 SAVE:
-  printf("b%s %6s f%-+5ld d%-+5ld v%-8.1f m%-+4.3g\n",
-    sreftime, param_name(iparm), ftime, dura, vlev, memb);
+  printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
+    sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
   r = save_data(gsp);
   goto END_NORMAL;
 
