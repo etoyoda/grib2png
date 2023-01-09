@@ -12,12 +12,21 @@ static struct ofile_t {
   const char *fnam;
   FILE *ofp;
   size_t pos;
+  unsigned char sec0[16];
   unsigned char *ids;
   unsigned char *gds;
 } ofile = {
-  NULL,
-  NULL, 0,
-  NULL, NULL
+  NULL, // fnam
+  NULL, // ofp
+  0, // pos
+  { 'G','R','I','B',
+    0,0,
+    0, // discipline
+    2, // edition - fixed 2
+    0,0,0,0, 0,0,0,0  // size of msg
+  },
+  NULL, // ids
+  NULL // gds
 };
 
 static const char *sfilter = "p[VVPa]=v70000=v30000=|&,p[rDIV]=v85000=v25000=|&,p[rVOR]=v50000=&,p[U]=p[V]=p[T]=p[RH]=p[Z]=||||,|||,g361<&,p[Z]=v50000=&p[RAIN]=p[Pmsl]=||,g720%0=g360=|&,|";
@@ -25,10 +34,6 @@ static const char *sfilter = "p[VVPa]=v70000=v30000=|&,p[rDIV]=v85000=v25000=|&,
   gribscan_err_t
 save_open(const char *ofnam)
 {
-  unsigned char sec0[16] = { 'G','R','I','B',
-    0,0,0,2,
-    0,0,0,0, 0,0,0,0  // size of msg
-  };
   if (ofnam) {
     ofile.fnam = ofnam;
   } else {
@@ -40,10 +45,7 @@ save_open(const char *ofnam)
   if (NULL == (ofile.ofp = fopen(ofile.fnam, "wb"))) {
     return ERR_IO;
   }
-  if (1 != fwrite(sec0, sizeof sec0, 1, ofile.ofp)) {
-    return ERR_IO;
-  }
-  ofile.pos = sizeof sec0;
+  ofile.pos = 0;
   return GSE_OKAY;
 }
 
@@ -51,9 +53,18 @@ save_open(const char *ofnam)
 save_data(const struct grib2secs *gsp)
 {
   //--- check IS (discipline number)
-  if (gsp->discipline != 0) {
-    fprintf(stderr, "discipline number %u not supported\n", gsp->discipline);
-    return ERR_BADGRIB;
+  if (ofile.pos == 0) {
+    ofile.sec0[6] = gsp->discipline;
+    if (1 != fwrite(ofile.sec0, sizeof ofile.sec0, 1, ofile.ofp)) {
+      return ERR_IO;
+    }
+    ofile.pos = sizeof ofile.sec0;
+  } else {
+    if (gsp->discipline != ofile.sec0[6]) {
+      fprintf(stderr, "discipline number %u != %u\n", gsp->discipline,
+        ofile.sec0[6]);
+      return ERR_BADGRIB;
+    }
   }
   //--- write or check IDS
   if (ofile.ids == NULL) {
@@ -157,8 +168,8 @@ checksec7(const struct grib2secs *gsp)
   }
 
 SAVE:
-  printf("b%s %6s f%-+5ld d%-+5ld v%-8.1f m%-+4.3g\n",
-    sreftime, param_name(iparm), ftime, dura, vlev, memb);
+  printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
+    sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
   r = save_data(gsp);
   goto END_NORMAL;
 
