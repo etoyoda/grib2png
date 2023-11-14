@@ -224,8 +224,19 @@ setpixel_t(png_bytep pixel, double val)
     pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; break;
   case -9:
   case -10:
+  case -12:
   default:
-    pixel[0] = 0; pixel[1] = 32; pixel[2] = 128; break;
+    frac /= 2;
+    pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; break;
+  case -15:
+  case -18:
+  case -21:
+  case -24:
+    frac /= 2;
+    pixel[0] = 64; pixel[1] = 32; pixel[2] = 128; break;
+  case -27:
+  case -30:
+    pixel[0] = 64; pixel[1] = 32; pixel[2] = 128; break;
   }
   pixel[3] = frac;
 }
