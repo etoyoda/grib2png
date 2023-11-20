@@ -547,8 +547,8 @@ drawfront(png_bytep *ovector, const double *gbuf,
       nx = (sbuf[ip1+j*owidth]-sbuf[im1+j*owidth])/dgbuf[i+j*owidth];
       ny = (sbuf[i+(j+1)*owidth]-sbuf[i+(j-1)*owidth])/dgbuf[i+j*owidth];
       ddgbuf[i + j*owidth] = 
-        nx * (dgbuf[ip1+j*owidth] - dgbuf[im1+j*owidth])
-      + ny * (gbuf[i+(j+1)*owidth] - dgbuf[i+(j-1)*owidth]);
+      - nx * (dgbuf[ip1+j*owidth] - dgbuf[im1+j*owidth])
+      - ny * (dgbuf[i+(j+1)*owidth] - dgbuf[i+(j-1)*owidth]);
     }
   }
   for (size_t j = 1; j < oheight - 1; j++) {
