@@ -541,7 +541,8 @@ drawfront(png_bytep *ovector, const double *gbuf,
         (ddgbuf[i+(j+1)*owidth] * ddgbuf[i+j*owidth] < 0.0)
         )
       ){
-        pixel[0] = pixel[1] = pixel[2] = pixel[3] = 0;
+        pixel[0] = 0;
+        pixel[1] = pixel[2] = pixel[3] = 255;
       }
     }
   }
@@ -585,6 +586,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_t(pixel, gbuf[i + j * owidth]);
       }
     }
+    drawfront(ovector, gbuf, owidth, oheight, pal);
     break;
   case PALETTE_WINDS_SFC:
     for (size_t j = 0; j < oheight; j++) {
