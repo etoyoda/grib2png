@@ -520,19 +520,21 @@ drawfront(png_bytep *ovector, const double *gbuf,
         gbuf[i + (j+1)*owidth] - gbuf[i + (j-1)*owidth]);
     }
   }
-  for (size_t j = 1; j < oheight - 1; j++) {
-    for (size_t i = 1; i < owidth - 1; i++) {
+  for (size_t j = 2; j < oheight - 2; j++) {
+    for (size_t i = 2; i < owidth - 2; i++) {
       double nx, ny;
+      nx = (gbuf[i+1+j*owidth]-gbuf[i-1+j*owidth])/dgbuf[i+j*owidth];
+      ny = (gbuf[i+(j+1)*owidth]-gbuf[i+(j-1)*owidth])/dgbuf[i+j*owidth];
       ddgbuf[i + j*owidth] = 
-        gbuf[i+1+j*owidth] + gbuf[i-1+j*owidth] - gbuf[i+j*owidth]*2 +
-        gbuf[i+(j+1)*owidth] + gbuf[i+(j-1)*owidth] - gbuf[i+j*owidth]*2;
+        nx * (dgbuf[i+1+j*owidth] - dgbuf[i-1+j*owidth])
+      + ny * (gbuf[i+(j+1)*owidth] - dgbuf[i+(j-1)*owidth]);
     }
   }
   for (size_t j = 2; j < oheight - 2; j++) {
     for (size_t i = 2; i < owidth - 2; i++) {
       png_bytep pixel = ovector[j] + i * 4;
       if (
-        (dgbuf[i+j*owidth] > 0.1) && (
+        (dgbuf[i+j*owidth] > 3.0) && (
         (ddgbuf[(i-1)+j*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
         (ddgbuf[(i+1)+j*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
         (ddgbuf[i+(j-1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
