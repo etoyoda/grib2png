@@ -509,6 +509,7 @@ contour_z(png_bytep *ovector, const double *gbuf,
 drawfront(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
 {
+  double mingrad;
   double *sbuf; // smoothed gbuf
   double *dgbuf; // |nabla_n sbuf|
   double *ddgbuf; // nabla_n |nabla_n sbuf|
@@ -518,15 +519,16 @@ drawfront(png_bytep *ovector, const double *gbuf,
   xbuf = dgbuf + owidth * oheight;
   ddgbuf = xbuf + owidth * oheight;
   memcpy(sbuf, gbuf, owidth * oheight * sizeof(double));
-  for (size_t j = 1; j < oheight - 1; j++) {
+  for (size_t j = 3; j < oheight - 3; j++) {
     for (size_t i = 0; i < owidth; i++) {
-      size_t ip1 = (i + 1) % owidth;
-      size_t im1 = (i - 1) % owidth;
-      sbuf[i+j*owidth] = (
-        gbuf[im1+(j-1)*owidth] + gbuf[im1+j*owidth] + gbuf[im1+(j+1)*owidth]
-      + gbuf[i  +(j-1)*owidth] + gbuf[i  +j*owidth] + gbuf[i  +(j+1)*owidth]
-      + gbuf[ip1+(j-1)*owidth] + gbuf[ip1+j*owidth] + gbuf[ip1+(j+1)*owidth]
-      ) / 9.0;
+      double sum;
+      sum = 0.0;
+      for (size_t jc = j - 3; jc <= j + 3; jc++) {
+        for (int ics = i - 3; ics <= i + 3; ics++) {
+          sum += gbuf[(ics % owidth)+jc*owidth];
+        }
+      }
+      sbuf[i+j*owidth] = sum / 49.0;
     }
   }
   for (size_t j = 1; j < oheight - 1; j++) {
@@ -561,13 +563,22 @@ drawfront(png_bytep *ovector, const double *gbuf,
       ) / 9.0;
     }
   }
+  switch (pal) {
+  case PALETTE_T:
+    mingrad = 16.0;
+    break;
+  case PALETTE_papT:
+  default:
+    mingrad = 32.0;
+    break;
+  }
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
       size_t im1 = (i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
       if (
-        (dgbuf[i+j*owidth] > 32.0) && (
+        (dgbuf[i+j*owidth] > mingrad) && (
           (ddgbuf[i+j*owidth] == 0.0) ||
           (ddgbuf[im1+(j-1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
           (ddgbuf[i  +(j-1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
