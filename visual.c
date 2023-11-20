@@ -509,44 +509,71 @@ contour_z(png_bytep *ovector, const double *gbuf,
 drawfront(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
 {
-  double *dgbuf; // |nabla_n gbuf|
-  double *ddgbuf; // nabla_n |nabla_n gbuf|
-  dgbuf = malloc(sizeof(double) * owidth * oheight * 2);
+  double *sbuf; // smoothed gbuf
+  double *dgbuf; // |nabla_n sbuf|
+  double *ddgbuf; // nabla_n |nabla_n sbuf|
+  sbuf = calloc(owidth * oheight * 3, sizeof(double));
+  dgbuf = sbuf + owidth * oheight;
   ddgbuf = dgbuf + owidth * oheight;
+  memcpy(sbuf, gbuf, owidth * oheight * sizeof(double));
   for (size_t j = 1; j < oheight - 1; j++) {
-    for (size_t i = 1; i < owidth - 1; i++) {
-      dgbuf[i + j*owidth] = 
-        hypot(gbuf[i+1 + j*owidth] - gbuf[i-1 + j*owidth],
-        gbuf[i + (j+1)*owidth] - gbuf[i + (j-1)*owidth]);
+    for (size_t i = 0; i < owidth; i++) {
+      size_t ip1 = (i + 1) % owidth;
+      size_t ip2 = (i + 2) % owidth;
+      size_t im1 = (i - 1) % owidth;
+      size_t im2 = (i - 2) % owidth;
+      sbuf[i+j*owidth] = (
+        gbuf[im1+(j-1)*owidth] + gbuf[im1+j*owidth] + gbuf[im1+(j+1)*owidth]
+      + gbuf[i  +(j-1)*owidth] + gbuf[i  +j*owidth] + gbuf[i  +(j+1)*owidth]
+      + gbuf[ip1+(j-1)*owidth] + gbuf[ip1+j*owidth] + gbuf[ip1+(j+1)*owidth]
+      + gbuf[im2+j*owidth] + gbuf[ip2+j*owidth]
+      ) / 11.0;
     }
   }
-  for (size_t j = 2; j < oheight - 2; j++) {
-    for (size_t i = 2; i < owidth - 2; i++) {
+  for (size_t j = 1; j < oheight - 1; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      size_t ip1 = (i + 1) % owidth;
+      size_t im1 = (i - 1) % owidth;
+      dgbuf[i + j*owidth] = 
+        hypot(sbuf[ip1+j*owidth] - sbuf[im1+j*owidth],
+        sbuf[i+(j+1)*owidth] - sbuf[i+(j-1)*owidth]);
+    }
+  }
+  for (size_t j = 1; j < oheight - 1; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      size_t ip1 = (i + 1) % owidth;
+      size_t im1 = (i - 1) % owidth;
       double nx, ny;
-      nx = (gbuf[i+1+j*owidth]-gbuf[i-1+j*owidth])/dgbuf[i+j*owidth];
-      ny = (gbuf[i+(j+1)*owidth]-gbuf[i+(j-1)*owidth])/dgbuf[i+j*owidth];
+      nx = (sbuf[ip1+j*owidth]-sbuf[im1+j*owidth])/dgbuf[i+j*owidth];
+      ny = (sbuf[i+(j+1)*owidth]-sbuf[i+(j-1)*owidth])/dgbuf[i+j*owidth];
       ddgbuf[i + j*owidth] = 
-        nx * (dgbuf[i+1+j*owidth] - dgbuf[i-1+j*owidth])
+        nx * (dgbuf[ip1+j*owidth] - dgbuf[im1+j*owidth])
       + ny * (gbuf[i+(j+1)*owidth] - dgbuf[i+(j-1)*owidth]);
     }
   }
-  for (size_t j = 2; j < oheight - 2; j++) {
-    for (size_t i = 2; i < owidth - 2; i++) {
+  for (size_t j = 1; j < oheight - 1; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      size_t ip1 = (i + 1) % owidth;
+      size_t im1 = (i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
       if (
-        (dgbuf[i+j*owidth] > 3.0) && (
-        (ddgbuf[(i-1)+j*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
-        (ddgbuf[(i+1)+j*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
-        (ddgbuf[i+(j-1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
-        (ddgbuf[i+(j+1)*owidth] * ddgbuf[i+j*owidth] < 0.0)
+        (dgbuf[i+j*owidth] > 15.0) && (
+          (ddgbuf[i+j*owidth] == 0.0) ||
+          (ddgbuf[im1+(j-1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
+          (ddgbuf[i  +(j-1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
+          (ddgbuf[ip1+(j-1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
+          (ddgbuf[im1+j    *owidth] * ddgbuf[i+j*owidth] < 0.0) ||
+          (ddgbuf[ip1+j    *owidth] * ddgbuf[i+j*owidth] < 0.0) ||
+          (ddgbuf[im1+(j+1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
+          (ddgbuf[i  +(j+1)*owidth] * ddgbuf[i+j*owidth] < 0.0) ||
+          (ddgbuf[ip1+(j+1)*owidth] * ddgbuf[i+j*owidth] < 0.0)
         )
       ){
-        pixel[0] = 0;
-        pixel[1] = pixel[2] = pixel[3] = 255;
+        pixel[0] = 0; pixel[1] = pixel[2] = 64; pixel[3] = 255;
       }
     }
   }
-  free(dgbuf);
+  free(sbuf);
   return 0;
 }
 
