@@ -566,6 +566,9 @@ drawfront(png_bytep *ovector, const double *gbuf,
       tfpbuf[i + j*owidth] = 
       - nx * (dgbuf[ip1+j*owidth] - dgbuf[im1+j*owidth])
       - ny * (dgbuf[i+(j+1)*owidth] - dgbuf[i+(j-1)*owidth]);
+      xbuf[i+j*owidth] =
+        sbuf[ip1+j*owidth] + sbuf[im1+j*owidth]
+      + sbuf[i+(j+1)*owidth] + sbuf[i+(j-1)*owidth] - 4*sbuf[i+j*owidth];
     }
   }
   switch (pal) {
@@ -583,8 +586,24 @@ drawfront(png_bytep *ovector, const double *gbuf,
       size_t im1 = (i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
       if (
+        (dgbuf[i+j*owidth] > mingrad) &&
+        (xbuf[i+j*owidth] > 0.0) && (
+          (xbuf[im1+(j-1)*owidth] * xbuf[i+j*owidth] < 0.0) ||
+          (xbuf[i  +(j-1)*owidth] * xbuf[i+j*owidth] < 0.0) ||
+          (xbuf[ip1+(j-1)*owidth] * xbuf[i+j*owidth] < 0.0) ||
+          (xbuf[im1+j    *owidth] * xbuf[i+j*owidth] < 0.0) ||
+          (xbuf[ip1+j    *owidth] * xbuf[i+j*owidth] < 0.0) ||
+          (xbuf[im1+(j+1)*owidth] * xbuf[i+j*owidth] < 0.0) ||
+          (xbuf[i  +(j+1)*owidth] * xbuf[i+j*owidth] < 0.0) ||
+          (xbuf[ip1+(j+1)*owidth] * xbuf[i+j*owidth] < 0.0)
+        )
+      ){
+        pixel[0] = pixel[1] = 12; pixel[2] = 128; pixel[3] = 255;
+      }
+      if (
+        (dgbuf[i+j*owidth] > mingrad) &&
         (tfpbuf[i+j*owidth] > 0.0) &&
-        (dgbuf[i+j*owidth] > mingrad) && (
+        (
           (tfpbuf[im1+(j-1)*owidth] * tfpbuf[i+j*owidth] < 0.0) ||
           (tfpbuf[i  +(j-1)*owidth] * tfpbuf[i+j*owidth] < 0.0) ||
           (tfpbuf[ip1+(j-1)*owidth] * tfpbuf[i+j*owidth] < 0.0) ||
@@ -595,7 +614,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
           (tfpbuf[ip1+(j+1)*owidth] * tfpbuf[i+j*owidth] < 0.0)
         )
       ){
-        pixel[0] = 64; pixel[1] = pixel[2] = 12; pixel[3] = 255;
+        pixel[0] = 128; pixel[1] = pixel[2] = 12; pixel[3] = 255;
       }
     }
   }
