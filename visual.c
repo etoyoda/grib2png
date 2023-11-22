@@ -661,6 +661,93 @@ drawfront(png_bytep *ovector, const double *gbuf,
 }
 
   int
+drawshear(png_bytep *ovector, const double *gbuf,
+  size_t owidth, size_t oheight)
+{
+  double *sbuf; 
+  double *rbuf;
+  double *lbuf;
+  double *dbuf;
+  sbuf = calloc(owidth * oheight * 4, sizeof(double));
+  rbuf = sbuf + owidth * oheight;
+  lbuf = rbuf + owidth * oheight;
+  dbuf = lbuf + owidth * oheight;
+  // sbuf: smoothed gbuf
+  memcpy(sbuf, gbuf, owidth * oheight * sizeof(double));
+  for (size_t j = 2; j < oheight - 2; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      double sum;
+      sum = 0.0;
+      for (size_t jc = j - 2; jc <= j + 2; jc++) {
+        for (int ics = i - 2; ics <= i + 2; ics++) {
+          sum += gbuf[(ics % owidth)+jc*owidth];
+        }
+      }
+      sbuf[i+j*owidth] = sum / 25.0;
+    }
+  }
+  // rbuf: 180以下を360増して360連続性を確保
+  for (size_t ij = 0; ij < oheight*owidth; ij++) {
+    rbuf[ij] = 180.0 + fmod(sbuf[ij] + 180.0, 360.0);
+  }
+  // lbuf: lapracian(WD) 
+  // dbuf: abs(grad WD)
+  for (size_t j = 1; j < oheight - 1; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      double *buf;
+      size_t ip1 = (i + 1) % owidth;
+      size_t im1 = (i - 1) % owidth;
+      buf = (sbuf[i+j*owidth] > 180.0) ? rbuf : sbuf;
+      lbuf[i+j*owidth] =
+        buf[ip1+j*owidth] + buf[im1+j*owidth]
+      + buf[i+(j+1)*owidth] + buf[i+(j-1)*owidth] - 4*buf[i+j*owidth];
+      dbuf[i+j*owidth] = hypot(
+        buf[ip1+j*owidth] - buf[im1+j*owidth],
+        buf[i+(j+1)*owidth] - buf[i+(j-1)*owidth]);
+    }
+  }
+  // sbuf: smooth lbuf
+  memcpy(sbuf, lbuf, owidth * oheight * sizeof(double));
+  for (size_t j = 2; j < oheight - 2; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      double sum;
+      sum = 0.0;
+      for (size_t jc = j - 2; jc <= j + 2; jc++) {
+        for (int ics = i - 2; ics <= i + 2; ics++) {
+          sum += lbuf[(ics % owidth)+jc*owidth];
+        }
+      }
+      sbuf[i+j*owidth] = sum / 25.0;
+    }
+  }
+  // draw lbuf=0 line
+  for (size_t j = 1; j < oheight - 1; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      size_t ip1 = (i + 1) % owidth;
+      size_t im1 = (i - 1) % owidth;
+      png_bytep pixel = ovector[j] + i * 4;
+      if (
+        (dbuf[i+j*owidth] > 20.0) &&
+        (sbuf[i+j*owidth] > 0.0) && (
+          (sbuf[im1+(j-1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
+          (sbuf[i  +(j-1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
+          (sbuf[ip1+(j-1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
+          (sbuf[im1+j    *owidth] * sbuf[i+j*owidth] < 0.0) ||
+          (sbuf[ip1+j    *owidth] * sbuf[i+j*owidth] < 0.0) ||
+          (sbuf[im1+(j+1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
+          (sbuf[i  +(j+1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
+          (sbuf[ip1+(j+1)*owidth] * sbuf[i+j*owidth] < 0.0)
+        )
+      ){
+        pixel[0] = pixel[1] = pixel[2] = 16; pixel[3] = 255;
+      }
+    }
+  }
+  free(sbuf);
+  return 0;
+}
+
+  int
 render(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
 {
@@ -721,6 +808,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_wd(pixel, gbuf[i + j * owidth]);
       }
     }
+    drawshear(ovector, gbuf, owidth, oheight);
     break;
   case PALETTE_RAIN6:
     for (size_t j = 0; j < oheight; j++) {
