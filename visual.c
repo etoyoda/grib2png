@@ -317,6 +317,27 @@ setpixel_winds(png_bytep pixel, double val)
   }
 }
 
+  void
+setpixel_wd(png_bytep pixel, double val)
+{
+  pixel[3] = (unsigned)fmod(val, 10.0) * 0x08 + 0x80;
+  if (val >= 300.0) {
+    pixel[0] = 64; pixel[1] = 242; pixel[2] = 255;
+  } else if (val >= 240.0) {
+    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255;
+  } else if (val >= 180.0) {
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0;
+  } else if (val >= 60.0) {
+    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0;
+  } else if (val >= 0.0) {
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104;
+  } else if (val < 0.0) {
+    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0;
+  } else {
+    pixel[0] = 0; pixel[1] = 0; pixel[2] = 0; pixel[3] = 0;
+  }
+}
+
 // コンター用なので pixel[3] を上書きしない
   void
 setpixel_pmsl(png_bytep pixel, double val)
@@ -673,6 +694,14 @@ render(png_bytep *ovector, const double *gbuf,
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
         setpixel_winds(pixel, gbuf[i + j * owidth]);
+      }
+    }
+    break;
+  case PALETTE_WD:
+    for (size_t j = 0; j < oheight; j++) {
+      for (size_t i = 0; i < owidth; i++) {
+        png_bytep pixel = ovector[j] + i * 4;
+        setpixel_wd(pixel, gbuf[i + j * owidth]);
       }
     }
     break;
