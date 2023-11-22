@@ -234,6 +234,35 @@ wdir(double u, double v)
   return atan2(v, u) / M_PI * 180.0 + 180.0;
 }
 
+// 風向だけは成分毎に投影してから算出する
+  gribscan_err_t
+project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
+  grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
+{
+  bounding_t b;
+  double *ubuf, *vbuf, *dbuf;
+  char filename[256];
+  size_t onx = ofp->xz - ofp->xa + 1;
+  size_t ony = ofp->yz - ofp->ya + 1;
+  gribscan_err_t r = decode_gds(gsp_v, &b);
+  //--- begin memory section
+  ubuf = malloc(sizeof(double) * onx * ony * 3);
+  if (ubuf == NULL) { return ERR_NOMEM; }
+  vbuf = ubuf + onx * ony;
+  dbuf = vbuf + onx * ony;
+  reproject(ubuf, &b, dbuf_u, ofp);
+  reproject(vbuf, &b, dbuf_v, ofp);
+  for (size_t ij = 0; ij < onx*ony; ij++) {
+    dbuf[ij] = wdir(ubuf[ij], vbuf[ij]);
+  }
+  set_parameter(gsp_v, IPARM_WD);
+  mkfilename(filename, sizeof filename, gsp_v, NULL);
+  r = gridsave(dbuf, onx, ony, PALETTE_GSI, filename, textv);
+  free(ubuf);
+  //--- end memory section
+  return r;
+}
+
 static FILE *text_fp = NULL;
 
   void
@@ -282,6 +311,11 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
   palette_t pal = (get_vlevel(gsp_u) >= 850.e2)
     ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
+  if (get_vlevel(gsp_u) == VLEVEL_Z10M) {
+    gribscan_err_t r;
+    r = project_winddir(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv);
+    if (r != GSE_OKAY) { return r; }
+  }
   return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
     IPARM_WINDS, pal, windspeed);
 }
