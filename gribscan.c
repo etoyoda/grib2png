@@ -383,6 +383,7 @@ param_name(unsigned long iparm)
   case 0x000101: return "RH";
   case 0x000107: return "RR1H";
   case 0x000108: return "RAIN";
+  case IPARM_WD: return "WD";
   case 0x000202: return "U";
   case 0x000203: return "V";
   case IPARM_WINDS: return "WINDS";
