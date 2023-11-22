@@ -258,7 +258,7 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   }
   set_parameter(gsp_v, IPARM_WD);
   mkfilename(filename, sizeof filename, gsp_v, NULL);
-  r = gridsave(dbuf, onx, ony, PALETTE_Z, filename, textv);
+  r = gridsave(dbuf, onx, ony, PALETTE_WD, filename, textv);
   free(ubuf);
   //--- end memory section
   return r;

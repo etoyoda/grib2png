@@ -11,7 +11,8 @@ typedef enum palette_t {
   PALETTE_VVPa,
   PALETTE_WINDS,
   PALETTE_WINDS_SFC,
-  PALETTE_Z
+  PALETTE_Z,
+  PALETTE_WD
 } palette_t;
 
   extern int
