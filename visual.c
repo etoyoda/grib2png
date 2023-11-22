@@ -320,22 +320,38 @@ setpixel_winds(png_bytep pixel, double val)
   void
 setpixel_wd(png_bytep pixel, double val)
 {
-  pixel[3] = (unsigned)fmod(val, 10.0) * 0x08 + 0x80;
-  if (val >= 300.0) {
-    pixel[0] = 64; pixel[1] = 242; pixel[2] = 255;
-  } else if (val >= 240.0) {
-    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255;
-  } else if (val >= 180.0) {
-    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0;
-  } else if (val >= 60.0) {
-    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0;
-  } else if (val >= 0.0) {
-    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104;
-  } else if (val < 0.0) {
-    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0;
-  } else {
-    pixel[0] = 0; pixel[1] = 0; pixel[2] = 0; pixel[3] = 0;
+  int ival = ceil(val / 15.0);
+  switch (ival) {
+    default:
+    case 24:
+    case  0: pixel[0] = 0x0F; pixel[1] = 0x21; pixel[2] = 0x8B; break;
+    case  1: pixel[0] = 0x09; pixel[1] = 0x3F; pixel[2] = 0x86; break;
+    case  2: pixel[0] = 0x05; pixel[1] = 0x5D; pixel[2] = 0x87; break;
+    case  3: pixel[0] = 0x00; pixel[1] = 0x7A; pixel[2] = 0x87; break;
+    case  4: pixel[0] = 0x00; pixel[1] = 0x86; pixel[2] = 0x78; break;
+    case  5: pixel[0] = 0x00; pixel[1] = 0x8F; pixel[2] = 0x62; break;
+    case  6: pixel[0] = 0x33; pixel[1] = 0xA2; pixel[2] = 0x3d; break;
+
+    case  7: pixel[0] = 0x66; pixel[1] = 0xB8; pixel[2] = 0x2B; break;
+    case  8: pixel[0] = 0x99; pixel[1] = 0xCF; pixel[2] = 0x15; break;
+    case  9: pixel[0] = 0xCC; pixel[1] = 0xE7; pixel[2] = 0x00; break;
+    case 10: pixel[0] = 0xFF; pixel[1] = 0xE6; pixel[2] = 0x00; break;
+    case 11: pixel[0] = 0xFF; pixel[1] = 0xCC; pixel[2] = 0x00; break;
+    case 12: pixel[0] = 0xFF; pixel[1] = 0x7F; pixel[2] = 0x00; break;
+    case 13: pixel[0] = 0xFF; pixel[1] = 0x59; pixel[2] = 0x0B; break;
+    case 14: pixel[0] = 0xFE; pixel[1] = 0x41; pixel[2] = 0x18; break;
+    case 15: pixel[0] = 0xFD; pixel[1] = 0x1A; pixel[2] = 0x1C; break;
+    case 16: pixel[0] = 0xEE; pixel[1] = 0x00; pixel[2] = 0x26; break;
+    case 17: pixel[0] = 0xD4; pixel[1] = 0x00; pixel[2] = 0x45; break;
+
+    case 18: pixel[0] = 0xAF; pixel[1] = 0x00; pixel[2] = 0x65; break;
+    case 19: pixel[0] = 0x77; pixel[1] = 0x00; pixel[2] = 0x71; break;
+    case 20: pixel[0] = 0x56; pixel[1] = 0x00; pixel[2] = 0x7D; break;
+    case 21: pixel[0] = 0x34; pixel[1] = 0x0C; pixel[2] = 0x81; break;
+    case 22: pixel[0] = 0x28; pixel[1] = 0x12; pixel[2] = 0x85; break;
+    case 23: pixel[0] = 0x1D; pixel[1] = 0x1A; pixel[2] = 0x88; break;
   }
+  pixel[3] = 0x80;
 }
 
 // コンター用なので pixel[3] を上書きしない

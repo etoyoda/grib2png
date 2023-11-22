@@ -253,8 +253,7 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   reproject(ubuf, &b, dbuf_u, ofp);
   reproject(vbuf, &b, dbuf_v, ofp);
   for (size_t ij = 0; ij < onx*ony; ij++) {
-    dbuf[ij] = (hypot(ubuf[ij], vbuf[ij]) > 33.0) ?
-      wdir(ubuf[ij], vbuf[ij]) : nan("");
+    dbuf[ij] = wdir(ubuf[ij], vbuf[ij]);
   }
   set_parameter(gsp_v, IPARM_WD);
   mkfilename(filename, sizeof filename, gsp_v, NULL);
