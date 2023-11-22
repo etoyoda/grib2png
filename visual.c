@@ -727,7 +727,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
       size_t im1 = (i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
       if (
-        (dbuf[i+j*owidth] > 20.0) &&
+        (dbuf[i+j*owidth] > 15.0) &&
         (sbuf[i+j*owidth] > 0.0) && (
           (sbuf[im1+(j-1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
           (sbuf[i  +(j-1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
