@@ -317,6 +317,7 @@ setpixel_winds(png_bytep pixel, double val)
   }
 }
 
+// さしあたり PCCS 24色 色相環をつかっている
   void
 setpixel_wd(png_bytep pixel, double val)
 {
