@@ -311,7 +311,7 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
   palette_t pal = (get_vlevel(gsp_u) >= 850.e2)
     ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
-  if (get_vlevel(gsp_u) == VLEVEL_Z10M) {
+  if (get_vlevel(gsp_u) >= 925.e2) {
     gribscan_err_t r;
     r = project_winddir(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv);
     if (r != GSE_OKAY) { return r; }
