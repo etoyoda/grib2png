@@ -690,7 +690,6 @@ drawshear(png_bytep *ovector, const double *gbuf,
   for (size_t ij = 0; ij < oheight*owidth; ij++) {
     rbuf[ij] = 180.0 + fmod(sbuf[ij] + 180.0, 360.0);
   }
-  // lbuf: lapracian(WD) 
   // dbuf: abs(grad WD)
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
@@ -698,12 +697,24 @@ drawshear(png_bytep *ovector, const double *gbuf,
       size_t ip1 = (i + 1) % owidth;
       size_t im1 = (i - 1) % owidth;
       buf = (sbuf[i+j*owidth] > 180.0) ? rbuf : sbuf;
-      lbuf[i+j*owidth] =
-        buf[ip1+j*owidth] + buf[im1+j*owidth]
-      + buf[i+(j+1)*owidth] + buf[i+(j-1)*owidth] - 4*buf[i+j*owidth];
       dbuf[i+j*owidth] = hypot(
         buf[ip1+j*owidth] - buf[im1+j*owidth],
         buf[i+(j+1)*owidth] - buf[i+(j-1)*owidth]);
+    }
+  }
+  // lbuf: lapracian(WD) 
+  for (size_t j = 1; j < oheight - 1; j++) {
+    for (size_t i = 0; i < owidth; i++) {
+      double *buf;
+      size_t ip1 = (i + 1) % owidth;
+      size_t im1 = (i - 1) % owidth;
+      double nx, ny;
+      buf = (sbuf[i+j*owidth] > 180.0) ? rbuf : sbuf;
+      nx = (buf[ip1+j*owidth] - buf[im1+j*owidth]) / dbuf[i+j*owidth];
+      ny = (buf[i+(j+1)*owidth] - buf[i+(j-1)*owidth]) / dbuf[i+j*owidth];
+      lbuf[i+j*owidth] =
+      - nx * (buf[ip1+j*owidth] + buf[im1+j*owidth] - 2.0*buf[i+j*owidth])
+      - ny * (buf[i+(j+1)*owidth] + buf[i+(j-1)*owidth] - 2.0*buf[i+j*owidth]);
     }
   }
   // sbuf: smooth lbuf
@@ -727,7 +738,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
       size_t im1 = (i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
       if (
-        (dbuf[i+j*owidth] > 15.0) &&
+        (dbuf[i+j*owidth] > 20.0) &&
         (sbuf[i+j*owidth] > 0.0) && (
           (sbuf[im1+(j-1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
           (sbuf[i  +(j-1)*owidth] * sbuf[i+j*owidth] < 0.0) ||
