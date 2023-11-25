@@ -7,6 +7,7 @@
 #include <math.h>
 #include "visual.h"
 
+#undef DRAW_LAPRACIAN_ZERO
 
 // libpng に渡せる形の RGBA バッファを作る。 
   png_bytep *
@@ -547,7 +548,6 @@ contour_z(png_bytep *ovector, const double *gbuf,
 drawfront(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
 {
-  double mingrad;
   double *xbuf; // pre-smoothed sbuf
   double *sbuf; // smoothed gbuf
   double *dgbuf; // |nabla_n sbuf|
@@ -593,6 +593,8 @@ drawfront(png_bytep *ovector, const double *gbuf,
         sbuf[i+(j+1)*owidth] - sbuf[i+(j-1)*owidth]);
     }
   }
+  double mingrad;
+  unsigned char pal0, pal1, pal2, pal3;
   // TFP (傾度ベクトルの方向での傾度の微分) を計算
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
@@ -604,18 +606,22 @@ drawfront(png_bytep *ovector, const double *gbuf,
       tfpbuf[i + j*owidth] = 
       - nx * (dgbuf[ip1+j*owidth] - dgbuf[im1+j*owidth])
       - ny * (dgbuf[i+(j+1)*owidth] - dgbuf[i+(j-1)*owidth]);
+#ifdef DRAW_LAPRACIAN_ZERO
       xbuf[i+j*owidth] =
         sbuf[ip1+j*owidth] + sbuf[im1+j*owidth]
       + sbuf[i+(j+1)*owidth] + sbuf[i+(j-1)*owidth] - 4*sbuf[i+j*owidth];
+#endif
     }
   }
   switch (pal) {
   case PALETTE_T:
     mingrad = 12.0;
+    pal0 = 128; pal1 = pal2 = 12; pal3 = 255;
     break;
   case PALETTE_papT:
   default:
     mingrad = 32.0;
+    pal0 = pal1 = 12; pal2 = 128; pal3 = 255;
     break;
   }
   for (size_t j = 1; j < oheight - 1; j++) {
@@ -623,6 +629,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
       size_t ip1 = (i + 1) % owidth;
       size_t im1 = (i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
+#ifdef DRAW_LAPRACIAN_ZERO
       if (
         (dgbuf[i+j*owidth] > mingrad) &&
         (xbuf[i+j*owidth] > 0.0) && (
@@ -638,6 +645,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
       ){
         pixel[0] = pixel[1] = 12; pixel[2] = 128; pixel[3] = 255;
       }
+#endif
       if (
         (dgbuf[i+j*owidth] > mingrad) &&
         (tfpbuf[i+j*owidth] > 0.0) &&
@@ -652,7 +660,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
           (tfpbuf[ip1+(j+1)*owidth] * tfpbuf[i+j*owidth] < 0.0)
         )
       ){
-        pixel[0] = 128; pixel[1] = pixel[2] = 12; pixel[3] = 255;
+        pixel[0] = pal0; pixel[1] = pal1; pixel[2] = pal2; pixel[3] = pal3;
       }
     }
   }
