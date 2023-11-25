@@ -559,6 +559,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
   memcpy(sbuf, gbuf, owidth * oheight * sizeof(double));
   // 7x7 + 5x5 格子移動平均をかける。
   // 入力格子間を線形補間しているから二階微分がカクカクになる問題を緩和
+#pragma omp parallel for
   for (size_t j = 3; j < oheight - 3; j++) {
     for (size_t i = 0; i < owidth; i++) {
       double sum;
@@ -571,6 +572,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
       xbuf[i+j*owidth] = sum / 49.0;
     }
   }
+#pragma omp parallel for
   for (size_t j = 2; j < oheight - 2; j++) {
     for (size_t i = 0; i < owidth; i++) {
       double sum;
@@ -584,6 +586,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
     }
   }
   // dgbuf に傾度ベクトル長を設定
+#pragma omp parallel for
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
@@ -596,6 +599,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
   double mingrad;
   unsigned char pal0, pal1, pal2, pal3;
   // TFP (傾度ベクトルの方向での傾度の微分) を計算
+#pragma omp parallel for
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
@@ -624,6 +628,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
     pal0 = pal1 = 12; pal2 = 128; pal3 = 255;
     break;
   }
+#pragma omp parallel for
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
