@@ -1,8 +1,9 @@
 OBJS=gribscan.o mainlogic.o visual.o mymalloc.o
 OBJS2=gribscan.o mainslim.o mymalloc.o filter.o
 LIBS= -lm -lpng
-LFLAGS= -pg -g -fopenmp
-CFLAGS= -pg -g -fopenmp -O2 --pedantic -std=gnu99 -Wall 
+# OPTS= -g -pg を想定
+LFLAGS= $(OPTS) -fopenmp
+CFLAGS= $(OPTS) -fopenmp -O2 --pedantic -std=gnu99 -Wall 
 CC=cc
 
 .SUFFIXES:
