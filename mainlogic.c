@@ -234,24 +234,31 @@ wdir(double u, double v)
   return atan2(v, u) / M_PI * 180.0 + 180.0;
 }
 
-
+// smoothes any two-dimensional array src into dest
   void
-smooth9(double *dest, const double *src, size_t nx, size_t ny)
+smooth49(double *dest, const double *src, size_t nx, size_t ny)
 {
-  memcpy(dest, src, nx*sizeof(double));
+  memcpy(dest, src, nx*sizeof(double)*4);
 #pragma omp parallel for
-  for (size_t j = 1; j < (ny-1); j++) {
+  for (size_t j = 3; j < (ny-3); j++) {
     dest[0+j*nx] = src[0+j*nx];
-    for (size_t i = 1; i < (nx-1); i++) {
-      dest[i+j*nx] = (
-        + src[(i-1)+(j-1)*nx] + src[(i+0)+(j-1)*nx] + src[(i+1)+(j-1)*nx]
-        + src[(i-1)+(j+0)*nx] + src[(i+0)+(j+0)*nx] + src[(i+1)+(j+0)*nx]
-        + src[(i-1)+(j+1)*nx] + src[(i+0)+(j+1)*nx] + src[(i+1)+(j+1)*nx]
-      ) / 9.0;
+    dest[1+j*nx] = src[1+j*nx];
+    dest[2+j*nx] = src[2+j*nx];
+    for (size_t i = 3; i < (nx-3); i++) {
+      double sum;
+      sum = 0.0;
+      for (size_t jc = j-3; jc <= j+3; jc++) {
+        for (size_t ic = i-3; ic <= i+3; ic++) {
+          sum += src[ic+jc*nx];
+        }
+      }
+      dest[i+j*nx] = sum / 49.0;
     }
+    dest[(nx-3)+j*nx] = src[(nx-3)+j*nx];
+    dest[(nx-2)+j*nx] = src[(nx-2)+j*nx];
     dest[(nx-1)+j*nx] = src[(nx-1)+j*nx];
   }
-  memcpy(dest+(ny-1)*nx, src+(ny-1)*nx, nx*sizeof(double));
+  memcpy(dest+(ny-3)*nx, src+(ny-3)*nx, nx*sizeof(double)*3);
 }
 
 // 風向だけは成分毎に投影してから算出する
@@ -271,9 +278,9 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   vbuf = ubuf + onx * ony;
   dbuf = vbuf + onx * ony;
   reproject(dbuf, &b, dbuf_u, ofp);
-  smooth9(ubuf, dbuf, onx, ony);
+  smooth49(ubuf, dbuf, onx, ony);
   reproject(dbuf, &b, dbuf_v, ofp);
-  smooth9(vbuf, dbuf, onx, ony);
+  smooth49(vbuf, dbuf, onx, ony);
   for (size_t ij = 0; ij < onx*ony; ij++) {
     dbuf[ij] = wdir(ubuf[ij], vbuf[ij]);
   }
