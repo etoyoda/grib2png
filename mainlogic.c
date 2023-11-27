@@ -234,6 +234,26 @@ wdir(double u, double v)
   return atan2(v, u) / M_PI * 180.0 + 180.0;
 }
 
+
+  void
+smooth9(double *dest, const double *src, size_t nx, size_t ny)
+{
+  memcpy(dest, src, nx*sizeof(double));
+#pragma omp parallel for
+  for (size_t j = 1; j < (ny-1); j++) {
+    dest[0+j*nx] = src[0+j*nx];
+    for (size_t i = 1; i < (nx-1); i++) {
+      dest[i+j*nx] = (
+        + src[(i-1)+(j-1)*nx] + src[(i+0)+(j-1)*nx] + src[(i+1)+(j-1)*nx]
+        + src[(i-1)+(j+0)*nx] + src[(i+0)+(j+0)*nx] + src[(i+1)+(j+0)*nx]
+        + src[(i-1)+(j+1)*nx] + src[(i+0)+(j+1)*nx] + src[(i+1)+(j+1)*nx]
+      ) / 9.0;
+    }
+    dest[(nx-1)+j*nx] = src[(nx-1)+j*nx];
+  }
+  memcpy(dest+(ny-1)*nx, src+(ny-1)*nx, nx*sizeof(double));
+}
+
 // 風向だけは成分毎に投影してから算出する
   gribscan_err_t
 project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
@@ -250,8 +270,10 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   if (ubuf == NULL) { return ERR_NOMEM; }
   vbuf = ubuf + onx * ony;
   dbuf = vbuf + onx * ony;
-  reproject(ubuf, &b, dbuf_u, ofp);
-  reproject(vbuf, &b, dbuf_v, ofp);
+  reproject(dbuf, &b, dbuf_u, ofp);
+  smooth9(ubuf, dbuf, onx, ony);
+  reproject(dbuf, &b, dbuf_v, ofp);
+  smooth9(vbuf, dbuf, onx, ony);
   for (size_t ij = 0; ij < onx*ony; ij++) {
     dbuf[ij] = wdir(ubuf[ij], vbuf[ij]);
   }
