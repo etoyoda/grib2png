@@ -492,6 +492,7 @@ contour_z(png_bytep *ovector, const double *gbuf,
   // 最初の格子で決めてしまう
   double cycle = (gbuf[0] > 6360.0) ? 120.0 : 60.0;
   // 段階1: 全格子 pixel[0] に段彩番号を打つ
+#pragma omp parallel for
   for (size_t j = 0; j < oheight; j++) {
     for (size_t i = 0; i < owidth; i++) {
       png_bytep pixel = ovector[j] + i * 4;
@@ -504,6 +505,7 @@ contour_z(png_bytep *ovector, const double *gbuf,
     }
   }
   // 段階2: 隣接格子が同値な場合透明化する
+#pragma omp parallel for
   for (size_t j = 1; j < (oheight-1); j++) {
     for (size_t i = 1; i < (owidth-1); i++) {
       png_bytep pixel = ovector[j] + i * 4;
@@ -531,6 +533,7 @@ contour_z(png_bytep *ovector, const double *gbuf,
       }
     }
   }
+#pragma omp parallel for
   for (size_t j = 0; j < oheight; j++) {
     for (size_t i = 0; i < owidth; i++) {
       png_bytep pixel = ovector[j] + i * 4;
@@ -687,6 +690,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
   dbuf = lbuf + owidth * oheight;
   // sbuf: smoothed gbuf
   memcpy(sbuf, gbuf, owidth * oheight * sizeof(double));
+#pragma omp parallel for
   for (size_t j = 2; j < oheight - 2; j++) {
     for (size_t i = 0; i < owidth; i++) {
       double sum;
@@ -700,10 +704,12 @@ drawshear(png_bytep *ovector, const double *gbuf,
     }
   }
   // rbuf: 180以下を360増して360連続性を確保
+#pragma omp parallel for
   for (size_t ij = 0; ij < oheight*owidth; ij++) {
     rbuf[ij] = 180.0 + fmod(sbuf[ij] + 180.0, 360.0);
   }
   // dbuf: abs(grad WD)
+#pragma omp parallel for
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       double *buf;
@@ -716,6 +722,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
     }
   }
   // lbuf: lapracian(WD) 
+#pragma omp parallel for
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       double *buf;
@@ -732,6 +739,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
   }
   // sbuf: smooth lbuf
   memcpy(sbuf, lbuf, owidth * oheight * sizeof(double));
+#pragma omp parallel for
   for (size_t j = 2; j < oheight - 2; j++) {
     for (size_t i = 0; i < owidth; i++) {
       double sum;
@@ -745,6 +753,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
     }
   }
   // draw lbuf=0 line
+#pragma omp parallel for
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
