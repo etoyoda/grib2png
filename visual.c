@@ -779,6 +779,28 @@ drawshear(png_bytep *ovector, const double *gbuf,
   free(sbuf);
   return 0;
 }
+  int
+drawrvor(png_bytep *ovector, const double *gbuf,
+  size_t owidth, size_t oheight)
+{
+  for (size_t j = oheight/4; j < (oheight*3/4); j++) {
+    for (size_t i = 1; i < (owidth-1); i++) {
+      png_bytep pixel = ovector[j] + i * 4;
+      double grad;
+      grad = hypot(gbuf[i+1+j*owidth] - gbuf[i-1+j*owidth],
+        gbuf[i+(j+1)*owidth] - gbuf[i+(j-1)*owidth]);
+      if ((grad > 150.0) && (
+        (gbuf[i+1+j*owidth] * gbuf[i+j*owidth] <= 0.0) ||
+        (gbuf[i-1+j*owidth] * gbuf[i+j*owidth] <= 0.0) ||
+        (gbuf[i+(j+1)*owidth] * gbuf[i+j*owidth] <= 0.0) ||
+        (gbuf[i+(j-1)*owidth] * gbuf[i+j*owidth] <= 0.0)
+      )) {
+        pixel[0] = 16; pixel[1] = 128; pixel[2] = 96; pixel[3] = 255;
+      }
+    }
+  }
+  return 0;
+}
 
   int
 render(png_bytep *ovector, const double *gbuf,
@@ -858,6 +880,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_rvor(pixel, gbuf[i + j * owidth]);
       }
     }
+    drawrvor(ovector, gbuf, owidth, oheight);
     break;
   case PALETTE_VVPa:
     for (size_t j = 0; j < oheight; j++) {
