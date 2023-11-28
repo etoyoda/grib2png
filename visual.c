@@ -784,18 +784,26 @@ drawrvor(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight)
 {
   for (size_t j = oheight/4; j < (oheight*3/4); j++) {
-    for (size_t i = 1; i < (owidth-1); i++) {
-      png_bytep pixel = ovector[j] + i * 4;
-      double grad;
-      grad = hypot(gbuf[i+1+j*owidth] - gbuf[i-1+j*owidth],
-        gbuf[i+(j+1)*owidth] - gbuf[i+(j-1)*owidth]);
-      if ((grad > 150.0) && (
-        (gbuf[i+1+j*owidth] * gbuf[i+j*owidth] <= 0.0) ||
-        (gbuf[i-1+j*owidth] * gbuf[i+j*owidth] <= 0.0) ||
-        (gbuf[i+(j+1)*owidth] * gbuf[i+j*owidth] <= 0.0) ||
-        (gbuf[i+(j-1)*owidth] * gbuf[i+j*owidth] <= 0.0)
-      )) {
-        pixel[0] = 16; pixel[1] = 128; pixel[2] = 96; pixel[3] = 255;
+    for (size_t i = 4; i < (owidth-4); i++) {
+      double rvor;
+      rvor = gbuf[i+j*owidth];
+      if ((rvor > 120.0) &&
+        (gbuf[i+1+j*owidth] < rvor) &&
+        (gbuf[i-1+j*owidth] < rvor) &&
+        (gbuf[i+(j+1)*owidth] < rvor) &&
+        (gbuf[i+(j-1)*owidth] < rvor)
+      ) {
+        png_bytep pixel;
+        pixel = ovector[j]+(i-1)*4;
+        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
+        pixel = ovector[j]+i*4;
+        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
+        pixel = ovector[j]+(i+1)*4;
+        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
+        pixel = ovector[j-1]+i*4;
+        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
+        pixel = ovector[j+1]+i*4;
+        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
       }
     }
   }
