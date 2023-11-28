@@ -779,31 +779,52 @@ drawshear(png_bytep *ovector, const double *gbuf,
   free(sbuf);
   return 0;
 }
+
+
   int
 drawrvor(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight)
 {
-  for (size_t j = oheight/4; j < (oheight*3/4); j++) {
-    for (size_t i = 4; i < (owidth-4); i++) {
-      double rvor;
-      rvor = gbuf[i+j*owidth];
-      if ((rvor > 120.0) &&
-        (gbuf[i+1+j*owidth] < rvor) &&
-        (gbuf[i-1+j*owidth] < rvor) &&
-        (gbuf[i+(j+1)*owidth] < rvor) &&
-        (gbuf[i+(j-1)*owidth] < rvor)
-      ) {
+  const png_byte pal_rvor_ridge[4] = {0xff, 0x64, 0, 0xff};
+  const double minridge = 120.0;
+  // divide the entire plane into 64x64 blocks (overlapping 32x32)
+  for (size_t jb = 0; jb <= owidth-64; jb+=32) {
+    for (size_t ib = 0; ib <= owidth-64; ib+=32) {
+      int ix, jx;
+      double gmax;
+      ix = ib;  jx = jb;  gmax = gbuf[ib+jb*owidth];
+      for (size_t j = 0; j < 64; j++) {
+        for (size_t i = 0; i < 64; i++) {
+          if (gmax < gbuf[ib+i+(jb+j)*owidth]) {
+            ix = ib+i;  jx = jb+j;  gmax = gbuf[ix+jx*owidth];
+          }
+        }
+      }
+      if (gmax < minridge) continue;
+      for (int niter=0; niter<20; niter++) {
         png_bytep pixel;
-        pixel = ovector[j]+(i-1)*4;
-        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
-        pixel = ovector[j]+i*4;
-        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
-        pixel = ovector[j]+(i+1)*4;
-        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
-        pixel = ovector[j-1]+i*4;
-        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
-        pixel = ovector[j+1]+i*4;
-        pixel[0] = 128; pixel[1] = 128; pixel[2] = 0; pixel[3] = 255;
+        pixel = ovector[jx]+ix*4;
+        if (pixel[3] == 0xff) { break; }
+        memcpy(pixel, pal_rvor_ridge, 4);
+        int i0, i2, j0, j2, in, jn;
+        double gnext;
+        i0 = (ix<=0) ? 0 : (ix-1);
+        i2 = (ix>=(owidth-1)) ? ix : (ix+1);
+        j0 = (jx<=0) ? 0 : (jx-1);
+        j2 = (jx>=(oheight-1)) ? jx : (jx+1);
+        in = jn = -1;
+        gnext = minridge;
+        for (int jc=j0; jc<=j2; jc++) {
+          for (int ic=i0; ic<=i2; ic++) {
+            if ((ic!=ix)||(jc==jx)) {
+              if (gbuf[ic+jc*owidth] > gnext) {
+                in = ic;  jn = jc;  gnext = gbuf[ic+jc*owidth];
+              }
+            }
+          }
+        }
+        if ((in==-1)||(jn==-1)) { break; }
+        ix = in; jx = jn;
       }
     }
   }
