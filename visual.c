@@ -785,49 +785,36 @@ drawshear(png_bytep *ovector, const double *gbuf,
 drawrvor(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight)
 {
-  const png_byte pal_rvor_ridge[4] = {0xff, 0x64, 0, 0xff};
-  const double minridge = 120.0;
-  // divide the entire plane into 64x64 blocks (overlapping 32x32)
-  for (size_t jb = 0; jb <= owidth-64; jb+=32) {
-    for (size_t ib = 0; ib <= owidth-64; ib+=32) {
-      int ix, jx;
-      double gmax;
-      ix = ib;  jx = jb;  gmax = gbuf[ib+jb*owidth];
-      for (size_t j = 0; j < 64; j++) {
-        for (size_t i = 0; i < 64; i++) {
-          if (gmax < gbuf[ib+i+(jb+j)*owidth]) {
-            ix = ib+i;  jx = jb+j;  gmax = gbuf[ix+jx*owidth];
-          }
+  const png_byte pal_rvor_ridge[4] = {0xff, 0xff, 0, 0xff};
+  const double minridge = 20.0;
+  double *lbuf;
+  lbuf = calloc(owidth * oheight, sizeof(double));
+#pragma omp parallel for
+  for (size_t j=2; j<(oheight-2); j++) {
+    for (size_t i=2; i<(owidth-2); i++) {
+      lbuf[i+j*owidth] = hypot(
+        gbuf[(i+2)+j*owidth] - gbuf[(i-2)+j*owidth],
+        gbuf[i+(j+2)*owidth] - gbuf[i+(j-2)*owidth]
+      );
+    }
+  }
+#pragma omp parallel for
+  for (size_t j=1; j<(oheight-1); j++) {
+    for (size_t i=1; i<(owidth-1); i++) {
+      if (fabs(lbuf[i+j*owidth]) > minridge) {
+        if (
+          (gbuf[i+j*owidth] * gbuf[i+(j+1)*owidth] < 0.0) ||
+          (gbuf[i+j*owidth] * gbuf[i+(j-1)*owidth] < 0.0) ||
+          (gbuf[i+j*owidth] * gbuf[i+1+j*owidth] < 0.0) ||
+          (gbuf[i+j*owidth] * gbuf[i-1+j*owidth] < 0.0)
+        ){
+          png_bytep pixel = ovector[j] + i*4;
+          memcpy(pixel, pal_rvor_ridge, 4);
         }
-      }
-      if (gmax < minridge) continue;
-      for (int niter=0; niter<20; niter++) {
-        png_bytep pixel;
-        pixel = ovector[jx]+ix*4;
-        if (pixel[3] == 0xff) { break; }
-        memcpy(pixel, pal_rvor_ridge, 4);
-        int i0, i2, j0, j2, in, jn;
-        double gnext;
-        i0 = (ix<=0) ? 0 : (ix-1);
-        i2 = (ix>=(owidth-1)) ? ix : (ix+1);
-        j0 = (jx<=0) ? 0 : (jx-1);
-        j2 = (jx>=(oheight-1)) ? jx : (jx+1);
-        in = jn = -1;
-        gnext = minridge;
-        for (int jc=j0; jc<=j2; jc++) {
-          for (int ic=i0; ic<=i2; ic++) {
-            if ((ic!=ix)||(jc==jx)) {
-              if (gbuf[ic+jc*owidth] > gnext) {
-                in = ic;  jn = jc;  gnext = gbuf[ic+jc*owidth];
-              }
-            }
-          }
-        }
-        if ((in==-1)||(jn==-1)) { break; }
-        ix = in; jx = jn;
       }
     }
   }
+  free(lbuf);
   return 0;
 }
 

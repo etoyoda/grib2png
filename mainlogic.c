@@ -292,7 +292,7 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
     dbuf[i+0*onx] = dbuf[i+(ony-1)*onx] = 0.0;
   }
   for (size_t j = 1; j < (ony-1); j++) {
-    double spacing = onx / 40.0;
+    double spacing = onx / 40.0 * 0.1;
     dbuf[0+j*onx] = dbuf[(onx-1)+j*onx] = 0.0;
     for (size_t i = 1; i < (onx-1); i++) {
       dbuf[i+j*onx] = spacing * (
