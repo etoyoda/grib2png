@@ -361,6 +361,9 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   }
 }
 
+// 下層でも強風軸を描く: -gj オプション
+int gflg_jet_lower = 0;
+
   gribscan_err_t
 project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
@@ -378,7 +381,8 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
     if (r != GSE_OKAY) { return r; }
   }
   r = project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
-    IPARM_WINDS, pal, windspeed, ubuf);
+    IPARM_WINDS, pal, windspeed,
+    (((vlev == 300.e2) || gflg_jet_lower) ? ubuf : NULL));
   if (ubuf) { free(ubuf); }
   return r;
 }
@@ -587,6 +591,8 @@ argscan(int argc, const char **argv)
       case 'g':
         if (argv[i][2] == 'v') {
           gflg_rvor_with_wd = 1;
+        } else if (argv[i][3] == 'j') {
+          gflg_jet_lower = 1;
         }
         break;
       default:
