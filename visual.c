@@ -782,14 +782,14 @@ drawshear(png_bytep *ovector, const double *gbuf,
 
   int
 draw_jet(png_bytep *ovector, const double *gbuf,
-  size_t owidth, size_t oheight, const double *omake)
+  size_t owidth, size_t oheight, double *omake)
 {
   return 0;
 }
 
   int
 render(png_bytep *ovector, const double *gbuf,
-  size_t owidth, size_t oheight, palette_t pal, const double *omake)
+  size_t owidth, size_t oheight, palette_t pal, double *omake)
 {
   int r = 0;
   switch (pal) {
@@ -890,7 +890,7 @@ render(png_bytep *ovector, const double *gbuf,
 
   int
 gridsave(double *gbuf, size_t owidth, size_t oheight, palette_t pal,
-  const char *filename, char **textv, const double *omake)
+  const char *filename, char **textv, double *omake)
 {
   png_bytep *ovector;
   int r = 0;

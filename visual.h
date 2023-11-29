@@ -17,4 +17,4 @@ typedef enum palette_t {
 
   extern int
 gridsave(double *gbuf, size_t owidth, size_t oheight, palette_t pal,
-  const char *filename, char **textv, const double *omake);
+  const char *filename, char **textv, double *omake);

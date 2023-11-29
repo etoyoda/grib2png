@@ -198,7 +198,7 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv,
   iparm_t iparm, palette_t pal,
   double (*element_conv)(double t, double rh, double p),
-  const double *ubuf)
+  double *ubuf)
 {
   // dbuf と同じ（GRIB格子の）配列長
   size_t npixels = get_npixels(gsp_t);
@@ -269,7 +269,7 @@ int gflg_rvor_with_wd = 0;
   gribscan_err_t
 project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv,
-  const double **ubufptr)
+  double **ubufptr)
 {
   bounding_t b;
   gribscan_err_t r;
@@ -367,7 +367,7 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
 project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
 {
-  const double *ubuf;
+  double *ubuf;
   textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
   palette_t pal = (get_vlevel(gsp_u) >= 850.e2)
     ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
