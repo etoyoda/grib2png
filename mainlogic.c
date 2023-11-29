@@ -279,12 +279,10 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   size_t ony = ofp->yz - ofp->ya + 1;
   r = decode_gds(gsp_v, &b);
   if (r != GSE_OKAY) { return r; }
-  ubuf = malloc(sizeof(double) * onx * ony * 2);
+  ubuf = malloc(sizeof(double) * onx * ony * 3);
   if (ubuf == NULL) { return ERR_NOMEM; }
-  //--- begin memory section
-  dbuf = malloc(sizeof(double) * onx * ony);
-  if (dbuf == NULL) { free(ubuf); return ERR_NOMEM; }
   vbuf = ubuf + onx * ony;
+  dbuf = vbuf + onx * ony;
   reproject(dbuf, &b, dbuf_u, ofp);
   smooth49(ubuf, dbuf, onx, ony);
   reproject(dbuf, &b, dbuf_v, ofp);
@@ -316,8 +314,6 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
     r = gridsave(dbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
   }
 QUIT:
-  free(dbuf);
-  //--- end memory section
   *ubufptr = ubuf;
   return r;
 }
@@ -367,17 +363,22 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
 project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
 {
+  gribscan_err_t r;
   double *ubuf;
+  double vlev;
+  ubuf = NULL;
   textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
-  palette_t pal = (get_vlevel(gsp_u) >= 850.e2)
-    ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
-  if (get_vlevel(gsp_u) >= 925.e2) {
+  vlev = get_vlevel(gsp_u);
+  palette_t pal = (vlev >= 850.e2) ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
+  if ((vlev >= 925.e2)||(vlev == 300.e2)) {
     gribscan_err_t r;
     r = project_winddir(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv, &ubuf);
     if (r != GSE_OKAY) { return r; }
   }
-  return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
+  r = project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
     IPARM_WINDS, pal, windspeed, ubuf);
+  if (ubuf) { free(ubuf); }
+  return r;
 }
 
   gribscan_err_t
