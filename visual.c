@@ -789,18 +789,22 @@ draw_jet(png_bytep *ovector, const double *gbuf,
   double *dbuf = omake + owidth*oheight*2;
   // 風向に直交する方向での風速の微分
   // 風向は (u,v)/g なので時計回りに90度進めると (v,-u)/g
-  for (size_t j = 1; j < (oheight-1); j++) {
-    for (size_t i = 1; i < (owidth-1); i++) {
+  for (size_t j = 3; j < (oheight-3); j++) {
+    for (size_t i = 3; i < (owidth-3); i++) {
       dbuf[i+j*owidth] =
         vbuf[i+j*owidth] / gbuf[i+j*owidth]
-        * (gbuf[i+1+j*owidth] - gbuf[i-1+j*owidth])
+        * (gbuf[i+1+j*owidth] - gbuf[i-1+j*owidth]
+         + gbuf[i+3+j*owidth] - gbuf[i-3+j*owidth]
+        )
         -
         ubuf[i+j*owidth] / gbuf[i+j*owidth]
-        * (gbuf[i+(j-1)*owidth] - gbuf[i+(j+1)*owidth]);
+        * (gbuf[i+(j-1)*owidth] - gbuf[i+(j+1)*owidth]
+         + gbuf[i+(j-3)*owidth] - gbuf[i+(j+3)*owidth]
+        );
     }
   }
-  for (size_t j = 2; j < (oheight-2); j++) {
-    for (size_t i = 2; i < (owidth-2); i++) {
+  for (size_t j = 4; j < (oheight-4); j++) {
+    for (size_t i = 4; i < (owidth-4); i++) {
       if (
         (gbuf[i+j*owidth] > limit) && (
           (dbuf[i-1+(j-1)*owidth] * dbuf[i+j*owidth] < 0.0) ||
@@ -814,7 +818,7 @@ draw_jet(png_bytep *ovector, const double *gbuf,
         )
       ){
         png_bytep pixel = ovector[j] + i * 4;
-        pixel[0] = pixel[1] = 64; pixel[2] = 128; pixel[3] = 255;
+        pixel[3] = 255;
       }
     }
   }
@@ -866,7 +870,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_windsfc(pixel, gbuf[i + j * owidth]);
       }
     }
-    if (omake) { draw_jet(ovector, gbuf, owidth, oheight, omake, 150.0); }
+    if (omake) { draw_jet(ovector, gbuf, owidth, oheight, omake, 50.0); }
     break;
   case PALETTE_WINDS:
     for (size_t j = 0; j < oheight; j++) {
