@@ -261,6 +261,9 @@ smooth49(double *dest, const double *src, size_t nx, size_t ny)
   memcpy(dest+(ny-3)*nx, src+(ny-3)*nx, nx*sizeof(double)*3);
 }
 
+// コマンドラインオプション -gv で風向と一緒に渦度を算出
+int gflg_rvor_with_wd = 0;
+
 // 風向だけは成分毎に投影してから算出する
   gribscan_err_t
 project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
@@ -287,23 +290,25 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   set_parameter(gsp_v, IPARM_WD);
   mkfilename(filename, sizeof filename, gsp_v, NULL);
   r = gridsave(dbuf, onx, ony, PALETTE_WD, filename, textv);
-  // rVOR
-  for (size_t i = 0; i < onx; i++) {
-    dbuf[i+0*onx] = dbuf[i+(ony-1)*onx] = 0.0;
-  }
-  for (size_t j = 1; j < (ony-1); j++) {
-    double spacing = onx / 40.0 * 0.1;
-    dbuf[0+j*onx] = dbuf[(onx-1)+j*onx] = 0.0;
-    for (size_t i = 1; i < (onx-1); i++) {
-      dbuf[i+j*onx] = spacing * (
-        -(ubuf[i+(j+1)*onx] - ubuf[i+(j-1)*onx])
-        +(vbuf[(i+1)+j*onx] - vbuf[(i-1)+j*onx])
-      );
+  // 渦度を算出描画
+  if (gflg_rvor_with_wd) {
+    for (size_t i = 0; i < onx; i++) {
+      dbuf[i+0*onx] = dbuf[i+(ony-1)*onx] = 0.0;
     }
+    for (size_t j = 1; j < (ony-1); j++) {
+      double spacing = onx / 40.0 * 0.1;
+      dbuf[0+j*onx] = dbuf[(onx-1)+j*onx] = 0.0;
+      for (size_t i = 1; i < (onx-1); i++) {
+        dbuf[i+j*onx] = spacing * (
+          -(ubuf[i+(j+1)*onx] - ubuf[i+(j-1)*onx])
+          +(vbuf[(i+1)+j*onx] - vbuf[(i-1)+j*onx])
+        );
+      }
+    }
+    set_parameter(gsp_v, IPARM_rVOR);
+    mkfilename(filename, sizeof filename, gsp_v, NULL);
+    r = gridsave(dbuf, onx, ony, PALETTE_rVOR, filename, textv);
   }
-  set_parameter(gsp_v, IPARM_rVOR);
-  mkfilename(filename, sizeof filename, gsp_v, NULL);
-  r = gridsave(dbuf, onx, ony, PALETTE_rVOR, filename, textv);
   free(ubuf);
   //--- end memory section
   return r;
@@ -566,6 +571,11 @@ argscan(int argc, const char **argv)
       switch (argv[i][1]) {
       case 't':
         text_fp = fopen(argv[i] + 2, "w");
+        break;
+      case 'g':
+        if (argv[i][2] == 'v') {
+          gflg_rvor_with_wd = 1;
+        }
         break;
       default:
         fprintf(stderr, "%s: unknown option\n", argv[i]);
