@@ -780,44 +780,6 @@ drawshear(png_bytep *ovector, const double *gbuf,
   return 0;
 }
 
-
-  int
-drawrvor(png_bytep *ovector, const double *gbuf,
-  size_t owidth, size_t oheight)
-{
-  const png_byte pal_rvor_ridge[4] = {0xff, 0xff, 0, 0xff};
-  const double minridge = 20.0;
-  double *lbuf;
-  lbuf = calloc(owidth * oheight, sizeof(double));
-#pragma omp parallel for
-  for (size_t j=2; j<(oheight-2); j++) {
-    for (size_t i=2; i<(owidth-2); i++) {
-      lbuf[i+j*owidth] = hypot(
-        gbuf[(i+2)+j*owidth] - gbuf[(i-2)+j*owidth],
-        gbuf[i+(j+2)*owidth] - gbuf[i+(j-2)*owidth]
-      );
-    }
-  }
-#pragma omp parallel for
-  for (size_t j=1; j<(oheight-1); j++) {
-    for (size_t i=1; i<(owidth-1); i++) {
-      if (fabs(lbuf[i+j*owidth]) > minridge) {
-        if (
-          (gbuf[i+j*owidth] * gbuf[i+(j+1)*owidth] < 0.0) ||
-          (gbuf[i+j*owidth] * gbuf[i+(j-1)*owidth] < 0.0) ||
-          (gbuf[i+j*owidth] * gbuf[i+1+j*owidth] < 0.0) ||
-          (gbuf[i+j*owidth] * gbuf[i-1+j*owidth] < 0.0)
-        ){
-          png_bytep pixel = ovector[j] + i*4;
-          memcpy(pixel, pal_rvor_ridge, 4);
-        }
-      }
-    }
-  }
-  free(lbuf);
-  return 0;
-}
-
   int
 render(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, palette_t pal)
@@ -896,7 +858,6 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_rvor(pixel, gbuf[i + j * owidth]);
       }
     }
-    drawrvor(ovector, gbuf, owidth, oheight);
     break;
   case PALETTE_VVPa:
     for (size_t j = 0; j < oheight; j++) {
