@@ -287,8 +287,10 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   smooth49(ubuf, dbuf, onx, ony);
   reproject(dbuf, &b, dbuf_v, ofp);
   smooth49(vbuf, dbuf, onx, ony);
+#pragma omp parallel for
   for (size_t ij = 0; ij < onx*ony; ij++) {
-    dbuf[ij] = wdir(ubuf[ij], vbuf[ij]);
+    dbuf[ij] = (hypot(ubuf[ij], vbuf[ij]) > 33.5) ?
+      wdir(ubuf[ij], vbuf[ij]) : nan("");
   }
   set_parameter(gsp_v, IPARM_WD);
   mkfilename(filename, sizeof filename, gsp_v, NULL);
