@@ -361,7 +361,7 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   }
 }
 
-// 下層でも強風軸を描く: -gj オプション
+// 強風軸を描く: -gj オプション
 int gflg_jet_lower = 0;
 
   gribscan_err_t
@@ -382,7 +382,7 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   }
   r = project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
     IPARM_WINDS, pal, windspeed,
-    (((vlev == 300.e2) || gflg_jet_lower) ? ubuf : NULL));
+    ((gflg_jet_lower) ? ubuf : NULL));
   if (ubuf) { free(ubuf); }
   return r;
 }
