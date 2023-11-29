@@ -781,8 +781,15 @@ drawshear(png_bytep *ovector, const double *gbuf,
 }
 
   int
+draw_jet(png_bytep *ovector, const double *gbuf,
+  size_t owidth, size_t oheight, const double *omake)
+{
+  return 0;
+}
+
+  int
 render(png_bytep *ovector, const double *gbuf,
-  size_t owidth, size_t oheight, palette_t pal)
+  size_t owidth, size_t oheight, palette_t pal, const double *omake)
 {
   int r = 0;
   switch (pal) {
@@ -833,6 +840,7 @@ render(png_bytep *ovector, const double *gbuf,
         setpixel_winds(pixel, gbuf[i + j * owidth]);
       }
     }
+    draw_jet(ovector, gbuf, owidth, oheight, omake);
     break;
   case PALETTE_WD:
     for (size_t j = 0; j < oheight; j++) {
@@ -882,7 +890,7 @@ render(png_bytep *ovector, const double *gbuf,
 
   int
 gridsave(double *gbuf, size_t owidth, size_t oheight, palette_t pal,
-  const char *filename, char **textv)
+  const char *filename, char **textv, const double *omake)
 {
   png_bytep *ovector;
   int r = 0;
@@ -890,7 +898,7 @@ gridsave(double *gbuf, size_t owidth, size_t oheight, palette_t pal,
   ovector = new_pngimg(owidth, oheight);
   if (ovector == NULL) return 'M';
   // 2. データ変換（double値→RGBA）
-  r = render(ovector, gbuf, owidth, oheight, pal);
+  r = render(ovector, gbuf, owidth, oheight, pal, omake);
   if (r != 0) goto badend;
   // 3. PNG書き出し
   r = write_pngimg(ovector, owidth, oheight, filename, textv);

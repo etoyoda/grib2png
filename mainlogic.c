@@ -165,7 +165,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
     break;
   }
   mkfilename(filename, sizeof filename, gsp, NULL);
-  r = gridsave(gbuf, onx, ony, pal, filename, textv);
+  r = gridsave(gbuf, onx, ony, pal, filename, textv, NULL);
   free(gbuf);
   //--- end memory section
   return r;
@@ -197,7 +197,8 @@ ept_bolton(double t, double rh, double p)
 project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv,
   iparm_t iparm, palette_t pal,
-  double (*element_conv)(double t, double rh, double p))
+  double (*element_conv)(double t, double rh, double p),
+  const double *ubuf)
 {
   // dbuf と同じ（GRIB格子の）配列長
   size_t npixels = get_npixels(gsp_t);
@@ -220,7 +221,7 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   reproject(gbuf, &b, dbuf_ept, ofp);
   set_parameter(gsp_t, iparm);
   mkfilename(filename, sizeof filename, gsp_t, NULL);
-  r = gridsave(gbuf, onx, ony, pal, filename, textv);
+  r = gridsave(gbuf, onx, ony, pal, filename, textv, ubuf);
   free(gbuf);
   //--- end memory section 2
   free(dbuf_ept);
@@ -267,19 +268,23 @@ int gflg_rvor_with_wd = 0;
 // 風向だけは成分毎に投影してから算出する
   gribscan_err_t
 project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
-  grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
+  grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv,
+  const double **ubufptr)
 {
   bounding_t b;
+  gribscan_err_t r;
   double *ubuf, *vbuf, *dbuf;
   char filename[256];
   size_t onx = ofp->xz - ofp->xa + 1;
   size_t ony = ofp->yz - ofp->ya + 1;
-  gribscan_err_t r = decode_gds(gsp_v, &b);
-  //--- begin memory section
-  ubuf = malloc(sizeof(double) * onx * ony * 3);
+  r = decode_gds(gsp_v, &b);
+  if (r != GSE_OKAY) { return r; }
+  ubuf = malloc(sizeof(double) * onx * ony * 2);
   if (ubuf == NULL) { return ERR_NOMEM; }
+  //--- begin memory section
+  dbuf = malloc(sizeof(double) * onx * ony);
+  if (dbuf == NULL) { free(ubuf); return ERR_NOMEM; }
   vbuf = ubuf + onx * ony;
-  dbuf = vbuf + onx * ony;
   reproject(dbuf, &b, dbuf_u, ofp);
   smooth49(ubuf, dbuf, onx, ony);
   reproject(dbuf, &b, dbuf_v, ofp);
@@ -289,7 +294,8 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   }
   set_parameter(gsp_v, IPARM_WD);
   mkfilename(filename, sizeof filename, gsp_v, NULL);
-  r = gridsave(dbuf, onx, ony, PALETTE_WD, filename, textv);
+  r = gridsave(dbuf, onx, ony, PALETTE_WD, filename, textv, NULL);
+  if (r != GSE_OKAY) goto QUIT;
   // 渦度を算出描画
   if (gflg_rvor_with_wd) {
     for (size_t i = 0; i < onx; i++) {
@@ -307,10 +313,12 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
     }
     set_parameter(gsp_v, IPARM_rVOR);
     mkfilename(filename, sizeof filename, gsp_v, NULL);
-    r = gridsave(dbuf, onx, ony, PALETTE_rVOR, filename, textv);
+    r = gridsave(dbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
   }
-  free(ubuf);
+QUIT:
+  free(dbuf);
   //--- end memory section
+  *ubufptr = ubuf;
   return r;
 }
 
@@ -359,16 +367,17 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
 project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v, const outframe_t *ofp, char **textv)
 {
+  const double *ubuf;
   textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
   palette_t pal = (get_vlevel(gsp_u) >= 850.e2)
     ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
   if (get_vlevel(gsp_u) >= 925.e2) {
     gribscan_err_t r;
-    r = project_winddir(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv);
+    r = project_winddir(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv, &ubuf);
     if (r != GSE_OKAY) { return r; }
   }
   return project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
-    IPARM_WINDS, pal, windspeed);
+    IPARM_WINDS, pal, windspeed, ubuf);
 }
 
   gribscan_err_t
@@ -376,7 +385,7 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
   grib2secs_t *gsp_t, double *dbuf_t, const outframe_t *ofp, char **textv)
 {
   return project_binop(gsp_rh, dbuf_rh, gsp_t, dbuf_t, ofp, textv,
-    IPARM_papT, PALETTE_papT, ept_bolton);
+    IPARM_papT, PALETTE_papT, ept_bolton, NULL);
 }
 
 typedef struct trap_t {
