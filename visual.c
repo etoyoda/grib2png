@@ -433,6 +433,7 @@ contour_pmsl(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight)
 {
   // 段階1: 全格子 pixel[0] に段彩番号を打つ
+#pragma omp parallel for
   for (size_t j = 0; j < oheight; j++) {
     for (size_t i = 0; i < owidth; i++) {
       png_bytep pixel = ovector[j] + i * 4;
@@ -445,6 +446,7 @@ contour_pmsl(png_bytep *ovector, const double *gbuf,
     }
   }
   // 段階2: 隣接格子が同値な場合透明化する
+#pragma omp parallel for
   for (size_t j = 1; j < (oheight-1); j++) {
     for (size_t i = 1; i < (owidth-1); i++) {
       png_bytep pixel = ovector[j] + i * 4;
@@ -472,6 +474,7 @@ contour_pmsl(png_bytep *ovector, const double *gbuf,
       }
     }
   }
+#pragma omp parallel for
   for (size_t j = 0; j < oheight; j++) {
     for (size_t i = 0; i < owidth; i++) {
       png_bytep pixel = ovector[j] + i * 4;
@@ -838,6 +841,7 @@ render(png_bytep *ovector, const double *gbuf,
     r = contour_pmsl(ovector, gbuf, owidth, oheight);
     break;
   case PALETTE_RH:
+#pragma omp parallel for
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
@@ -846,6 +850,7 @@ render(png_bytep *ovector, const double *gbuf,
     }
     break;
   case PALETTE_papT:
+#pragma omp parallel for
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
@@ -855,6 +860,7 @@ render(png_bytep *ovector, const double *gbuf,
     drawfront(ovector, gbuf, owidth, oheight, pal);
     break;
   case PALETTE_T:
+#pragma omp parallel for
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
@@ -864,6 +870,7 @@ render(png_bytep *ovector, const double *gbuf,
     drawfront(ovector, gbuf, owidth, oheight, pal);
     break;
   case PALETTE_WINDS_SFC:
+#pragma omp parallel for
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
@@ -873,6 +880,7 @@ render(png_bytep *ovector, const double *gbuf,
     if (omake) { draw_jet(ovector, gbuf, owidth, oheight, omake, 50.0); }
     break;
   case PALETTE_WINDS:
+#pragma omp parallel for
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
@@ -882,6 +890,7 @@ render(png_bytep *ovector, const double *gbuf,
     if (omake) { draw_jet(ovector, gbuf, owidth, oheight, omake, 500.0); }
     break;
   case PALETTE_WD:
+#pragma omp parallel for
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;
@@ -891,6 +900,7 @@ render(png_bytep *ovector, const double *gbuf,
     drawshear(ovector, gbuf, owidth, oheight);
     break;
   case PALETTE_RAIN6:
+#pragma omp parallel for
     for (size_t j = 0; j < oheight; j++) {
       for (size_t i = 0; i < owidth; i++) {
         png_bytep pixel = ovector[j] + i * 4;

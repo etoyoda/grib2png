@@ -116,6 +116,7 @@ default:
 reproject(double *gbuf, const bounding_t *bp, const double *dbuf,
   const outframe_t *ofp)
 {
+#pragma omp parallel for
   for (unsigned j = ofp->ya; j <= ofp->yz; j++) {
     double lat = asin(tanh(
       (1.0 - ldexp((int)j + 0.5, -7 - (int)ofp->z)) * M_PI
