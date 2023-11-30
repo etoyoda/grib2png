@@ -793,57 +793,57 @@ draw_jet(png_bytep *ovector, const double *gbuf,
   for (size_t jb = 0; jb <= (oheight-64); jb+=32) {
   for (size_t ib = 0; ib <= (owidth-64); ib+=32) {
     // looks up local maxima
-    double uavr, vavr, gmax;
+    double gmax;
     size_t ix, jx;
-    uavr = vavr = 0.0;
     gmax = -HUGE_VAL;  ix = jx = 0;
     for (size_t j=0; j<64; j++) {
     for (size_t i=0; i<64; i++) {
       size_t ij = (ib+i)+(jb+j)*owidth;
-      uavr += ubuf[ij];
-      vavr += vbuf[ij];
       if (gmax < gbuf[ij]) {
         ix = i; jx = j; gmax = gbuf[ij];
       }
     }
     }
     if ((ix<=16)||(jx<=16)||(ix>48)||(jx>48)) goto SKIPBLOCK;
-    if (gmax < 100.0) goto SKIPBLOCK;
+    if (gmax < limit) goto SKIPBLOCK;
     //printf("draw_jet local maximum found: [%4zu,%4zu] %g\n", jx+jb, ix+ib, gmax);
-    // scan 31x31 box around the local maxima
-    double xxsum, yysum, xysum;
-    xxsum = yysum = xysum = 0.0;
-    for (int j=-15; j<=15; j++) {
-    for (int i=-15; i<=15; i++) {
-      size_t ij = (size_t)(ix+i)+ib+((size_t)(jx+j)+jb)*owidth;
-      double dif = gbuf[ij] - gmax;
-      xxsum += dif*i*i;
-      yysum += dif*j*j;
-      xysum += dif*i*j;
-    }
-    }
-    xxsum /= 11055344.0; xysum /= 6150400.0; yysum /= 11055344.0;
-    //printf(" xx=%g yy=%g xy=%g\n", xxsum, yysum, xysum);
-    double apb = xxsum + yysum;
-    double costheta = sqrt(xxsum/apb);
-    double sintheta = sqrt(yysum/apb);
-    double amb = 0.5*xysum/(costheta*sintheta);
-    //printf(" a+b=%g a-b=%g\n", apb, amb);
-    if (fabs(amb) < 0.1 * fabs(apb)) {
-      //printf(" skip circular\n");
-      goto SKIPBLOCK;
-    }
-    if (xysum * apb > 0.0) {
-      sintheta = -sintheta;
-    }
-    printf(" cos=%g sin=%g\n", costheta, sintheta);
-    for (int k=-15; k<=15; k++) {
-      size_t jc, ic;
-      jc = jb+(size_t)(jx+k*sintheta);
-      ic = ib+(size_t)(ix+k*costheta);
-      png_bytep pixel = ovector[jc] + ic * 4;
+    // downward trace
+    double icur, jcur;
+    icur = ib + ix;
+    jcur = jb + jx;
+    for (int w=0; w<100; w++) {
+      size_t ic = round(icur);
+      size_t jc = round(jcur);
+      //printf(" dn [%4zu,%4zu]\n", jc,ic);
+      png_bytep pixel = ovector[jc]+ic*4;
+      if (pixel[3] == 0) goto END_DNTRACE;
       pixel[3] = 0xff;
+      size_t ij = ic+jc*owidth;
+      icur += ubuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.8;
+      jcur -= vbuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.8;
+      if ((icur<0.0)||(icur>owidth-1)||(jcur<0.0)||(jcur>oheight-1)){
+        goto END_DNTRACE;
+      }
     }
+    END_DNTRACE:
+    // upward trace
+    icur = ib + ix;
+    jcur = jb + jx;
+    for (int w=0; w<100; w++) {
+      size_t ic = round(icur);
+      size_t jc = round(jcur);
+      //printf(" up [%4zu,%4zu]\n", jc,ic);
+      png_bytep pixel = ovector[jc]+ic*4;
+      if (pixel[3] == 0) goto END_UPTRACE;
+      pixel[3] = 0xff;
+      size_t ij = ic+jc*owidth;
+      icur -= ubuf[ij]/hypot(ubuf[ij],vbuf[ij])*1.5;
+      jcur += vbuf[ij]/hypot(ubuf[ij],vbuf[ij])*1.5;
+      if ((icur<0.0)||(icur>owidth-1)||(jcur<0.0)||(jcur>oheight-1)){
+        goto END_UPTRACE;
+      }
+    }
+    END_UPTRACE:
     // end of iteration
     SKIPBLOCK: ;
   // end double loop for block
