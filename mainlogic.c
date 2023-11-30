@@ -381,8 +381,7 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
     if (r != GSE_OKAY) { return r; }
   }
   r = project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
-    IPARM_WINDS, pal, windspeed,
-    ((gflg_jet_lower) ? ubuf : NULL));
+    IPARM_WINDS, pal, windspeed, ubuf);
   if (ubuf) { free(ubuf); }
   return r;
 }

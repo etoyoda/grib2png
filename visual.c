@@ -789,41 +789,65 @@ draw_jet(png_bytep *ovector, const double *gbuf,
 {
   const double *ubuf = omake;
   const double *vbuf = omake + owidth*oheight;
-  double *dbuf = omake + owidth*oheight*2;
-  // 風向に直交する方向での風速の微分
-  // 風向は (u,v)/g なので時計回りに90度進めると (v,-u)/g
-  for (size_t j = 3; j < (oheight-3); j++) {
-    for (size_t i = 3; i < (owidth-3); i++) {
-      dbuf[i+j*owidth] =
-        vbuf[i+j*owidth] / gbuf[i+j*owidth]
-        * (gbuf[i+1+j*owidth] - gbuf[i-1+j*owidth]
-         + gbuf[i+3+j*owidth] - gbuf[i-3+j*owidth]
-        )
-        -
-        ubuf[i+j*owidth] / gbuf[i+j*owidth]
-        * (gbuf[i+(j-1)*owidth] - gbuf[i+(j+1)*owidth]
-         + gbuf[i+(j-3)*owidth] - gbuf[i+(j+3)*owidth]
-        );
-    }
-  }
-  for (size_t j = 4; j < (oheight-4); j++) {
-    for (size_t i = 4; i < (owidth-4); i++) {
-      if (
-        (gbuf[i+j*owidth] > limit) && (
-          (dbuf[i-1+(j-1)*owidth] * dbuf[i+j*owidth] < 0.0) ||
-          (dbuf[i  +(j-1)*owidth] * dbuf[i+j*owidth] < 0.0) ||
-          (dbuf[i+1+(j-1)*owidth] * dbuf[i+j*owidth] < 0.0) ||
-          (dbuf[i-1+j    *owidth] * dbuf[i+j*owidth] < 0.0) ||
-          (dbuf[i+1+j    *owidth] * dbuf[i+j*owidth] < 0.0) ||
-          (dbuf[i-1+(j+1)*owidth] * dbuf[i+j*owidth] < 0.0) ||
-          (dbuf[i  +(j+1)*owidth] * dbuf[i+j*owidth] < 0.0) ||
-          (dbuf[i+1+(j+1)*owidth] * dbuf[i+j*owidth] < 0.0)
-        )
-      ){
-        png_bytep pixel = ovector[j] + i * 4;
-        pixel[3] = 255;
+  // begin double loop for block
+  for (size_t jb = 0; jb <= (oheight-64); jb+=32) {
+  for (size_t ib = 0; ib <= (owidth-64); ib+=32) {
+    // looks up local maxima
+    double uavr, vavr, gmax;
+    size_t ix, jx;
+    uavr = vavr = 0.0;
+    gmax = -HUGE_VAL;  ix = jx = 0;
+    for (size_t j=0; j<64; j++) {
+    for (size_t i=0; i<64; i++) {
+      size_t ij = (ib+i)+(jb+j)*owidth;
+      uavr += ubuf[ij];
+      vavr += vbuf[ij];
+      if (gmax < gbuf[ij]) {
+        ix = i; jx = j; gmax = gbuf[ij];
       }
     }
+    }
+    if ((ix<=16)||(jx<=16)||(ix>48)||(jx>48)) goto SKIPBLOCK;
+    if (gmax < 100.0) goto SKIPBLOCK;
+    //printf("draw_jet local maximum found: [%4zu,%4zu] %g\n", jx+jb, ix+ib, gmax);
+    // scan 31x31 box around the local maxima
+    double xxsum, yysum, xysum;
+    xxsum = yysum = xysum = 0.0;
+    for (int j=-15; j<=15; j++) {
+    for (int i=-15; i<=15; i++) {
+      size_t ij = (size_t)(ix+i)+ib+((size_t)(jx+j)+jb)*owidth;
+      double dif = gbuf[ij] - gmax;
+      xxsum += dif*i*i;
+      yysum += dif*j*j;
+      xysum += dif*i*j;
+    }
+    }
+    xxsum /= 11055344.0; xysum /= 6150400.0; yysum /= 11055344.0;
+    //printf(" xx=%g yy=%g xy=%g\n", xxsum, yysum, xysum);
+    double apb = xxsum + yysum;
+    double costheta = sqrt(xxsum/apb);
+    double sintheta = sqrt(yysum/apb);
+    double amb = 0.5*xysum/(costheta*sintheta);
+    //printf(" a+b=%g a-b=%g\n", apb, amb);
+    if (fabs(amb) < 0.1 * fabs(apb)) {
+      //printf(" skip circular\n");
+      goto SKIPBLOCK;
+    }
+    if (xysum * apb > 0.0) {
+      sintheta = -sintheta;
+    }
+    printf(" cos=%g sin=%g\n", costheta, sintheta);
+    for (int k=-15; k<=15; k++) {
+      size_t jc, ic;
+      jc = jb+(size_t)(jx+k*sintheta);
+      ic = ib+(size_t)(ix+k*costheta);
+      png_bytep pixel = ovector[jc] + ic * 4;
+      pixel[3] = 0xff;
+    }
+    // end of iteration
+    SKIPBLOCK: ;
+  // end double loop for block
+  }
   }
   return 0;
 }
