@@ -285,9 +285,23 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   vbuf = ubuf + onx * ony;
   dbuf = vbuf + onx * ony;
   reproject(dbuf, &b, dbuf_u, ofp);
-  smooth49(ubuf, dbuf, onx, ony);
+  switch (get_parameter(gsp_u)) {
+  case IPARM_U:
+    smooth49(ubuf, dbuf, onx, ony);
+    break;
+  case IPARM_V: default:
+    smooth49(vbuf, dbuf, onx, ony);
+    break;
+  }
   reproject(dbuf, &b, dbuf_v, ofp);
-  smooth49(vbuf, dbuf, onx, ony);
+  switch (get_parameter(gsp_v)) {
+  case IPARM_U:
+    smooth49(ubuf, dbuf, onx, ony);
+    break;
+  case IPARM_V: default:
+    smooth49(vbuf, dbuf, onx, ony);
+    break;
+  }
 #pragma omp parallel for
   for (size_t ij = 0; ij < onx*ony; ij++) {
     dbuf[ij] = wdir(ubuf[ij], vbuf[ij]);
