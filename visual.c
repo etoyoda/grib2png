@@ -790,6 +790,7 @@ draw_jet(png_bytep *ovector, const double *gbuf,
   const double *ubuf = omake;
   const double *vbuf = omake + owidth*oheight;
   // begin double loop for block
+#pragma omp parallel for
   for (size_t jb = 0; jb <= (oheight-64); jb+=32) {
   for (size_t ib = 0; ib <= (owidth-64); ib+=32) {
     // looks up local maxima
@@ -819,8 +820,8 @@ draw_jet(png_bytep *ovector, const double *gbuf,
       if (pixel[3] == 0) goto END_DNTRACE;
       pixel[3] = 0xff;
       size_t ij = ic+jc*owidth;
-      icur += ubuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.8;
-      jcur -= vbuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.8;
+      icur += ubuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.25;
+      jcur -= vbuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.25;
       if ((icur<0.0)||(icur>owidth-1)||(jcur<0.0)||(jcur>oheight-1)){
         goto END_DNTRACE;
       }
@@ -837,8 +838,8 @@ draw_jet(png_bytep *ovector, const double *gbuf,
       if (pixel[3] == 0) goto END_UPTRACE;
       pixel[3] = 0xff;
       size_t ij = ic+jc*owidth;
-      icur -= ubuf[ij]/hypot(ubuf[ij],vbuf[ij])*1.5;
-      jcur += vbuf[ij]/hypot(ubuf[ij],vbuf[ij])*1.5;
+      icur -= ubuf[ij]/hypot(ubuf[ij],vbuf[ij])*0.25;
+      jcur += vbuf[ij]/hypot(ubuf[ij],vbuf[ij])*0.25;
       if ((icur<0.0)||(icur>owidth-1)||(jcur<0.0)||(jcur>oheight-1)){
         goto END_UPTRACE;
       }
