@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <unistd.h>
 #include <time.h>
 #include "gribscan.h"
@@ -69,16 +70,102 @@ ptlist_load(const char *filename)
   return r;
 }
 
-/*
- * 改造予定地
+  double
+interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
+{
+  double ri, rj, fi, fj, weight[4];
+  size_t ijofs[4];
+  int ceil_ri, floor_ri;
+  if (lon < bp->w) { lon += 360.0; } 
+  if (lat > bp->n || lat < bp->s) { return nan(""); }
+  ri = (lon - bp->w) * (bp->ni - 1) / (bp->e - bp->w);
+  if ((lon > bp->e) && !bp->wraplon) { return nan(""); }
+  rj = (bp->n - lat) * (bp->nj - 1) / (bp->n - bp->s);
+  fi = ri - floor(ri);
+  fj = rj - floor(rj);
+  // これは起こらないとはおもうんだけど
+  if ((floor_ri = floor(ri)) > (bp->ni - 1)) { floor_ri = bp->ni - 1; }
+  if ((ceil_ri = ceil(ri)) > (bp->ni - 1)) { ceil_ri = 0; }
+  ijofs[0] = floor_ri + floor(rj) * bp->ni;
+  weight[0] = 1.0 - hypot(fi, fj);
+  if (weight[0] < 0.0) { weight[0] = 0.0; }
+  ijofs[1] =  ceil_ri + floor(rj) * bp->ni;
+  weight[1] = 1.0 - hypot(1 - fi, fj);
+  if (weight[1] < 0.0) { weight[1] = 0.0; }
+  ijofs[2] = floor_ri +  ceil(rj) * bp->ni;
+  weight[2] = 1.0 - hypot(fi, 1 - fj);
+  if (weight[2] < 0.0) { weight[2] = 0.0; }
+  ijofs[3] =  ceil_ri +  ceil(rj) * bp->ni;
+  weight[3] = 1.0 - hypot(1 - fi, 1 - fj);
+  if (weight[3] < 0.0) { weight[3] = 0.0; }
+  return (dbuf[ijofs[0]] * weight[0] + dbuf[ijofs[1]] * weight[1]
+    + dbuf[ijofs[2]] * weight[2] + dbuf[ijofs[3]] * weight[3])
+    / (weight[0] + weight[1] + weight[2] + weight[3]);
+}
+
+  // 特定パラメタの場合十進尺度 scale_d を補正する
+  // 気温または露点: 0.1 K 単位に変換
+  // 積算降水量: 0.1 mm 単位に変換
+  void
+adjust_scales(iparm_t param, int *scale_e, int *scale_d)
+{
+  switch (param) {
+  // 海面気圧: 0.1 hPa 単位に変換
+  // 典型的値域: 9000..10900
+  case IPARM_Pmsl:
+    *scale_d += 1;
+    break;
+  // 渦度または発散: 1e-6/s 単位に変換
+  // 典型的値域: -1000..1000
+  case IPARM_rDIV:
+  case IPARM_rVOR:
+    *scale_d -= 6;
+    break;
+  // 気温または露点: 0.1 K 単位に変換
+  // 典型的値域: 2500..3200
+  case IPARM_T:
+  case IPARM_dT:
+  // 風速: 0.1 m/s 単位に変換
+  // 典型的値域: -1000..1000
+  case IPARM_U:
+  case IPARM_V:
+  // 積算降水量: 0.1 mm 単位に変換
+  // 典型的値域: 0..10000
+  case IPARM_RAIN:
+    *scale_d -= 1;
+    break;
+default:
+    break;
+  }
+}
+
+/* ptlist に記載された地点リストについて gsp からGPVを抜き出して印字。
  */
   gribscan_err_t
 save_data(const struct grib2secs *gsp, const char *title)
 {
+  bounding_t b;
   unsigned i;
+  size_t npixels;
+  double *dbuf;
+  gribscan_err_t r;
+  if ((npixels = get_npixels(gsp)) == 0) {
+    fprintf(stderr, "DRS missing\n");
+    return ERR_BADGRIB;
+  }
+  //--- begin memory section
+  if ((dbuf = malloc(sizeof(double) * npixels)) == NULL) {
+    fprintf(stderr, "malloc failed %zu\n", npixels);
+    return ERR_NOMEM;
+  }
+  r = decode_ds(gsp, dbuf, adjust_scales);
+  if (r != GSE_OKAY) return r;
+  decode_gds(gsp, &b);
   for (i = 0; i < maxpts; i++) {
+    double x;
     if (ptlist[i].tag[0] == '\0') break;
-    printf("%s,%16s,%g\n", title, ptlist[i].tag, 0.0);
+    x = interpol(dbuf, &b, ptlist[i].lat, ptlist[i].lon);
+    printf("%s,%16s,%g\n", title, ptlist[i].tag, x);
   }
   return GSE_OKAY;
 }
@@ -98,7 +185,6 @@ checksec7(const struct grib2secs *gsp)
   double vlev, memb;
   long ftime, dura;
   get_reftime(&t, gsp);
-  showtime(sreftime, sizeof sreftime, &t);
   iparm = get_parameter(gsp);
   ftime = get_ftime(gsp);
   vlev = get_vlevel(gsp);
@@ -114,6 +200,7 @@ checksec7(const struct grib2secs *gsp)
   }
 
 SAVE:
+  showtime(sreftime, sizeof sreftime, &t);
   sprintf(title, "%s,%6s,%-+5ld,%-+5ld,%-8s,%-+4.3g",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
   r = save_data(gsp, title);
