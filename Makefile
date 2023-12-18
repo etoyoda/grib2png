@@ -1,6 +1,6 @@
 OBJS=gribscan.o mainlogic.o visual.o mymalloc.o
 OBJS2=gribscan.o mainslim.o mymalloc.o filter.o
-OBJS3=gribscan.o mainpick.o mymalloc.o
+OBJS3=gribscan.o mainpick.o mymalloc.o filter.o
 LIBS= -lm -lpng
 # OPTS= -g -pg を想定
 LFLAGS= $(OPTS) -fopenmp
