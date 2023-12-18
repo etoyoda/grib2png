@@ -8,44 +8,24 @@
 #include "visual.h"
 #include "mymalloc.h" // only for mymemstat();
 
-static struct ofile_t {
-  const char *fnam;
-  FILE *ofp;
-  size_t pos;
-  unsigned char sec0[16];
-  unsigned char *ids;
-  unsigned char *gds;
-} ofile = {
-  NULL, // fnam
-  NULL, // ofp
-  0, // pos
-  { 'G','R','I','B',
-    0,0,
-    0, // discipline
-    2, // edition - fixed 2
-    0,0,0,0, 0,0,0,0  // size of msg
-  },
-  NULL, // ids
-  NULL // gds
-};
+struct ptlist_t {
+  float lat;
+  float lon;
+  char tag[16];
+} *ptlist = NULL;
 
-static const char *sfilter = "p[VVPa]=v70000=v30000=|&,p[rDIV]=v85000=v25000=|&,p[rVOR]=v50000=&,p[U]=p[V]=p[T]=p[RH]=p[Z]=||||,|||,g361<&,p[Z]=v50000=&p[RAIN]=p[Pmsl]=||,g720%0=g360=|&,|";
+FILE *outf = NULL;
 
   gribscan_err_t
 save_open(const char *ofnam)
 {
   if (ofnam) {
-    ofile.fnam = ofnam;
+    outf = fopen(ofnam, "wt");
+    if (outf == NULL) return ERR_IO;
   } else {
-    if (ofile.fnam) {
-      return GSE_OKAY;
-    }
-    ofile.fnam = "distilled.bin";
+    if (outf) { fclose(outf); }
+    outf = stdout;
   }
-  if (NULL == (ofile.ofp = fopen(ofile.fnam, "wb"))) {
-    return ERR_IO;
-  }
-  ofile.pos = 0;
   return GSE_OKAY;
 }
 
@@ -198,10 +178,9 @@ argscan(int argc, const char **argv)
       } else if (argv[i][1] == 'q') {
         r = save_open("/dev/null");
         if (r != GSE_OKAY) goto BARF;
-      } else if (argv[i][1] == 'f') {
-        sfilter = argv[i] + 2;
-      } else if (argv[i][1] == 'a') {
-        sfilter = "";
+      } else if (argv[i][1] == 'p') {
+        r = ptlist_open(argv[i] + 2);
+        if (r != GSE_OKAY) goto BARF;
       } else {
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         r = GSE_JUSTWARN;
@@ -210,6 +189,8 @@ argscan(int argc, const char **argv)
     } else {
       // implicit open
       r = save_open(NULL);
+      if (r != GSE_OKAY) goto BARF;
+      r = ptlist_open(NULL);
       if (r != GSE_OKAY) goto BARF;
       r = grib2scan_by_filename(argv[i]);
       if (r != GSE_OKAY) goto BARF;
@@ -227,7 +208,7 @@ main(int argc, const char **argv)
   gribscan_err_t r;
   r = argscan(argc, argv);
   if (r == ERR_NOINPUT) {
-    fprintf(stderr, "usage: %s [-a][-fFILTER][-oFILENAME] input ...\n", argv[0]);
+    fprintf(stderr, "usage: %s [-oFILENAME][-pPICKPTS] input ...\n", argv[0]);
   } else if (r != GSE_OKAY) {
     fprintf(stderr, "%s: exit(%u)\n", argv[0], r);
   }
