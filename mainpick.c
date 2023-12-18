@@ -104,16 +104,15 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
 }
 
   // 特定パラメタの場合十進尺度 scale_d を補正する
-  // 気温または露点: 0.1 K 単位に変換
-  // 積算降水量: 0.1 mm 単位に変換
+  // 注： mainlogic.c とは値が異なる
   void
 adjust_scales(iparm_t param, int *scale_e, int *scale_d)
 {
   switch (param) {
-  // 海面気圧: 0.1 hPa 単位に変換
-  // 典型的値域: 9000..10900
+  // 海面気圧: 1 hPa 単位に変換
+  // 典型的値域: 900..1090
   case IPARM_Pmsl:
-    *scale_d += 1;
+    *scale_d += 2;
     break;
   // 渦度または発散: 1e-6/s 単位に変換
   // 典型的値域: -1000..1000
@@ -121,18 +120,19 @@ adjust_scales(iparm_t param, int *scale_e, int *scale_d)
   case IPARM_rVOR:
     *scale_d -= 6;
     break;
-  // 気温または露点: 0.1 K 単位に変換
-  // 典型的値域: 2500..3200
+  // 気温または露点: 1 K 単位に変換
+  // 典型的値域: 250..320
   case IPARM_T:
   case IPARM_dT:
-  // 風速: 0.1 m/s 単位に変換
-  // 典型的値域: -1000..1000
+    break;
+  // 風速: 1 m/s 単位に変換
+  // 典型的値域: -100..100
   case IPARM_U:
   case IPARM_V:
-  // 積算降水量: 0.1 mm 単位に変換
-  // 典型的値域: 0..10000
+    break;
+  // 積算降水量: 1 mm 単位に変換
+  // 典型的値域: 0..1000
   case IPARM_RAIN:
-    *scale_d -= 1;
     break;
 default:
     break;
@@ -165,7 +165,7 @@ save_data(const struct grib2secs *gsp, const char *title)
     double x;
     if (ptlist[i].tag[0] == '\0') break;
     x = interpol(dbuf, &b, ptlist[i].lat, ptlist[i].lon);
-    printf("%s,%16s,%g\n", title, ptlist[i].tag, x);
+    printf("%s,%8s,%8.5g\n", title, ptlist[i].tag, x);
   }
   return GSE_OKAY;
 }
