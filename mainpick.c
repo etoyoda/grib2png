@@ -73,8 +73,13 @@ ptlist_load(const char *filename)
  * 改造予定地
  */
   gribscan_err_t
-save_data(const struct grib2secs *gsp)
+save_data(const struct grib2secs *gsp, const char *title)
 {
+  unsigned i;
+  for (i = 0; i < maxpts; i++) {
+    if (ptlist[i].tag[0] == '\0') break;
+    printf("%s,%16s,%g\n", title, ptlist[i].tag, 0.0);
+  }
   return GSE_OKAY;
 }
 
@@ -87,6 +92,7 @@ checksec7(const struct grib2secs *gsp)
 {
   gribscan_err_t r;
   struct tm t;
+  char title[maxline];
   char sreftime[24];
   unsigned long iparm;
   double vlev, memb;
@@ -108,9 +114,9 @@ checksec7(const struct grib2secs *gsp)
   }
 
 SAVE:
-  printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
+  sprintf(title, "%s,%6s,%-+5ld,%-+5ld,%-8s,%-+4.3g",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
-  r = save_data(gsp);
+  r = save_data(gsp, title);
   goto END_NORMAL;
 
 END_SKIP:
