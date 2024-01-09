@@ -389,11 +389,8 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   textout_winds(gsp_u, dbuf_u, gsp_v, dbuf_v);
   vlev = get_vlevel(gsp_u);
   palette_t pal = (vlev >= 850.e2) ? PALETTE_WINDS_SFC : PALETTE_WINDS; 
-  if ((vlev >= 925.e2)||(vlev == 300.e2)) {
-    gribscan_err_t r;
-    r = project_winddir(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv, &ubuf);
-    if (r != GSE_OKAY) { return r; }
-  }
+  r = project_winddir(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv, &ubuf);
+  if (r != GSE_OKAY) { return r; }
   r = project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
     IPARM_WINDS, pal, windspeed, ubuf);
   if (ubuf) { free(ubuf); }

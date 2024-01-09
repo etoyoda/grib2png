@@ -278,19 +278,20 @@ setpixel_windsfc(png_bytep pixel, double val)
   // 通報値 (0.1 m/s)
   int mps = floor(val * 0.1);
   if (mps < 5) {
-    pixel[0] = pixel[1] = pixel[2] = pixel[3] = 0;
+    pixel[0] = 80; pixel[1] = 80; pixel[2] = 128; pixel[3] = 0;
   } else if (mps < 10) {
-    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0x80;
+    pixel[0] = 80; pixel[1] = 105; pixel[2] = 128; pixel[3] = 0;
+    //pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0;
   } else if (mps < 15) {
-    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0x80;
+    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 20) {
-    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0x80;
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 25) {
-    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 0x80;
+    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 30) {
-    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0x80;
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0;
   } else {
-    pixel[0] = 100; pixel[1] = 0; pixel[2] = 80; pixel[3] = 0xC0;
+    pixel[0] = 100; pixel[1] = 0; pixel[2] = 80; pixel[3] = 0;
   }
 }
 
@@ -300,21 +301,21 @@ setpixel_winds(png_bytep pixel, double val)
   // 通報値 (0.1 m/s)
   int mps = floor(val * 0.1);
   if (mps < 1) {
-    pixel[0] = 64; pixel[1] = 242; pixel[2] = 255; pixel[3] = 0x80;
+    pixel[0] = 80; pixel[1] = 80; pixel[2] = 128; pixel[3] = 0;
   } else if (mps < 25) {
-    pixel[0] = pixel[1] = pixel[2] = pixel[3] = 0;
+    pixel[0] = 80; pixel[1] = 105; pixel[2] = 128; pixel[3] = 0;
   } else if (mps < 30) {
-    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0x80;
+    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0;
   } else if (mps < 40) {
-    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0x80;
+    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 50) {
-    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0x80;
+    pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 70) {
-    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 0x80;
+    pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 100) {
-    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0x80;
+    pixel[0] = 180; pixel[1] = 0; pixel[2] = 104; pixel[3] = 0;
   } else {
-    pixel[0] = 100; pixel[1] = 0; pixel[2] = 80; pixel[3] = 0xC0;
+    pixel[0] = 100; pixel[1] = 0; pixel[2] = 80; pixel[3] = 0;
   }
 }
 
@@ -791,20 +792,17 @@ draw_jet(png_bytep *ovector, const double *gbuf,
   const double *vbuf = omake + owidth*oheight;
   // begin double loop for block
 #pragma omp parallel for
-  for (size_t jb = 4; jb < oheight; jb+=8) {
-  for (size_t ib = 4; ib < owidth; ib+=8) {
+  for (size_t jb = 0u; jb < oheight; jb+=4u) {
+  for (size_t ib = 0u; ib < owidth; ib+=4u) {
     // downward trace
     double icur, jcur;
-    icur = ib;
-    jcur = jb;
+    icur = ib + ((ib*17u + jb*89u) % 4u);
+    jcur = jb + ((ib*53u + jb*29u) % 4u);
     for (int w=0; w<32; w++) {
       size_t ic = round(icur);
       size_t jc = round(jcur);
       //printf(" dn [%4zu,%4zu]\n", jc,ic);
       png_bytep pixel = ovector[jc]+ic*4;
-      pixel[0] = 0x7Fu;
-      pixel[1] = 0x6Cu;
-      pixel[2] = 0x11u;
       pixel[3] = 0xFFu - (31u-(unsigned)w)*(0x80u/31u);
       size_t ij = ic+jc*owidth;
       icur += ubuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.25;
