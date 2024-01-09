@@ -792,12 +792,15 @@ draw_jet(png_bytep *ovector, const double *gbuf,
   const double *vbuf = omake + owidth*oheight;
   // begin double loop for block
 #pragma omp parallel for
-  for (size_t jb = 0u; jb < oheight; jb+=4u) {
-  for (size_t ib = 0u; ib < owidth; ib+=4u) {
+  for (size_t jb = 0u; jb <= (oheight-4u); jb+=4u) {
+  for (size_t ib = 0u; ib <= (owidth-4u); ib+=4u) {
     // downward trace
     double icur, jcur;
-    icur = ib + ((ib*17u + jb*89u) % 4u);
-    jcur = jb + ((ib*53u + jb*29u) % 4u);
+    // well, I know random(3) is MT-unsafe; its just a quick hack
+    unsigned long rdm;
+    rdm = random();
+    icur = ib + (rdm / 773u) % 4u;
+    jcur = jb + (rdm / 991u) % 4u;
     for (int w=0; w<32; w++) {
       size_t ic = round(icur);
       size_t jc = round(jcur);
