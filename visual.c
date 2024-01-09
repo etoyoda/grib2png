@@ -791,34 +791,21 @@ draw_jet(png_bytep *ovector, const double *gbuf,
   const double *vbuf = omake + owidth*oheight;
   // begin double loop for block
 #pragma omp parallel for
-  for (size_t jb = 0; jb <= (oheight-64); jb+=32) {
-  for (size_t ib = 0; ib <= (owidth-64); ib+=32) {
-    // looks up local maxima
-    double gmax;
-    size_t ix, jx;
-    gmax = -HUGE_VAL;  ix = jx = 0;
-    for (size_t j=0; j<64; j++) {
-    for (size_t i=0; i<64; i++) {
-      size_t ij = (ib+i)+(jb+j)*owidth;
-      if (gmax < gbuf[ij]) {
-        ix = i; jx = j; gmax = gbuf[ij];
-      }
-    }
-    }
-    if ((ix<=16)||(jx<=16)||(ix>48)||(jx>48)) goto SKIPBLOCK;
-    if (gmax < limit) goto SKIPBLOCK;
-    //printf("draw_jet local maximum found: [%4zu,%4zu] %g\n", jx+jb, ix+ib, gmax);
+  for (size_t jb = 4; jb < oheight; jb+=8) {
+  for (size_t ib = 4; ib < owidth; ib+=8) {
     // downward trace
     double icur, jcur;
-    icur = ib + ix;
-    jcur = jb + jx;
-    for (int w=0; w<100; w++) {
+    icur = ib;
+    jcur = jb;
+    for (int w=0; w<32; w++) {
       size_t ic = round(icur);
       size_t jc = round(jcur);
       //printf(" dn [%4zu,%4zu]\n", jc,ic);
       png_bytep pixel = ovector[jc]+ic*4;
-      if (pixel[3] == 0) goto END_DNTRACE;
-      pixel[3] = 0xff;
+      pixel[0] = 0x7Fu;
+      pixel[1] = 0x6Cu;
+      pixel[2] = 0x11u;
+      pixel[3] = 0xFFu - (31u-(unsigned)w)*(0x80u/31u);
       size_t ij = ic+jc*owidth;
       icur += ubuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.25;
       jcur -= vbuf[ij]/hypot(ubuf[ij],vbuf[ij]) * 0.25;
@@ -826,27 +813,7 @@ draw_jet(png_bytep *ovector, const double *gbuf,
         goto END_DNTRACE;
       }
     }
-    END_DNTRACE:
-    // upward trace
-    icur = ib + ix;
-    jcur = jb + jx;
-    for (int w=0; w<100; w++) {
-      size_t ic = round(icur);
-      size_t jc = round(jcur);
-      //printf(" up [%4zu,%4zu]\n", jc,ic);
-      png_bytep pixel = ovector[jc]+ic*4;
-      if (pixel[3] == 0) goto END_UPTRACE;
-      pixel[3] = 0xff;
-      size_t ij = ic+jc*owidth;
-      icur -= ubuf[ij]/hypot(ubuf[ij],vbuf[ij])*0.25;
-      jcur += vbuf[ij]/hypot(ubuf[ij],vbuf[ij])*0.25;
-      if ((icur<0.0)||(icur>owidth-1)||(jcur<0.0)||(jcur>oheight-1)){
-        goto END_UPTRACE;
-      }
-    }
-    END_UPTRACE:
-    // end of iteration
-    SKIPBLOCK: ;
+    END_DNTRACE: ;
   // end double loop for block
   }
   }
