@@ -262,7 +262,8 @@ setpixel_rain6(png_bytep pixel, double val)
   } else if (mmh < 20) {
     pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; pixel[3] = 255;
   } else if (mmh < 30) {
-    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 255;
+    pixel[0] = 125; pixel[1] = 122; pixel[2] = 0; pixel[3] = 0;
+    //pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 255;
   } else if (mmh < 50) {
     pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 255;
   } else if (mmh < 80) {
@@ -283,7 +284,8 @@ setpixel_windsfc(png_bytep pixel, double val)
     pixel[0] = 80; pixel[1] = 105; pixel[2] = 128; pixel[3] = 0;
     //pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0;
   } else if (mps < 15) {
-    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0;
+    pixel[0] = 125; pixel[1] = 122; pixel[2] = 0; pixel[3] = 0;
+    //pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 20) {
     pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 25) {
@@ -784,6 +786,14 @@ drawshear(png_bytep *ovector, const double *gbuf,
   return 0;
 }
 
+  unsigned long
+rand_parkmiller(void)
+{
+  volatile static unsigned long r = 12345;
+  r = (48271u * r) % 2147483647u;
+  return r;
+}
+
   int
 draw_jet(png_bytep *ovector, const double *gbuf,
   size_t owidth, size_t oheight, double *omake, double limit)
@@ -792,15 +802,15 @@ draw_jet(png_bytep *ovector, const double *gbuf,
   const double *vbuf = omake + owidth*oheight;
   // begin double loop for block
 #pragma omp parallel for
-  for (size_t jb = 0u; jb <= (oheight-4u); jb+=4u) {
-  for (size_t ib = 0u; ib <= (owidth-4u); ib+=4u) {
+  for (size_t jb = 0u; jb <= (oheight-6u); jb+=6u) {
+  for (size_t ib = 0u; ib <= (owidth-6u); ib+=6u) {
     // downward trace
     double icur, jcur;
     // well, I know random(3) is MT-unsafe; its just a quick hack
     unsigned long rdm;
-    rdm = random();
-    icur = ib + (rdm / 773u) % 4u;
-    jcur = jb + (rdm / 991u) % 4u;
+    rdm = rand_parkmiller();
+    icur = ib + (rdm / 773u) % 6u;
+    jcur = jb + (rdm / 991u) % 6u;
     for (int w=0; w<32; w++) {
       size_t ic = round(icur);
       size_t jc = round(jcur);
