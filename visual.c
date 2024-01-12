@@ -92,23 +92,23 @@ setpixel_z(png_bytep pixel, double val)
   // val は 1 m 単位、縞々透過は 60 m 単位 (6000 m 以上では 120 m 単位)
   long istep = floor(val / cycle); 
   if (val < 1000.0) { // 925hPa用
-    blue = (istep - 720/60) * 24 + 0x80;
+    blue = (istep - 720/60) * 24 + 0x40;
   } else if (val < 2160.0) { // 850hPa用
-    blue = (istep - 1440/60) * 16 + 0x80;
+    blue = (istep - 1440/60) * 16 + 0x40;
   } else if (val < 4200.0) { // 700hPa用
-    blue = (istep - 3000/60) * 16 + 0x80;
+    blue = (istep - 3000/60) * 16 + 0x40;
   } else if (val < 6360.0) { // 500hPa用
-    blue = (istep - 5520/60) * 16 + 0x80;
+    blue = (istep - 5520/60) * 16 + 0x40;
   } else if (val < 8160.0) { // 400hPa用
-    blue = (istep - 7200/120) * 24 + 0x80;
+    blue = (istep - 7200/120) * 24 + 0x40;
   } else if (val < 10320.0) { // 300hPa用
-    blue = (istep - 9120/120) * 24 + 0x80;
+    blue = (istep - 9120/120) * 24 + 0x40;
   } else { // 200hPa用
-    blue = (istep - 11760/120) * 24 + 0x80;
+    blue = (istep - 11760/120) * 24 + 0x40;
   }
-  int red = 0xFF - blue;
+  int red = 0xC0 - blue;
   pixel[0] = (red < 0) ? 0 : (red > 0xFF) ? 0xFF : red;
-  pixel[1] = 0x80;
+  pixel[1] = 0x40;
   pixel[2] = (blue < 0) ? 0 : (blue > 0xFF) ? 0xFF : blue;
 }
 
