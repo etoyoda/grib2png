@@ -628,12 +628,12 @@ drawfront(png_bytep *ovector, const double *gbuf,
   }
   switch (pal) {
   case PALETTE_T:
-    mingrad = 12.0;
+    mingrad = 8.0;
     pal0 = 128; pal1 = pal2 = 12; pal3 = 255;
     break;
   case PALETTE_papT:
   default:
-    mingrad = 32.0;
+    mingrad = 21.333;
     pal0 = pal1 = 12; pal2 = 128; pal3 = 255;
     break;
   }
@@ -674,7 +674,12 @@ drawfront(png_bytep *ovector, const double *gbuf,
           (tfpbuf[ip1+(j+1)*owidth] * tfpbuf[i+j*owidth] < 0.0)
         )
       ){
+        if (dgbuf[i+j*owidth] < mingrad * 1.5) {
+          if ((i+j) % 2u) goto skip;
+          if ((i-j) % 2u) goto skip;
+        }
         pixel[0] = pal0; pixel[1] = pal1; pixel[2] = pal2; pixel[3] = pal3;
+        skip: ;
       }
     }
   }
