@@ -786,10 +786,13 @@ drawshear(png_bytep *ovector, const double *gbuf,
   return 0;
 }
 
+extern int gflg_jet_lower;
+
   unsigned long
 rand_parkmiller(void)
 {
-  volatile static unsigned long r = 12345;
+  volatile static unsigned long r = 12345u;
+  if (gflg_jet_lower) return 0u;
   r = (48271u * r) % 2147483647u;
   return r;
 }

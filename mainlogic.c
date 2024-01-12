@@ -601,7 +601,7 @@ argscan(int argc, const char **argv)
       case 'g':
         if (argv[i][2] == 'v') {
           gflg_rvor_with_wd = 1;
-        } else if (argv[i][3] == 'j') {
+        } else if (argv[i][2] == 'j') {
           gflg_jet_lower = 1;
         }
         break;
