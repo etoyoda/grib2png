@@ -302,14 +302,14 @@ setpixel_winds(png_bytep pixel, double val)
 {
   // 通報値 (0.1 m/s)
   int mps = floor(val * 0.1);
-  if (mps < 1) {
+  if (mps < 25) {
     pixel[0] = 80; pixel[1] = 80; pixel[2] = 128; pixel[3] = 0;
-  } else if (mps < 25) {
-    pixel[0] = 80; pixel[1] = 105; pixel[2] = 128; pixel[3] = 0;
   } else if (mps < 30) {
-    pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0;
+    pixel[0] = 80; pixel[1] = 105; pixel[2] = 128; pixel[3] = 0;
+    //pixel[0] = 160; pixel[1] = 210; pixel[2] = 255; pixel[3] = 0;
   } else if (mps < 40) {
-    pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0;
+    pixel[0] = 125; pixel[1] = 122; pixel[2] = 0; pixel[3] = 0;
+    //pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 50) {
     pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; pixel[3] = 0;
   } else if (mps < 70) {
