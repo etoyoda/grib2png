@@ -98,7 +98,7 @@ setpixel_z(png_bytep pixel, double val)
   } else if (val < 4200.0) { // 700hPa用
     blue = (istep - 3000/60) * 16 + 0x40;
   } else if (val < 6360.0) { // 500hPa用
-    blue = (istep - 5520/60) * 16 + 0x40;
+    blue = (5520/60 - istep) * 16 + 0x40;
   } else if (val < 8160.0) { // 400hPa用
     blue = (istep - 7200/120) * 24 + 0x40;
   } else if (val < 10320.0) { // 300hPa用
