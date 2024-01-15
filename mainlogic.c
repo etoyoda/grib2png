@@ -422,7 +422,7 @@ typedef struct trap_t {
       const outframe_t *ofp, char **textv);
 } trap_t;
 
-enum { N_TRAPS = 9 };
+enum { N_TRAPS = 13 };
 static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_T, 925.e2, 360L, IPARM_RH, 925.e2, 360L, project_ept },
   { NULL, IPARM_T, 850.e2, 360L, IPARM_RH, 850.e2, 360L, project_ept },
@@ -432,7 +432,11 @@ static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_U, 500.e2, 360L, IPARM_V, 500.e2, 360L, project_winds },
   { NULL, IPARM_U, 300.e2, 360L, IPARM_V, 300.e2, 360L, project_winds },
   { NULL, IPARM_U, 200.e2, 360L, IPARM_V, 200.e2, 360L, project_winds },
-  { NULL, IPARM_U, 100.e2, 360L, IPARM_V, 100.e2, 360L, project_winds }
+  { NULL, IPARM_U, 100.e2, 360L, IPARM_V, 100.e2, 360L, project_winds },
+  { NULL, IPARM_U, 925.e2, 1440L, IPARM_V, 925.e2, 1440L, project_winds },
+  { NULL, IPARM_U, 925.e2, 2880L, IPARM_V, 925.e2, 2880L, project_winds },
+  { NULL, IPARM_T, 925.e2, 1440L, IPARM_RH, 925.e2, 1440L, project_ept },
+  { NULL, IPARM_T, 925.e2, 2880L, IPARM_RH, 925.e2, 2880L, project_ept }
 };
 
   gribscan_err_t
@@ -526,7 +530,12 @@ checksec7(const struct grib2secs *gsp)
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
   // 長すぎる予報時間は最初に捨ててしまう
+  if (((ftime + dura) % 1440 == 0) && (vlev == 500.e2 || vlev == 925.e2) &&
+  (iparm != IPARM_rVOR)) {
+    goto DONT_SKIP;
+  }
   if (ftime + dura > 360) goto END_SKIP;
+  DONT_SKIP:
   // 解析値も今の所使わないので捨てる
   if (ftime + dura == 0) goto END_SKIP;
   // 要素と面の複合フィルタ
