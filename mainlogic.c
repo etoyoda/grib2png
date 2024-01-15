@@ -422,7 +422,7 @@ typedef struct trap_t {
       const outframe_t *ofp, char **textv);
 } trap_t;
 
-enum { N_TRAPS = 13 };
+enum { N_TRAPS = 19 };
 static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_T, 925.e2, 360L, IPARM_RH, 925.e2, 360L, project_ept },
   { NULL, IPARM_T, 850.e2, 360L, IPARM_RH, 850.e2, 360L, project_ept },
@@ -435,8 +435,14 @@ static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_U, 100.e2, 360L, IPARM_V, 100.e2, 360L, project_winds },
   { NULL, IPARM_U, 925.e2, 1440L, IPARM_V, 925.e2, 1440L, project_winds },
   { NULL, IPARM_U, 925.e2, 2880L, IPARM_V, 925.e2, 2880L, project_winds },
+  { NULL, IPARM_U, 925.e2, 4320L, IPARM_V, 925.e2, 4320L, project_winds },
+  { NULL, IPARM_U, 925.e2, 5760L, IPARM_V, 925.e2, 5760L, project_winds },
+  { NULL, IPARM_U, 925.e2, 7200L, IPARM_V, 925.e2, 7200L, project_winds },
   { NULL, IPARM_T, 925.e2, 1440L, IPARM_RH, 925.e2, 1440L, project_ept },
-  { NULL, IPARM_T, 925.e2, 2880L, IPARM_RH, 925.e2, 2880L, project_ept }
+  { NULL, IPARM_T, 925.e2, 2880L, IPARM_RH, 925.e2, 2880L, project_ept },
+  { NULL, IPARM_T, 925.e2, 4320L, IPARM_RH, 925.e2, 4320L, project_ept },
+  { NULL, IPARM_T, 925.e2, 5760L, IPARM_RH, 925.e2, 5760L, project_ept },
+  { NULL, IPARM_T, 925.e2, 7200L, IPARM_RH, 925.e2, 7200L, project_ept }
 };
 
   gribscan_err_t
