@@ -29,7 +29,7 @@ static struct ofile_t {
   NULL // gds
 };
 
-static const char *sfilter = "p[VVPa]=v70000=v30000=|&,p[rDIV]=v85000=v25000=|&,p[rVOR]=v50000=&,p[U]=p[V]=p[T]=p[RH]=p[Z]=||||,|||,g361<&,p[Z]=v50000=&p[RAIN]=p[Pmsl]=||,g720%0=g360=|&,|";
+static const char *sfilter = "p[VVPa]=v70000=v30000=|&,p[rDIV]=v85000=v25000=|&,p[rVOR]=v50000=&,p[U]=p[V]=p[T]=p[RH]=p[Z]=||||,|||,g361<&,p[Z]=v50000=v92500=|&,p[U]=p[V]=p[T]=||v50000=v92500=|&,p[RH]=v70000=v92500=|&,p[RAIN]=p[Pmsl]=|,|||,g720%0=g360=|&,|";
 
   gribscan_err_t
 save_open(const char *ofnam)
