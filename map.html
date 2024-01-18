@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>NWP analysis/forecast maps</title>
+<link rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""/>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
+<style>
+html { margin:0; padding:0; }
+body { margin:0; padding:0; }
+div#mapid { position:absolute; top:0px; left:0;
+  margin:0; padding:0; width:100%; height:100%; }
+div#datamenu {
+  z-index:940; position:absolute; top:20px; left:45px; width:90%; }
+div#togglemenu {
+  z-index:920; position:absolute; top:120px; left:10px; width:50px; }
+.btn { padding: 4; }
+.btnx { padding: 8; }
+</style>
+<script type="text/javascript">
+
+function addtile(mapctx, url, vnam, atb) {
+  var ly = L.imageOverlay(url, [[-85.043,-179.3],[85.043,179.3]], {attribution: atb, opacity:0.8});
+  ly.addTo(mapctx.map);
+  mapctx.ly.addOverlay(ly, vnam);
+}
+
+function cmp(a, b) {
+  const regex = /[sv](\d\d\d\d\d\d\d\d\d\d\d\d)/;
+  var at = a.match(regex);
+  var bt = b.match(regex);
+  if (at > bt) {
+    return -1;
+  } else if (at < bt) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+function vtime(path) {
+  const regex = /[sv](\d\d\d\d\d\d\d\d)T?(\d\d\d\d)/;
+  var match = path.match(regex);
+  if (match == null) {
+    return null;
+  } else {
+    return match[1] + match[2];
+  }
+}
+
+function tilelist(mapctx, xhr) {
+  var response = xhr.responseText.split(/\r?\n/);
+  var pane = document.getElementById('tilemenu');
+  var vtimes = new Object();
+  for (path of response) {
+    let vt = vtime(path);
+    if (vt) { vtimes[vt] = true; }
+  }
+  for (vt of Object.keys(vtimes).sort().reverse()) {
+    let par = document.createElement('p');
+    par.innerText = vt;
+    par.setAttribute('id', 'vt'+vt);
+    vtimes[vt] = par;
+    pane.appendChild(par);
+  }
+  // pane.style.display = 'none';
+  for (jsfnam of response) {
+    // these MUST be let (block-local)
+    let vt = vtime(jsfnam);
+    if (vt == null) continue;
+    let par = vtimes[vt];
+    let elb = document.createElement('button');
+    elb.setAttribute('class', 'btn');
+    let url = jsfnam;
+    let atb = null;
+    let vnam = null;
+    if (jsfnam.match(/^jmagrib/)) {
+      atb = '<a href="https://www.wis-jma.go.jp/">GISC Tokyo</a>'
+      vnam = jsfnam.replace(/\.png$/, '').replace(/.*T\d\d\d\dZ_/, '');
+    } else if (jsfnam.match(/^nowc/)) {
+      atb = '<a href="https://www.jma.go.jp/">JMA</a>'
+      vnam = "nowc";
+    }
+    elb.addEventListener('click',
+      function (){
+        addtile(mapctx, url, vnam, atb);
+        elb.disabled = true;
+      }
+    );
+    elb.innerText = vnam;
+    par.appendChild(elb);
+  }
+}
+
+function init() {
+  var canv = document.getElementById('mapid');
+  canv.style.csstext = 'height: ' + (window.innerHeight - 22) + ';';
+  // タイル背景地図（１）淡色地図
+  var tile1 = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
+    attribution:
+    '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>(淡色)',
+    maxZoom: 7
+  });
+  var tile2 = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/english/{z}/{x}/{y}.png', {
+    attribution:
+    '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>(English)',
+    maxZoom: 7
+  });
+  // タイル背景地図（３）写真
+  var tile3 = L.tileLayer(
+  'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', {
+    attribution:
+    '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>(写真)',
+    maxZoom: 7
+  });
+  var mymap = L.map('mapid', {
+    center: [36.0, 135.0],
+    zoom: 5,
+    layers: [tile2]
+  });
+  var basemaps = {
+    "淡色地図": tile1,
+    "English": tile2,
+    "写真": tile3
+  };
+  var lyctrl = L.control.layers(basemaps, {});
+  lyctrl.addTo(mymap);
+  var mapctx = {map: mymap, ly: lyctrl};
+  var urltil = 'files.lst';
+  var zhr = new XMLHttpRequest();
+  zhr.open('GET', urltil);
+  if (navigator.userAgent.indexOf('Trident') == -1) {
+    zhr.responseType = 'text';
+  }
+  zhr.send();
+  zhr.addEventListener("load", function() { tilelist(mapctx, zhr); });
+  var div = document.getElementById("datamenu");
+  div.style.display = 'none';
+}
+
+function togglemenu() {
+  var div = document.getElementById("datamenu");
+  div.style.display = (div.style.display == '') ? 'none' : '';
+}
+
+function closemenu() {
+  var div = document.getElementById("datamenu");
+  div.style.display = 'none';
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</head>
+<body>
+<div id="togglemenu">
+  <button onclick="togglemenu();" title="open data menu" class="btnx">&#x1F4C2;</button>
+</div>
+<div id="datamenu">
+  <div id="headarea">
+    <span>Data Layers</span>
+    <button id="closebt" onclick="closemenu();" title="close" class="btn">&#x2716;</a>
+  </div>
+  <div id="tilemenu"></div>
+</div>
+<div id="mapid">/map to be loaded here/</div>
+</body></html>
