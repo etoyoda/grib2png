@@ -638,8 +638,8 @@ drawfront(png_bytep *ovector, const double *gbuf,
     break;
   }
 #pragma omp parallel for
-  for (size_t j = 1; j < oheight - 1; j++) {
-    for (size_t i = 0; i < owidth; i++) {
+  for (size_t j = 6; j < oheight - 6; j++) {
+    for (size_t i = 6; i < owidth - 4; i++) {
       size_t ip1 = (i + 1) % owidth;
       size_t im1 = (i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
