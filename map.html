@@ -26,7 +26,15 @@ div#togglemenu {
 <script type="text/javascript">
 
 function addtile(mapctx, url, vnam, atb) {
-  var ly = L.imageOverlay(url, [[-85.043,-179.3],[85.043,179.3]], {attribution: atb, opacity:0.8});
+  var bbox;
+  if (url.match(/^nowc/)) {
+    bbox = [[21.942986,118.124957],[48.922485,151.874957]];
+  } else if  (url.match(/himdst20/)) {
+    bbox = [[20,110],[50,150]];
+  } else {
+    bbox = [[-85.043,-179.3],[85.043,179.3]];
+  }
+  var ly = L.imageOverlay(url, bbox, {attribution: atb, opacity:0.8});
   ly.addTo(mapctx.map);
   mapctx.ly.addOverlay(ly, vnam);
 }
