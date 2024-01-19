@@ -31,19 +31,6 @@ function addtile(mapctx, url, vnam, atb) {
   mapctx.ly.addOverlay(ly, vnam);
 }
 
-function cmp(a, b) {
-  const regex = /[sv](\d\d\d\d\d\d\d\d\d\d\d\d)/;
-  var at = a.match(regex);
-  var bt = b.match(regex);
-  if (at > bt) {
-    return -1;
-  } else if (at < bt) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
 function vtime(path) {
   const regex = /[sv](\d\d\d\d\d\d\d\d)T?(\d\d\d\d)/;
   var match = path.match(regex);
@@ -69,32 +56,41 @@ function tilelist(mapctx, xhr) {
     vtimes[vt] = par;
     pane.appendChild(par);
   }
-  // pane.style.display = 'none';
+  var vtbin = new Object();
   for (jsfnam of response) {
-    // these MUST be let (block-local)
     let vt = vtime(jsfnam);
     if (vt == null) continue;
-    let par = vtimes[vt];
-    let elb = document.createElement('button');
-    elb.setAttribute('class', 'btn');
-    let url = jsfnam;
-    let atb = null;
-    let vnam = null;
-    if (jsfnam.match(/^jmagrib/)) {
-      atb = '<a href="https://www.wis-jma.go.jp/">GISC Tokyo</a>'
-      vnam = jsfnam.replace(/\.png$/, '').replace(/.*T\d\d\d\dZ_/, '');
-    } else if (jsfnam.match(/^nowc/)) {
-      atb = '<a href="https://www.jma.go.jp/">JMA</a>'
-      vnam = "nowc";
+    if (vtbin[vt] == null) {
+      vtbin[vt] = new Array();
     }
-    elb.addEventListener('click',
-      function (){
-        addtile(mapctx, url, vnam, atb);
-        elb.disabled = true;
+    vtbin[vt].push(jsfnam);
+  }
+  for (vt of Object.keys(vtbin)) {
+    vtbin[vt].sort();
+    for (jsfnam of vtbin[vt]) {
+      // these MUST be let (block-local)
+      let par = vtimes[vt];
+      let elb = document.createElement('button');
+      elb.setAttribute('class', 'btn');
+      let url = jsfnam;
+      let atb = null;
+      let vnam = null;
+      if (jsfnam.match(/^jmagrib/)) {
+        atb = '<a href="https://www.wis-jma.go.jp/">GISC Tokyo</a>'
+        vnam = jsfnam.replace(/\.png$/, '').replace(/.*T\d\d\d\dZ_/, '');
+      } else if (jsfnam.match(/^nowc/)) {
+        atb = '<a href="https://www.jma.go.jp/">JMA</a>'
+        vnam = "nowc";
       }
-    );
-    elb.innerText = vnam;
-    par.appendChild(elb);
+      elb.addEventListener('click',
+        function (){
+          addtile(mapctx, url, vnam, atb);
+          elb.disabled = true;
+        }
+      );
+      elb.innerText = vnam;
+      par.appendChild(elb);
+    }
   }
 }
 
