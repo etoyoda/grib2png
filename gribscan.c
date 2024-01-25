@@ -446,10 +446,11 @@ decode_ds(const grib2secs_t *gsp, double *dbuf,
   }
   npixels = ui4(gsp->drs + 5);
   drstempl = ui2(gsp->drs + 9);
-  if (drstempl != 0) {
-    fprintf(stderr, "unsupported DRS template 5.%u\n", drstempl);
-    return ERR_BADGRIB;
-  }
+  if (drstempl == 0) goto DRT5_0;
+ // if (drstempl == 3) goto DRT5_3;
+  fprintf(stderr, "unsupported DRS template 5.%u\n", drstempl);
+  return ERR_BADGRIB;
+DRT5_0:
   float refv = float32(gsp->drs + 11);
   scale_e = si2(gsp->drs + 15);
   scale_d = si2(gsp->drs + 17);
@@ -460,6 +461,7 @@ decode_ds(const grib2secs_t *gsp, double *dbuf,
       * pow(10.0, -scale_d);
   }
   return GSE_OKAY;
+//DRT5_3:
 }
 
 // GRIB2 GDSからデータの投影法パラメタを bp に抽出する。
