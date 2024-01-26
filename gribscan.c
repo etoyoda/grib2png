@@ -50,7 +50,9 @@ ui2(const unsigned char *buf)
 getbits(const unsigned char *buf, size_t bitofs, size_t nbits)
 {
   unsigned c0, c1, c2, c3;
-  if (nbits == 7u) {
+  if (nbits == 0u) {
+    return 0u;
+  } else if (nbits == 7u) {
     switch (bitofs) {
     case 0: return buf[0] >> 1;
     case 1: return buf[0] & 0x7Fu;
@@ -503,15 +505,102 @@ DRT5_3:
   // DRS#43 - 最後の資料群の真の資料群長
   unsigned last_g_len = ui4(gsp->drs + 42);
   // DRS#47 - 尺度付き資料群長を表わすためのビット数
-  unsigned drs47 = gsp->drs[46];
+  unsigned g_len_nbits = gsp->drs[46];
   // DRS#48 - 空間差分の次数: 現状では2だけに対応
   if (gsp->drs[47] != 2) { fprintf(stderr, "DRS#22 = %u (2 only)\n", gsp->drs[47]);
     return ERR_BADGRIB;
   }
-  // DRS#49 - DRT7.3 の 6-ww; 気象庁では2に固定.
+  // DRS#49 - DRT7.3#6以後の数値のオクテット数; 気象庁では2に固定.
   if (gsp->drs[48] != 2) { fprintf(stderr, "DRS#22 = %u (2 only)\n", gsp->drs[48]);
     return ERR_BADGRIB;
   }
+  // DS#6-11 - Z(1), Z(2), Zmin (各2オクテット)
+  unsigned z1 = ui2(gsp->ds + 5);
+  unsigned z2 = ui2(gsp->ds + 7);
+  signed zmin = si2(gsp->ds + 9);
+printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
+  // 三個配列の確保
+  unsigned *group_ref = mymalloc(3 * sizeof(unsigned) * ng);
+  if (group_ref == NULL) {
+    return ERR_NOMEM;
+  }
+  unsigned *g_width = group_ref + ng;
+  unsigned *group_length = g_width + ng;
+
+  // 第1配列 group_ref の読み取り
+  unsigned char *ptr = gsp->ds + 11;
+  for (size_t j = 0; j < ng; j++) {
+    group_ref[j] = unpackbits(ptr, depth, j);
+  }
+  unsigned blocksize = (ng * depth + 7u) / 8u;
+  ptr += blocksize;
+
+  // 第2配列 g_width の読み取り
+  for (size_t j = 0; j < ng; j++) {
+    g_width[j] = unpackbits(ptr, g_width_nbits, j) + g_width_ref;
+  }
+  blocksize = (ng * g_width_nbits + 7u) / 8u;
+  ptr += blocksize;
+
+  // 第3配列 g_len の読み取り (その場で group_length に換算)
+  for (size_t j = 0; j < ng; j++) {
+    // g_len[j] とすべき値
+    unsigned g_len_j = unpackbits(ptr, g_len_nbits, j);
+    group_length[j] = g_len_ref + g_len_inc * g_len_j;
+  }
+  // group_length の最終要素は別途指定される
+  group_length[ng-1] = last_g_len;
+  blocksize = (ng * g_len_nbits + 7u) / 8u;
+  ptr += blocksize;
+
+  // 保安確認
+  size_t npx = 0;
+  size_t nbits = (ptr - gsp->ds) * 8u;
+  for (size_t j = 0; j < ng; j++) {
+    npx += group_length[j];
+    nbits += group_length[j] * g_width[j];
+  }
+  if (npx != npixels) {
+    fprintf(stderr, "npixels %zu != %zu\n", npx, npixels);
+    return ERR_BADGRIB;
+  }
+printf("nbits %zu %zu\n", nbits, gsp->dslen * 8u);
+  if (nbits > gsp->dslen * 8u) {
+    fprintf(stderr, "nbits %zu overrun %zu\n", nbits, gsp->dslen * 8u);
+    return ERR_BADGRIB;
+  }
+
+  signed x1, x2;
+  npx = 2;
+  nbits = g_width[0] * 2;
+  x1 = z2;
+  x2 = z1;
+  for (size_t j = 0; j < ng; j++) {
+    size_t grplen = (j == 0) ? (group_length[j] - 2) : group_length[j];
+    for (size_t k = 0; k < grplen; k++) {
+      signed x, y, z;
+      size_t byteofs = nbits / 8u;
+      size_t bitofs = nbits % 8u;
+      z = getbits(ptr + byteofs, bitofs, g_width[j]);
+      y = z + (int)group_ref[j] + zmin;
+      x = y + 2u * x1 - x2;
+printf("%5zu z=%5d gref=%5d y=%5d x=%5d\n", npx, z, group_ref[j], y, x);
+      // shift to next pixel
+      nbits += g_width[j];
+      npx++;
+      x2 = x1;
+      x1 = x;
+    }
+  }
+
+  
+
+for (size_t j = 0; j < ng; j++) {
+printf("grp %5zu ref %5u w %5u len %5u\n", j, group_ref[j], g_width[j], group_length[j]);
+}
+
+
+  myfree(group_ref);
 
   fprintf(stderr, "okay 未完成なので落ちる\n");
   // デコード部完成まで落とす
