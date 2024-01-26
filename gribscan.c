@@ -444,10 +444,13 @@ decode_ds(const grib2secs_t *gsp, double *dbuf,
     fprintf(stderr, "missing DRS %zu DS %zu\n", gsp->drslen, gsp->dslen);
     return ERR_BADGRIB;
   }
+  // DRS#6 - データ点数（ビットマップがある場合は第7節に残る点数）
   npixels = ui4(gsp->drs + 5);
+  // DRS#10 - データ表現テンプレート番号
   drstempl = ui2(gsp->drs + 9);
+  // いずれ switch で書き直してもよい
   if (drstempl == 0) goto DRT5_0;
- // if (drstempl == 3) goto DRT5_3;
+  if (drstempl == 3) goto DRT5_3;
   fprintf(stderr, "unsupported DRS template 5.%u\n", drstempl);
   return ERR_BADGRIB;
 DRT5_0:
@@ -461,7 +464,10 @@ DRT5_0:
       * pow(10.0, -scale_d);
   }
   return GSE_OKAY;
-//DRT5_3:
+DRT5_3:
+  
+  // デコード部完成まで落とす
+  return ERR_BADGRIB;
 }
 
 // GRIB2 GDSからデータの投影法パラメタを bp に抽出する。
