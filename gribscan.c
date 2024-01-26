@@ -439,7 +439,8 @@ decode_ds(const grib2secs_t *gsp, double *dbuf,
   unsigned drstempl;
   int scale_e;
   int scale_d;
-  unsigned width;
+  unsigned depth;
+  float refv;
   if ((gsp->drslen == 0) || (gsp->dslen == 0)) {
     fprintf(stderr, "missing DRS %zu DS %zu\n", gsp->drslen, gsp->dslen);
     return ERR_BADGRIB;
@@ -448,24 +449,71 @@ decode_ds(const grib2secs_t *gsp, double *dbuf,
   npixels = ui4(gsp->drs + 5);
   // DRS#10 - データ表現テンプレート番号
   drstempl = ui2(gsp->drs + 9);
-  // いずれ switch で書き直してもよい
+
+  // DRT5.0 と DRT5.3 の共通部
+  refv = float32(gsp->drs + 11);
+  scale_e = si2(gsp->drs + 15);
+  scale_d = si2(gsp->drs + 17);
+  // DRS#20 - ビットパックのビット数
+  depth = gsp->drs[19];
+
+  // テンプレートの分岐
   if (drstempl == 0) goto DRT5_0;
   if (drstempl == 3) goto DRT5_3;
   fprintf(stderr, "unsupported DRS template 5.%u\n", drstempl);
   return ERR_BADGRIB;
-DRT5_0:
-  float refv = float32(gsp->drs + 11);
-  scale_e = si2(gsp->drs + 15);
-  scale_d = si2(gsp->drs + 17);
-  width = gsp->drs[19];
+
+  /* DRT5.0 - 単純圧縮 */
+DRT5_0: ;
+  if (gsp->drslen < 21) {
+    fprintf(stderr, "DRS size %zu < 21 for DRT5.0\n", gsp->drslen);
+    return ERR_BADGRIB;
+  }
   adjust_scales(get_parameter(gsp), &scale_e, &scale_d);
   for (unsigned i = 0; i < npixels; i++) {
-    dbuf[i] = (refv + ldexp(unpackbits(gsp->ds + 5, width, i), scale_e))
+    dbuf[i] = (refv + ldexp(unpackbits(gsp->ds + 5, depth, i), scale_e))
       * pow(10.0, -scale_d);
   }
   return GSE_OKAY;
+
+  /* DRT5.0 - 複合差分圧縮 */
 DRT5_3:
-  
+  if (gsp->drslen < 49) {
+    fprintf(stderr, "DRS size %zu < 49 for DRT5.3\n", gsp->drslen);
+    return ERR_BADGRIB;
+  }
+  // DRS#22 - 資料群分割法: 1は一般的な分割
+  if (gsp->drs[21] != 1) { fprintf(stderr, "DRS#22 = %u (1 only)\n", gsp->drs[21]);
+    return ERR_BADGRIB;
+  }
+  // DRS#23 - 欠損値: 0は欠損値なし (すると DRS#24,28 は無視できる
+  if (gsp->drs[22] != 0) { fprintf(stderr, "DRS#23 = %u (0 only)\n", gsp->drs[21]);
+    return ERR_BADGRIB;
+  }
+  // DRS#32 - 資料群の数
+  unsigned ng = ui4(gsp->drs + 31);
+  // DRS#36 - 資料群幅の参照値
+  unsigned g_width_ref = gsp->drs[35];
+  // DRS#37 - 資料群幅を表わすためのビット数
+  unsigned g_width_nbits = gsp->drs[36];
+  // DRS#38 - 資料群長の参照値
+  unsigned g_len_ref = ui4(gsp->drs + 37);
+  // DRS#42 - 資料群長に対する長さ増分
+  unsigned g_len_inc = gsp->drs[41];
+  // DRS#43 - 最後の資料群の真の資料群長
+  unsigned last_g_len = ui4(gsp->drs + 42);
+  // DRS#47 - 尺度付き資料群長を表わすためのビット数
+  unsigned drs47 = gsp->drs[46];
+  // DRS#48 - 空間差分の次数: 現状では2だけに対応
+  if (gsp->drs[47] != 2) { fprintf(stderr, "DRS#22 = %u (2 only)\n", gsp->drs[47]);
+    return ERR_BADGRIB;
+  }
+  // DRS#49 - DRT7.3 の 6-ww; 気象庁では2に固定.
+  if (gsp->drs[48] != 2) { fprintf(stderr, "DRS#22 = %u (2 only)\n", gsp->drs[48]);
+    return ERR_BADGRIB;
+  }
+
+  fprintf(stderr, "okay 未完成なので落ちる\n");
   // デコード部完成まで落とす
   return ERR_BADGRIB;
 }
