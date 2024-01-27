@@ -570,11 +570,11 @@ printf("nbits %zu %zu\n", nbits, gsp->dslen * 8u);
     return ERR_BADGRIB;
   }
 
-  signed x1, x2;
+  signed x_prev, x_prev2;
   npx = 2;
   nbits = g_width[0] * 2;
-  x1 = z2;
-  x2 = z1;
+  x_prev = (int)z2;
+  x_prev2 = (int)z1;
   for (size_t j = 0; j < ng; j++) {
     size_t grplen = (j == 0) ? (group_length[j] - 2) : group_length[j];
     for (size_t k = 0; k < grplen; k++) {
@@ -583,13 +583,13 @@ printf("nbits %zu %zu\n", nbits, gsp->dslen * 8u);
       size_t bitofs = nbits % 8u;
       z = getbits(ptr + byteofs, bitofs, g_width[j]);
       y = z + (int)group_ref[j] + zmin;
-      x = y + 2u * x1 - x2;
+      x = y + 2u * x_prev - x_prev2;
 printf("%5zu z=%5d gref=%5d y=%5d x=%5d\n", npx, z, group_ref[j], y, x);
       // shift to next pixel
       nbits += g_width[j];
       npx++;
-      x2 = x1;
-      x1 = x;
+      x_prev2 = x_prev;
+      x_prev = x;
     }
   }
 
