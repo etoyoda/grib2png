@@ -529,6 +529,7 @@ printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
 
   // 第1配列 group_ref の読み取り
   unsigned char *ptr = gsp->ds + 11;
+printf("ds#%04lu group_ref\n", ptr - gsp->ds);
   for (size_t j = 0; j < ng; j++) {
     group_ref[j] = unpackbits(ptr, depth, j);
   }
@@ -536,6 +537,7 @@ printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
   ptr += blocksize;
 
   // 第2配列 g_width の読み取り
+printf("ds#%04lu g_width\n", ptr - gsp->ds);
   for (size_t j = 0; j < ng; j++) {
     g_width[j] = unpackbits(ptr, g_width_nbits, j) + g_width_ref;
   }
@@ -543,6 +545,7 @@ printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
   ptr += blocksize;
 
   // 第3配列 g_len の読み取り (その場で group_length に換算)
+printf("ds#%04lu g_len\n", ptr - gsp->ds);
   for (size_t j = 0; j < ng; j++) {
     // g_len[j] とすべき値
     unsigned g_len_j = unpackbits(ptr, g_len_nbits, j);
@@ -553,6 +556,7 @@ printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
   blocksize = (ng * g_len_nbits + 7u) / 8u;
   ptr += blocksize;
 
+printf("ds#%04lu z\n", ptr - gsp->ds);
   // 保安確認
   size_t npx = 0;
   size_t nbits = (ptr - gsp->ds) * 8u;
@@ -577,6 +581,7 @@ printf("nbits %zu %zu\n", nbits, gsp->dslen * 8u);
   x_prev2 = (int)z1;
   for (size_t j = 0; j < ng; j++) {
     size_t grplen = (j == 0) ? (group_length[j] - 2) : group_length[j];
+printf("grp %5zu ref %5u w %5u len %5u\n", j, group_ref[j], g_width[j], group_length[j]);
     for (size_t k = 0; k < grplen; k++) {
       signed x, y, z;
       size_t byteofs = nbits / 8u;
@@ -594,15 +599,11 @@ printf("%5zu z=%5d gref=%5d y=%5d x=%5d\n", npx, z, group_ref[j], y, x);
   }
 
   
-
-for (size_t j = 0; j < ng; j++) {
-printf("grp %5zu ref %5u w %5u len %5u\n", j, group_ref[j], g_width[j], group_length[j]);
-}
-
+  // TODO
 
   myfree(group_ref);
 
-  fprintf(stderr, "okay 未完成なので落ちる\n");
+  fprintf(stderr, "okay stop for now\n");
   // デコード部完成まで落とす
   return ERR_BADGRIB;
 }
