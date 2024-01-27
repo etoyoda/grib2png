@@ -529,7 +529,7 @@ printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
 
   // 第1配列 group_ref の読み取り
   unsigned char *ptr = gsp->ds + 11;
-printf("ds#%04lu group_ref\n", ptr - gsp->ds);
+printf("ds#%04lu %u group_ref\n", ptr - gsp->ds + 1, depth);
   for (size_t j = 0; j < ng; j++) {
     group_ref[j] = unpackbits(ptr, depth, j);
   }
@@ -537,7 +537,7 @@ printf("ds#%04lu group_ref\n", ptr - gsp->ds);
   ptr += blocksize;
 
   // 第2配列 g_width の読み取り
-printf("ds#%04lu g_width\n", ptr - gsp->ds);
+printf("ds#%04lu %u g_width\n", ptr - gsp->ds + 1, g_width_nbits);
   for (size_t j = 0; j < ng; j++) {
     g_width[j] = unpackbits(ptr, g_width_nbits, j) + g_width_ref;
   }
@@ -545,7 +545,7 @@ printf("ds#%04lu g_width\n", ptr - gsp->ds);
   ptr += blocksize;
 
   // 第3配列 g_len の読み取り (その場で group_length に換算)
-printf("ds#%04lu g_len\n", ptr - gsp->ds);
+printf("ds#%04lu %u g_len\n", ptr - gsp->ds + 1, g_len_nbits);
   for (size_t j = 0; j < ng; j++) {
     // g_len[j] とすべき値
     unsigned g_len_j = unpackbits(ptr, g_len_nbits, j);
@@ -556,7 +556,7 @@ printf("ds#%04lu g_len\n", ptr - gsp->ds);
   blocksize = (ng * g_len_nbits + 7u) / 8u;
   ptr += blocksize;
 
-printf("ds#%04lu z\n", ptr - gsp->ds);
+printf("ds#%04lu z\n", ptr - gsp->ds + 1);
   // 保安確認
   size_t npx = 0;
   size_t nbits = (ptr - gsp->ds) * 8u;
@@ -568,7 +568,7 @@ printf("ds#%04lu z\n", ptr - gsp->ds);
     fprintf(stderr, "npixels %zu != %zu\n", npx, npixels);
     return ERR_BADGRIB;
   }
-printf("nbits %zu %zu\n", nbits, gsp->dslen * 8u);
+printf("nbytes %zu %zu\n", (nbits + 7u) / 8u, gsp->dslen);
   if (nbits > gsp->dslen * 8u) {
     fprintf(stderr, "nbits %zu overrun %zu\n", nbits, gsp->dslen * 8u);
     return ERR_BADGRIB;
@@ -581,7 +581,8 @@ printf("nbits %zu %zu\n", nbits, gsp->dslen * 8u);
   x_prev2 = (int)z1;
   for (size_t j = 0; j < ng; j++) {
     size_t grplen = (j == 0) ? (group_length[j] - 2) : group_length[j];
-printf("grp %5zu ref %5u w %5u len %5u\n", j, group_ref[j], g_width[j], group_length[j]);
+printf("ds#%04lu grp %5zu ref %5u w %5u len %5u\n", ptr-gsp->ds+1+(nbits/8u),
+j, group_ref[j], g_width[j], group_length[j]);
     for (size_t k = 0; k < grplen; k++) {
       signed x, y, z;
       size_t byteofs = nbits / 8u;
