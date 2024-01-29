@@ -8,6 +8,10 @@
 #include "mymalloc.h"
 #include "gribscan.h"
 
+#ifndef DBG53
+# define DBG53 0
+#endif
+
 //=== レプレゼンテーション層 ===
 
 // 4オクテット符号付き整数の解読
@@ -547,7 +551,9 @@ DRT5_3:
   unsigned z1 = ui2(gsp->ds + 5);
   unsigned z2 = ui2(gsp->ds + 7);
   signed zmin = si2(gsp->ds + 9);
+#if DBG53
 printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
+#endif
   // 三個配列の確保
   unsigned *group_ref = mymalloc(sizeof(unsigned) * ng);
   if (group_ref == NULL) { return ERR_NOMEM; }
@@ -558,8 +564,10 @@ printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
 
   // 第1配列 group_ref の読み取り
   unsigned char *ptr = gsp->ds + 11u;
+#if DBG53
 printf("ds#%04lu %u group_ref\n", ptr - gsp->ds + 1, depth);
 printx(gsp->ds, (ptr-gsp->ds)/16*16);
+#endif
   for (size_t j = 0; j < ng; j++) {
     group_ref[j] = unpackbits(ptr, depth, j);
   }
@@ -567,8 +575,10 @@ printx(gsp->ds, (ptr-gsp->ds)/16*16);
   ptr += blocksize;
 
   // 第2配列 g_width の読み取り
+#if DBG53
 printf("ds#%04lu %u g_width\n", ptr - gsp->ds + 1, g_width_nbits);
 printx(gsp->ds, (ptr-gsp->ds)/16*16);
+#endif
   for (size_t j = 0; j < ng; j++) {
     g_width[j] = unpackbits(ptr, g_width_nbits, j) + g_width_ref;
   }
@@ -576,8 +586,10 @@ printx(gsp->ds, (ptr-gsp->ds)/16*16);
   ptr += blocksize;
 
   // 第3配列 g_len の読み取り (その場で group_length に換算)
+#if DBG53
 printf("ds#%04lu %u g_len\n", ptr - gsp->ds + 1, g_len_nbits);
 printx(gsp->ds, (ptr-gsp->ds)/16*16);
+#endif
   for (size_t j = 0; j < ng; j++) {
     // g_len[j] とすべき値
     unsigned g_len_j = unpackbits(ptr, g_len_nbits, j);
@@ -588,8 +600,10 @@ printx(gsp->ds, (ptr-gsp->ds)/16*16);
   blocksize = (ng * g_len_nbits + 7u) / 8u;
   ptr += blocksize;
 
+#if DBG53
 printf("ds#%04lu z\n", ptr - gsp->ds + 1);
 printx(gsp->ds, (ptr-gsp->ds)/16*16);
+#endif
   // 保安確認
   size_t npx = 0;
   size_t nbits = (ptr - gsp->ds) * 8u;
@@ -601,11 +615,16 @@ printx(gsp->ds, (ptr-gsp->ds)/16*16);
     fprintf(stderr, "npixels %zu != %zu\n", npx, npixels);
     return ERR_BADGRIB;
   }
+#if DBG53
 printf("nbytes %zu %zu\n", (nbits + 7u) / 8u, gsp->dslen);
+#endif
   if (nbits > gsp->dslen * 8u) {
     fprintf(stderr, "nbits %zu overrun %zu\n", nbits, gsp->dslen * 8u);
     return ERR_BADGRIB;
   }
+
+  dbuf[0] = (refv + ldexp(z1, scale_e)) * pow(10.0, -scale_d);
+  dbuf[1] = (refv + ldexp(z2, scale_e)) * pow(10.0, -scale_d);
 
   signed x_prev, x_prev2;
   npx = 2;
@@ -614,8 +633,10 @@ printf("nbytes %zu %zu\n", (nbits + 7u) / 8u, gsp->dslen);
   x_prev2 = (int)z1;
   for (size_t j = 0; j < ng; j++) {
     size_t grplen = (j == 0) ? (group_length[j] - 2) : group_length[j];
+#if DBG53
 printf("ds#%04lu grp %5zu ref %5u w %5u len %5u\n", ptr-gsp->ds+1+(nbits/8u),
 j, group_ref[j], g_width[j], group_length[j]);
+#endif
     for (size_t k = 0; k < grplen; k++) {
       signed x, y, z;
       size_t byteofs = nbits / 8u;
@@ -624,8 +645,10 @@ j, group_ref[j], g_width[j], group_length[j]);
       y = z + (int)group_ref[j] + zmin;
       x = y + 2u * x_prev - x_prev2;
       dbuf[npx] = (refv + ldexp(x, scale_e)) * pow(10.0, -scale_d);
+#if DBG53
 printf("%5zu z=%5d gref=%5d y=%5d x=%5d %7.2f\n", npx, z, group_ref[j], y, x,
 dbuf[npx]);
+#endif
       // shift to next pixel
       nbits += g_width[j];
       npx++;
@@ -634,16 +657,10 @@ dbuf[npx]);
     }
   }
 
-  
-  // TODO
-
   myfree(group_ref);
   myfree(g_width);
   myfree(group_length);
-
-  fprintf(stderr, "okay stop for now\n");
-  // デコード部完成まで落とす
-  return ERR_BADGRIB;
+  return GSE_OKAY;
 }
 
 // GRIB2 GDSからデータの投影法パラメタを bp に抽出する。
