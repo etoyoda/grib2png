@@ -397,6 +397,10 @@ param_name(unsigned long iparm)
   case 0x000300: return "Pres";
   case 0x000301: return "Pmsl";
   case 0x000305: return "Z";
+  case IPARM_CLA: return "CLA";
+  case IPARM_CLL: return "CLL";
+  case IPARM_CLM: return "CLM";
+  case IPARM_CLH: return "CLH";
   default:
     sprintf(buf, "p%02lu-%03lu-%03lu-%03lu",
       iparm >> 24, (iparm >> 16) & 0xFF,

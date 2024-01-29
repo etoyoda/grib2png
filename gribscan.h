@@ -48,6 +48,10 @@ typedef enum iparm_t {
   IPARM_Pres   = 0x000300,
   IPARM_Pmsl   = 0x000301,
   IPARM_Z      = 0x000305,
+  IPARM_CLA    = 0x000601,
+  IPARM_CLL    = 0x000603,
+  IPARM_CLM    = 0x000604,
+  IPARM_CLH    = 0x000605,
 } iparm_t;
 
 // map projection parameters
