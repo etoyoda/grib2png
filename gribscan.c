@@ -623,7 +623,9 @@ j, group_ref[j], g_width[j], group_length[j]);
       z = getbits(ptr + byteofs, bitofs, g_width[j]);
       y = z + (int)group_ref[j] + zmin;
       x = y + 2u * x_prev - x_prev2;
-printf("%5zu z=%5d gref=%5d y=%5d x=%5d\n", npx, z, group_ref[j], y, x);
+      dbuf[npx] = (refv + ldexp(x, scale_e)) * pow(10.0, -scale_d);
+printf("%5zu z=%5d gref=%5d y=%5d x=%5d %7.2f\n", npx, z, group_ref[j], y, x,
+dbuf[npx]);
       // shift to next pixel
       nbits += g_width[j];
       npx++;
