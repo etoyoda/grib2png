@@ -436,6 +436,28 @@ get_npixels(const grib2secs_t *gsp)
   return ui4(gsp->drs + 5);
 }
 
+  void
+printx(unsigned char *ptr, size_t base)
+{
+  ptr += base;
+  for (unsigned j=0u; j<4u; j++) {
+    printf("%04lu:", base+j*16u);
+    for (unsigned i=0u; i<16u; i++) {
+      if (i == 8u) printf(" .");
+      printf(" %02X", ptr[j*16u+i]);
+    }
+    printf("\n    ");
+    for (unsigned i=0u; i<16u; i++) {
+      if (i == 8u) printf("\n    ");
+      putchar(' ');
+      for (unsigned mask=0x80u; mask; mask >>= 1) {
+        putchar((ptr[j*16u+i] & mask) ? '1' : '0');
+      }
+    }
+    putchar('\n');
+  }
+}
+
   gribscan_err_t
 decode_ds(const grib2secs_t *gsp, double *dbuf,
   void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d)
@@ -524,16 +546,17 @@ DRT5_3:
   signed zmin = si2(gsp->ds + 9);
 printf("ng=%u z1=%u z2=%u zmin=%d\n", ng, z1, z2, zmin);
   // 三個配列の確保
-  unsigned *group_ref = mymalloc(3 * sizeof(unsigned) * ng);
-  if (group_ref == NULL) {
-    return ERR_NOMEM;
-  }
-  unsigned *g_width = group_ref + ng;
-  unsigned *group_length = g_width + ng;
+  unsigned *group_ref = mymalloc(sizeof(unsigned) * ng);
+  if (group_ref == NULL) { return ERR_NOMEM; }
+  unsigned *g_width = mymalloc(sizeof(unsigned) * ng);
+  if (g_width == NULL) { return ERR_NOMEM; }
+  unsigned *group_length = mymalloc(sizeof(unsigned) * ng);
+  if (group_length == NULL) { return ERR_NOMEM; }
 
   // 第1配列 group_ref の読み取り
-  unsigned char *ptr = gsp->ds + 11;
+  unsigned char *ptr = gsp->ds + 11u;
 printf("ds#%04lu %u group_ref\n", ptr - gsp->ds + 1, depth);
+printx(gsp->ds, (ptr-gsp->ds)/16*16);
   for (size_t j = 0; j < ng; j++) {
     group_ref[j] = unpackbits(ptr, depth, j);
   }
@@ -542,6 +565,7 @@ printf("ds#%04lu %u group_ref\n", ptr - gsp->ds + 1, depth);
 
   // 第2配列 g_width の読み取り
 printf("ds#%04lu %u g_width\n", ptr - gsp->ds + 1, g_width_nbits);
+printx(gsp->ds, (ptr-gsp->ds)/16*16);
   for (size_t j = 0; j < ng; j++) {
     g_width[j] = unpackbits(ptr, g_width_nbits, j) + g_width_ref;
   }
@@ -550,6 +574,7 @@ printf("ds#%04lu %u g_width\n", ptr - gsp->ds + 1, g_width_nbits);
 
   // 第3配列 g_len の読み取り (その場で group_length に換算)
 printf("ds#%04lu %u g_len\n", ptr - gsp->ds + 1, g_len_nbits);
+printx(gsp->ds, (ptr-gsp->ds)/16*16);
   for (size_t j = 0; j < ng; j++) {
     // g_len[j] とすべき値
     unsigned g_len_j = unpackbits(ptr, g_len_nbits, j);
@@ -561,6 +586,7 @@ printf("ds#%04lu %u g_len\n", ptr - gsp->ds + 1, g_len_nbits);
   ptr += blocksize;
 
 printf("ds#%04lu z\n", ptr - gsp->ds + 1);
+printx(gsp->ds, (ptr-gsp->ds)/16*16);
   // 保安確認
   size_t npx = 0;
   size_t nbits = (ptr - gsp->ds) * 8u;
@@ -607,6 +633,8 @@ printf("%5zu z=%5d gref=%5d y=%5d x=%5d\n", npx, z, group_ref[j], y, x);
   // TODO
 
   myfree(group_ref);
+  myfree(g_width);
+  myfree(group_length);
 
   fprintf(stderr, "okay stop for now\n");
   // デコード部完成まで落とす
