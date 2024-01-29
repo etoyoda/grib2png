@@ -97,10 +97,10 @@ getbits(const unsigned char *buf, size_t bitofs, size_t nbits)
     case 7: return ((buf[0] << 11) & 0xFFFu) | buf[1] << 3 | buf[2] >> 5;
     }
   }
-  c0 = nbits + bitofs < 8u
+  c0 = (nbits + bitofs < 8u
     ? buf[0] >> (8u - nbits - bitofs)
-    : (buf[0] << (nbits + bitofs - 8u)) & ((1u << nbits) - 1u)
-  ;
+    : buf[0] << (nbits + bitofs - 8u)
+  ) & ((1u << nbits) - 1u);
   c1 = nbits + bitofs < 16u
     ? buf[1] >> (16u - nbits - bitofs)
     : buf[1] << (nbits + bitofs - 16u)
