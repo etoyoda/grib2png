@@ -29,12 +29,25 @@ ept_bolton(double t, double rh, double p)
   return ept;
 }
 
+// 相当温位 ept の（気温の関数としての）逆関数。相対湿度は 100% とする。
+// 気圧は p [hPa] で与える。相対湿度は 100% とする。
+// 求める値より大きな第一推定値 t1 から二分法で求める。
   double
 inv_ept_core(double ept, double p, double t1, double tstep)
 {
   const double rh = 100.0;
   double ept1, ept2;
+  // 上側の関数値。
+  // 一応上側になっていなければやりなおす
+SWEEP_UP:
   ept1 = ept_bolton(t1, rh, p);
+  if (ept1 < ept) {
+    t1 += tstep;
+    goto SWEEP_UP;
+  }
+  // 下側の関数値。
+  // 適当なステップ tstep だけ下がったところで関数値を試算して、
+  // 下側になっていなければ t1-tstep を上側としてやりなおし
 SWEEP_DOWN:
   ept2 = ept_bolton(t1-tstep, rh, p);
   if (ept2 > ept) {
@@ -42,6 +55,7 @@ SWEEP_DOWN:
     ept1 = ept2;
     goto SWEEP_DOWN;
   }
+  // 収束していればリターン
   if (tstep < 0.005) {
     return t1-0.5*tstep;
   } else {
@@ -49,9 +63,13 @@ SWEEP_DOWN:
   }
 }
 
+// 相当温位 ept の（気温の関数としての）逆関数。
+// 気圧は p [hPa] で与える。相対湿度は 100% とする。
   double
 inv_ept(double ept, double p)
 {
+  // 第一推定値として、温位が ept となる気温を与える。
+  // これは求める値より常に大きい
   return inv_ept_core(ept, p, inv_potemp(ept, p), 16.0);
 }
 
