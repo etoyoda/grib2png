@@ -621,6 +621,8 @@ printf("nbytes %zu %zu\n", (nbits + 7u) / 8u, gsp->dslen);
   if (nbits > gsp->dslen * 8u) {
     fprintf(stderr, "nbits %zu overrun %zu\n", nbits, gsp->dslen * 8u);
     return ERR_BADGRIB;
+  } else if ((nbits+7u)/8u < gsp->dslen) {
+    fprintf(stderr, "padding %zu octets\n", gsp->dslen-(((size_t)nbits+7u)/8u));
   }
 
   dbuf[0] = (refv + ldexp(z1, scale_e)) * pow(10.0, -scale_d);
