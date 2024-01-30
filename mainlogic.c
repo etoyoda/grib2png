@@ -583,6 +583,11 @@ checksec7(const struct grib2secs *gsp)
     if (!(vlev == 200.e2 || vlev == 300.e2
     || vlev == 500.e2 || vlev == 850.e2 || vlev == 925.e2)) goto END_SKIP;
     break;
+  case IPARM_CLA:
+  case IPARM_CLL:
+  case IPARM_CLM:
+  case IPARM_CLH:
+    break;
   default:
     goto END_SKIP;
   }

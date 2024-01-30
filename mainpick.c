@@ -7,6 +7,9 @@
 #include "visual.h"
 #include "mymalloc.h" // only for mymemstat();
 
+// -dFILENAME オプションを指定すると dumpfile が非ヌルになり出力する
+static FILE *dumpfile = NULL;
+
 static const char *sfilter = "p[U]=p[V]=p[T]=p[RH]=|||,v10000>,g0=,&&";
 
 struct ptlist_t {
@@ -160,6 +163,11 @@ save_data(const struct grib2secs *gsp, const char *title)
   }
   r = decode_ds(gsp, dbuf, adjust_scales);
   if (r != GSE_OKAY) return r;
+  if (dumpfile) {
+    size_t r;
+    r = fwrite(dbuf, sizeof(dbuf[0]), npixels, dumpfile);
+    if (r != npixels) { perror("gribpick.fwrite"); }
+  }
   decode_gds(gsp, &b);
   for (i = 0; i < maxpts; i++) {
     double x;
@@ -229,6 +237,8 @@ argscan(int argc, const char **argv)
         if (r != GSE_OKAY) goto BARF;
       } else if (argv[i][1] == 'f') {
         sfilter = argv[i] + 2;
+      } else if (argv[i][1] == 'd') {
+        dumpfile = fopen(argv[i] + 2, "wb");
       } else {
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         r = GSE_JUSTWARN;
@@ -242,6 +252,7 @@ argscan(int argc, const char **argv)
     }
   }
 BARF:
+  if (dumpfile) { fclose(dumpfile); dumpfile = NULL; }
   fflush(stdout);
   return r;
 }
@@ -252,7 +263,7 @@ main(int argc, const char **argv)
   gribscan_err_t r;
   r = argscan(argc, argv);
   if (r == ERR_NOINPUT) {
-    fprintf(stderr, "usage: %s [-ffilter][-pPICKPTS] input ...\n", argv[0]);
+    fprintf(stderr, "usage: %s [-ffilter][-pPICKPTS][-dDUMPFILE] input ...\n", argv[0]);
   } else if (r != GSE_OKAY) {
     fprintf(stderr, "%s: exit(%u)\n", argv[0], r);
   }
