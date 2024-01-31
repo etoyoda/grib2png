@@ -177,24 +177,20 @@ int
 main(void)
 {
   openpl();
+  setrgb(255, 255, 255);
+  box(0, 0, 1023, 1023);
   setlinewidth(1.0f);
-  setfontsize(28);
-  for (unsigned iz = 0; iz < nplevs; iz++) {
-    move_tzp(-40.0f, plevs[iz]);
-    line_tzp(40.0f, plevs[iz]);
-    move_tzp(-48.0f, plevs[iz]);
-    { char buf[32]; sprintf(buf, "%4u", (unsigned)plevs[iz]); symbol(buf); }
-  }
   setrgb(200, 0, 200);
-  setfontsize(18);
+  setfontsize(20);
   for (float t=-54.0f; t<=36.0f; t+=6.0f) {
     move_tp(t, 100.0f);
     for (float p=100.0f; p<=1000.0f; p+=25.0f){
       line_tp(t, p);
     }
-    move_tp(t, 1050.0f);
+    move_tp(t, 1060.0f);
     { char buf[32]; sprintf(buf, "%3d", (int)t); symbol(buf); }
   }
+  setfontsize(18);
   setrgb(0, 0, 255);
   for (float th=240.0f; th<=400.0f; th+=20.0f) {
     float t;
@@ -220,6 +216,18 @@ main(void)
     t= inv_potemp(th, 98.0f);
     move_tp(t-273.15f, 98.0f);
     { char buf[32]; sprintf(buf, "%3u", (unsigned)th); symbol(buf); }
+  }
+  setrgb(255, 255, 255);
+  box(0, 0, 100, 1023);
+  box(900, 0, 1023, 1023);
+  setlinewidth(1.0f);
+  setrgb(0, 0, 0);
+  setfontsize(28);
+  for (unsigned iz = 0; iz < nplevs; iz++) {
+    move_tzp(-40.0f, plevs[iz]);
+    line_tzp(40.0f, plevs[iz]);
+    move_tzp(-48.0f, plevs[iz]);
+    { char buf[32]; sprintf(buf, "%4u", (unsigned)plevs[iz]); symbol(buf); }
   }
   closepl();
 }

@@ -128,6 +128,21 @@ lineto(float x, float y)
 }
 
   int
+box(float x0, float y0, float x1, float y1)
+{
+  CLOSEPATH_IF_NEEDED;
+  NEWPATH_IF_NEEDED;
+  fprintf(psout, "%.1f %.1f moveto\n", x0, y0);
+  fprintf(psout, "%.1f %.1f lineto\n", x0, y1);
+  fprintf(psout, "%.1f %.1f lineto\n", x1, y1);
+  fprintf(psout, "%.1f %.1f lineto\n", x1, y0);
+  fprintf(psout, "closepath %g setlinewidth %.3f %.3f %.3f setrgbcolor fill\n",
+    clinewidth, cred, cgreen, cblue);
+  is_pen_up = 1;
+  return 0;
+}
+
+  int
 symbol(const char *text)
 {
   openpl();
