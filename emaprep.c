@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include "plot.h"
 
 // 気温t[K], 気圧p[hPa]に対して温位 [K] を与える
   double
@@ -91,6 +92,7 @@ double plevs[] = { 1000.0, 925.0, 850.0, 700.0, 500.0,
   300.0, 250.0, 200.0, 150.0, 100.0 };
 unsigned nplevs = sizeof(plevs)/sizeof(double);
 
+#ifdef TESTMAIN1
   int
 main(int argc, char **argv)
 {
@@ -118,4 +120,66 @@ main(int argc, char **argv)
     }
   }
   return 0;
+}
+#endif /* TESTMAIN1 */
+
+#define Y_BOTTOM  100.0f
+#define Y_SPAN 700.0f
+#define X_LEFT 100.0f
+#define X_SPAN 800.0f
+#define X_RIGHT (X_LEFT + X_SPAN)
+
+void
+xyconv(float tc, float p, int *xp, int *yp)
+{
+  float y = (3.0f - log10f(p)) * Y_SPAN;
+  float x = (tc - -40.0f) * 0.0125 * X_SPAN;
+  *yp = roundf(Y_BOTTOM + y);
+  *xp = roundf(X_LEFT + x + y);
+printf(":: %8.1f %8.1f %5d %5d\n", (double)tc, (double)p, *xp, *yp);
+}
+
+void
+move_tp(float tc, float p)
+{
+  int x, y;
+  xyconv(tc, p, &x, &y);
+  moveto(x, y);
+}
+
+void
+line_tp(float tc, float p)
+{
+  int x, y;
+  xyconv(tc, p, &x, &y);
+  lineto(x, y);
+}
+
+void
+move_tzp(float tc, float p)
+{
+  int x, xz, y;
+  xyconv(tc, 1000.0f, &xz, &y);
+  xyconv(tc, p, &x, &y);
+  moveto(xz, y);
+}
+
+void
+line_tzp(float tc, float p)
+{
+  int x, xz, y;
+  xyconv(tc, 1000.0f, &xz, &y);
+  xyconv(tc, p, &x, &y);
+  lineto(xz, y);
+}
+
+int
+main(void)
+{
+  openpl();
+  for (unsigned iz = 0; iz < nplevs; iz++) {
+    move_tzp(-40.0f, plevs[iz]);
+    line_tzp(40.0f, plevs[iz]);
+  }
+  closepl();
 }

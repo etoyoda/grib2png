@@ -21,6 +21,9 @@ gribslim: $(OBJS2)
 gribpick: $(OBJS3)
 	$(CC) $(LFLAGS) -o gribpick $(OBJS3) $(LIBS)
 
+testemap: emaprep.o plot.o
+	$(CC) $(LFLAGS) -o testemap emaprep.o plot.o $(LIBS)
+
 testv: testv.c visual.o
 	$(CC) $(LFLAGS) -o testv testv.c visual.o $(LIBS)
 

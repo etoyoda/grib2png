@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-//#include "plot.h"
+#include "plot.h"
 
 static int is_pen_up = 1;
 static int cx = 0;
@@ -55,6 +55,7 @@ setfont(void)
   if (cfontset) return 1;
   fprintf(psout, "/Courier findfont %g scalefont setfont\n", cfontsize);
   cfontset = 1;
+  return 0;
 }
 
   int
@@ -62,7 +63,7 @@ setfontsize(float sz)
 {
   if (cfontset && (cfontsize != sz)) cfontset = 0;
   cfontsize = sz;
-  setfont();
+  return setfont();
 }
 
   int
@@ -131,6 +132,7 @@ symbol(const char *text)
     }
   }
   fputs(") show\n", psout);
+  return 0;
 }
 
 #ifdef TESTMAIN
