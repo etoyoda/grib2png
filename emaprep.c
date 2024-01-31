@@ -130,19 +130,19 @@ main(int argc, char **argv)
 #define X_RIGHT (X_LEFT + X_SPAN)
 
 void
-xyconv(float tc, float p, int *xp, int *yp)
+xyconv(float tc, float p, float *xp, float *yp)
 {
   float y = (3.0f - log10f(p)) * Y_SPAN;
   float x = (tc - -40.0f) * 0.0125 * X_SPAN;
-  *yp = roundf(Y_BOTTOM + y);
-  *xp = roundf(X_LEFT + x + y);
-printf(":: %8.1f %8.1f %5d %5d\n", (double)tc, (double)p, *xp, *yp);
+  *yp = Y_BOTTOM + y;
+  *xp = X_LEFT + x + y;
+//printf(":: %8.1f %8.1f %8.1f %8.1f\n", (double)tc, (double)p, *xp, *yp);
 }
 
 void
 move_tp(float tc, float p)
 {
-  int x, y;
+  float x, y;
   xyconv(tc, p, &x, &y);
   moveto(x, y);
 }
@@ -150,7 +150,7 @@ move_tp(float tc, float p)
 void
 line_tp(float tc, float p)
 {
-  int x, y;
+  float x, y;
   xyconv(tc, p, &x, &y);
   lineto(x, y);
 }
@@ -158,7 +158,7 @@ line_tp(float tc, float p)
 void
 move_tzp(float tc, float p)
 {
-  int x, xz, y;
+  float x, xz, y;
   xyconv(tc, 1000.0f, &xz, &y);
   xyconv(tc, p, &x, &y);
   moveto(xz, y);
@@ -167,7 +167,7 @@ move_tzp(float tc, float p)
 void
 line_tzp(float tc, float p)
 {
-  int x, xz, y;
+  float x, xz, y;
   xyconv(tc, 1000.0f, &xz, &y);
   xyconv(tc, p, &x, &y);
   lineto(xz, y);
@@ -177,9 +177,49 @@ int
 main(void)
 {
   openpl();
+  setlinewidth(1.0f);
+  setfontsize(28);
   for (unsigned iz = 0; iz < nplevs; iz++) {
     move_tzp(-40.0f, plevs[iz]);
     line_tzp(40.0f, plevs[iz]);
+    move_tzp(-48.0f, plevs[iz]);
+    { char buf[32]; sprintf(buf, "%4u", (unsigned)plevs[iz]); symbol(buf); }
+  }
+  setrgb(200, 0, 200);
+  setfontsize(18);
+  for (float t=-54.0f; t<=36.0f; t+=6.0f) {
+    move_tp(t, 100.0f);
+    for (float p=100.0f; p<=1000.0f; p+=25.0f){
+      line_tp(t, p);
+    }
+    move_tp(t, 1050.0f);
+    { char buf[32]; sprintf(buf, "%3d", (int)t); symbol(buf); }
+  }
+  setrgb(0, 0, 255);
+  for (float th=240.0f; th<=400.0f; th+=20.0f) {
+    float t;
+    t= inv_potemp(th, 100.0f);
+    move_tp(t-273.15f, 100.0f);
+    for (float p=100.0f; p<=1000.0f; p+=25.0f){
+      t = inv_potemp(th, p);
+      line_tp(t-273.15f, p);
+    }
+    t= inv_potemp(th, 98.0f);
+    move_tp(t-273.15f, 98.0f);
+    { char buf[32]; sprintf(buf, "%3u", (unsigned)th); symbol(buf); }
+  }
+  setrgb(0, 200, 0);
+  for (float th=250.0f; th<=390.0f; th+=20.0f) {
+    float t;
+    t = inv_ept(th, 100.0f);
+    move_tp(t-273.15f, 100.0f);
+    for (float p=100.0f; p<=1000.0f; p+=25.0f){
+      t = inv_ept(th, p);
+      line_tp(t-273.15f, p);
+    }
+    t= inv_potemp(th, 98.0f);
+    move_tp(t-273.15f, 98.0f);
+    { char buf[32]; sprintf(buf, "%3u", (unsigned)th); symbol(buf); }
   }
   closepl();
 }

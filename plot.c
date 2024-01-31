@@ -7,8 +7,8 @@
 #include "plot.h"
 
 static int is_pen_up = 1;
-static int cx = 0;
-static int cy = 0;
+static float cx = 0.0;
+static float cy = 0.0;
 static FILE *psout = NULL;
 static float clinewidth = 1;
 static float cred = 0.0;
@@ -40,7 +40,7 @@ newpath(void)
 closepath(void)
 {
   openpl();
-  fprintf(psout, "%g setlinewidth %g %g %g setrgbcolor stroke\n",
+  fprintf(psout, "%g setlinewidth %.3f %.3f %.3f setrgbcolor stroke\n",
     clinewidth, cred, cgreen, cblue);
   is_pen_up = 1;
   return 0;
@@ -66,15 +66,26 @@ setfontsize(float sz)
   return setfont();
 }
 
+#define CLOSEPATH_IF_NEEDED (is_pen_up ? -1 : closepath())
+#define NEWPATH_IF_NEEDED (is_pen_up ? newpath() : -1)
+
   int
-linewidth(float x)
+setlinewidth(float x)
 {
+  CLOSEPATH_IF_NEEDED;
   clinewidth = x;
   return x;
 }
 
-#define CLOSEPATH_IF_NEEDED (is_pen_up ? -1 : closepath())
-#define NEWPATH_IF_NEEDED (is_pen_up ? newpath() : -1)
+  int
+setrgb(unsigned char r, unsigned char g, unsigned char b)
+{
+  CLOSEPATH_IF_NEEDED;
+  cred = (float)r / 0xFF;
+  cgreen = (float)g / 0xFF;
+  cblue = (float)b / 0xFF;
+  return 0;
+}
 
   int
 closepl(void)
@@ -85,28 +96,32 @@ closepl(void)
   fprintf(psout, "showpage\n");
   fclose(psout);
   sprintf(cmd, "gs -q -sDEVICE=pngalpha -r72 -g1024x1024 -dBATCH -dNOPAUSE -sOutputFile=plot.png %s\n", cname);
-  if (isatty(2)) { fputs(cmd, stderr); }
   r = system(cmd);
-  if (r == 0) remove(cname);
+  if ((r != 0) || (getenv("PLOT"))) {
+    fputs(cmd, stderr);
+    fprintf(stderr, "PostScript %s remains\n", cname);
+    return -1;
+  }
+  remove(cname);
   return r;
 }
 
   int
-moveto(int x, int y)
+moveto(float x, float y)
 {
   CLOSEPATH_IF_NEEDED;
   NEWPATH_IF_NEEDED;
-  fprintf(psout, "%d %d moveto\n", x, y);
+  fprintf(psout, "%.1f %.1f moveto\n", x, y);
   cx = x;
   cy = y;
   return 0;
 }
 
   int
-lineto(int x, int y)
+lineto(float x, float y)
 {
   openpl();
-  fprintf(psout, "%d %d lineto\n", x, y);
+  fprintf(psout, "%.1f %.1f lineto\n", x, y);
   cx = x;
   cy = y;
   return 0;
@@ -145,7 +160,7 @@ main()
   lineto(1023, 1023);
   lineto(1023, 1);
   lineto(1, 1);
-  linewidth(2.0f);
+  setlinewidth(2.0f);
   moveto(100, 200);
   lineto(200, 250);
   lineto(100, 300);
