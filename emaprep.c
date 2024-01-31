@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
+// 気温t[K], 気圧p[hPa]に対して温位 [K] を与える
   double
 potemp(double t, double p)
 {
@@ -8,6 +9,7 @@ potemp(double t, double p)
   return th;
 }
 
+// 温位t[K], 気圧p[hPa]に対して気温 [K] を与える
   double
 inv_potemp(double th, double p)
 {
@@ -15,6 +17,12 @@ inv_potemp(double th, double p)
   return t;
 }
 
+// 気温t[K], 相対湿度rh[%], 気圧p[hPa]に対して温位 [K] を与える
+// Bolton(1980) による。
+// https://doi.org/10.1175/1520-0493(1980)108%3C1046:TCOEPT%3E2.0.CO;2
+// 動作範囲の注意:
+// Bolton が精度を検証しているのは -35℃ .. 35℃ まで。かなり高温まで使えるが、
+// 96℃ 100%1atmで 2.9e50 を返し、98℃までに爆発する（infやnanを返す）
   double
 ept_bolton(double t, double rh, double p)
 {
@@ -29,21 +37,25 @@ ept_bolton(double t, double rh, double p)
   return ept;
 }
 
-// 相当温位 ept の（気温の関数としての）逆関数。相対湿度は 100% とする。
-// 気圧は p [hPa] で与える。相対湿度は 100% とする。
-// 求める値より大きな第一推定値 t1 から二分法で求める。
+// 相当温位 ept[K] の（気温の関数としての）逆関数。
+// 気圧は p[hPa] で与える。相対湿度は 100% とする。
+// 第一推定値 t1 からステップ tstep で振って二分法で求める。
   double
 inv_ept_core(double ept, double p, double t1, double tstep)
 {
   const double rh = 100.0;
+  const double TSTEP_MIN = 0.1;
   double ept1, ept2;
   // 上側の関数値。
-  // 一応上側になっていなければやりなおす
+  // 上側になっていなければ tstep だけ上がったところでやりなおし
 SWEEP_UP:
   ept1 = ept_bolton(t1, rh, p);
   if (ept1 < ept) {
     t1 += tstep;
     goto SWEEP_UP;
+  } else if (isnan(ept1)) {
+    // 高温すぎるばあいは NaN を返す
+    return ept1;
   }
   // 下側の関数値。
   // 適当なステップ tstep だけ下がったところで関数値を試算して、
@@ -55,10 +67,11 @@ SWEEP_DOWN:
     ept1 = ept2;
     goto SWEEP_DOWN;
   }
-  // 収束していればリターン
-  if (tstep < 0.005) {
-    return t1-0.5*tstep;
+  if (tstep < TSTEP_MIN) {
+    // 収束していれば ept1, ept2 で線形補間して返す
+    return t1-((ept1-ept)/(ept1-ept2))*tstep;
   } else {
+    // 収束していなければステップを半分にしてやりなおし
     return inv_ept_core(ept, p, t1, 0.5*tstep);
   }
 }
@@ -68,9 +81,10 @@ SWEEP_DOWN:
   double
 inv_ept(double ept, double p)
 {
-  // 第一推定値として、温位が ept となる気温を与える。
-  // これは求める値より常に大きい
-  return inv_ept_core(ept, p, inv_potemp(ept, p), 16.0);
+  // 第一推定値として、過小な値が望ましく、273.15 K を与える。
+  // ステップは 32K とする。float64 的に切りの良い数字であり、
+  // 32*6 = 96℃までの範囲がアルゴリズム的に破綻せず動くことを狙ったもの。
+  return inv_ept_core(ept, p, 273.15, 32.0);
 }
 
 double plevs[] = { 1000.0, 925.0, 850.0, 700.0, 500.0, 
@@ -80,6 +94,14 @@ unsigned nplevs = sizeof(plevs)/sizeof(double);
   int
 main(int argc, char **argv)
 {
+  // 相当温位近似式の適用限界のチェック
+  for (double tc = 70.0; tc < 200.0; tc+=1.0) {
+    double t = tc + 273.15;
+    double ept = ept_bolton(t, 100.0, 1013.25);
+    printf("tc=%g t=%g ept=%g\n", tc, t, ept);
+    if (isnan(ept)) break;
+  }
+  // 温位の逆関数のテスト
   for (double th_c = -60.0; th_c <= 180.0; th_c += 20.0) {
     printf("= TH %5.1f %5.1f\n", th_c, th_c+273.15);
     for (unsigned iz = 0; iz < nplevs; iz++) {
@@ -87,6 +109,7 @@ main(int argc, char **argv)
       printf("%6.1f\t%5.1f\t%5.1f\n", plevs[iz], t, t-273.15);
     }
   }
+  // 相当温位の逆関数のテスト
   for (double ept_c = -50.0; ept_c <= 130.0; ept_c += 20.0) {
     printf("= EPT %5.1f %5.1f\n", ept_c, ept_c+273.15);
     for (unsigned iz = 0; iz < nplevs; iz++) {
