@@ -3,27 +3,11 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "emagram.h"
 
 #define streq(a,b) (strcmp((a),(b))==0)
 
-typedef struct {
-  float p;
-  float x;
-  float y;
-} level_t;
-
-typedef struct {
-  char name[32];
-  size_t ttd_size;
-  level_t *ttd;
-  size_t uv_size;
-  level_t *uv;
-  size_t z_size;
-  level_t *z;
-  float pmsl;
-} obs_t;
-
-size_t obs_size;
+size_t obs_size, obs_count;
 obs_t *obs = NULL;
 
   int
@@ -34,11 +18,15 @@ obs_init(void)
   for (size_t i=0; i<obs_size; i++) {
     obs[i].name[0] = '\0';
     obs[i].ttd_size = 0;
+    obs[i].ttd_count = 0;
     obs[i].ttd = NULL;
     obs[i].uv_size = 0;
+    obs[i].uv_count = 0;
     obs[i].uv = NULL;
     obs[i].z_size = 0;
+    obs[i].z_count = 0;
     obs[i].z = NULL;
+    obs[i].pmsl = 0.0f;
   }
   return 0;
 }
@@ -163,7 +151,9 @@ loadfile(const char *fnam)
     // 観測識別名titleを生成
     char title[32];
     float ftime = (atof(sftime) + atof(sdura))/60.0f;
-    snprintf(title, 32, "%s+%g %s", sreftime, ftime, sname);
+    int plus = '+';
+    if (*smemb!='-') plus = '-';
+    snprintf(title, 32, "%s%c%g %s", sreftime, plus, ftime, sname);
     // プロファイルを探索
     obs_t *obsp = obs_find(title);
     if (obsp == NULL) continue; // 収容不能な数のプロファイルは捨てる
@@ -178,30 +168,42 @@ level_compare(const void *ap, const void *bp)
 {
   const level_t *la = ap;
   const level_t *lb = bp;
-  if (la->p > lb->p) return 1;
-  if (la->p < lb->p) return -1;
+  if (la->p > lb->p) return -1;
+  if (la->p < lb->p) return 1;
   return 0;
 }
 
   int
 obs_conv(void)
 {
+  obs_count=obs_size;
   for (size_t i=0; i<obs_size; i++) {
     obs_t *obsp = &(obs[i]);
-    if (obsp->name[0]=='\0') break;
-    size_t n;
-    // just sort z
-    for (n=0; n<obsp->z_size; n++) { if (obsp->z[n].p==0.0f) break; }
-    qsort(obsp->z, n, sizeof(level_t), level_compare);
-    // just sort wind
-    for (n=0; n<obsp->uv_size; n++) { if (obsp->uv[n].p==0.0f) break; }
-    qsort(obsp->uv, n, sizeof(level_t), level_compare);
-    // sort ttd and then convert rh to td
-    for (n=0; n<obsp->ttd_size; n++) { if (obsp->ttd[n].p==0.0f) break; }
-    qsort(obsp->ttd, n, sizeof(level_t), level_compare);
-    for (size_t j=0; j<n; j++) {
-      float td = t2td(obsp->ttd+j);
-      obsp->ttd[j].y = td;
+    if (obsp->name[0]=='\0') {
+      obs_count = i;
+      break;
+    }
+    // zの有効レベル数obsp->z_countを数えてソート
+    obsp->z_count=obsp->z_size;
+    for (size_t n=0; n<obsp->z_size; n++) {
+      if (obsp->z[n].p==0.0f) { obsp->z_count=n; break; }
+    }
+    qsort(obsp->z, obsp->z_count, sizeof(level_t), level_compare);
+    // uvの有効レベル数obsp->uv_countを数えてソート
+    obsp->uv_count=obsp->uv_size;
+    for (size_t n=0; n<obsp->uv_size; n++) {
+      if (obsp->uv[n].p==0.0f) { obsp->uv_count=n; break; }
+    }
+    qsort(obsp->uv, obsp->uv_count, sizeof(level_t), level_compare);
+    // ttdの有効レベル数obsp->ttd_countを数えてソート
+    obsp->ttd_count=obsp->ttd_size;
+    for (size_t n=0; n<obsp->ttd_size; n++) {
+      if (obsp->ttd[n].p==0.0f) { obsp->ttd_count=n; break; }
+    }
+    qsort(obsp->ttd, obsp->ttd_count, sizeof(level_t), level_compare);
+    // 要素変換
+    for (size_t j=0; j<obsp->ttd_count; j++) {
+      obsp->ttd[j].y = t2td(obsp->ttd[j].x, obsp->ttd[j].y, obsp->ttd[j].p);
     }
   }
   return 0;
@@ -234,6 +236,7 @@ obs_print(void)
       obsp->uv[j].x, obsp->uv[j].y);
     }
   }
+  return 0;
 }
 
   int
@@ -248,6 +251,7 @@ main(int argc, const char **argv)
     }
   }
   obs_conv();
+  draw_emagram(obs, obs_count);
   obs_print();
   return 0;
 }

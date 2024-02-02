@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "plot.h"
+#include "emagram.h"
 
 // 気温t[K], 気圧p[hPa]に対して温位 [K] を与える
   double
@@ -16,6 +17,17 @@ inv_potemp(double th, double p)
 {
   double t = th * pow(p / 1.0e3, 0.2854);
   return t;
+}
+
+// 気温t[K], 相対湿度rh[%], 気圧p[hPa]に対して TD [K] を与える
+  double
+t2td(double t, double rh, double p)
+{
+  double es = 6.112 * exp(17.67 * (t - 273.15) / (t - 29.65));
+  double e = es * rh * 0.01;
+  double lne = log(e/6.112);
+  double td = (17.67*273.15-lne*29.65)/(17.67-lne);
+  return td;
 }
 
 // 気温t[K], 相対湿度rh[%], 気圧p[hPa]に対して温位 [K] を与える
@@ -173,10 +185,9 @@ line_tzp(float tc, float p)
   lineto(xz, y);
 }
 
-int
-main(void)
+  int
+draw_emagram_frame(void)
 {
-  openpl();
   setrgb(255, 255, 255);
   box(0, 0, 1023, 1023);
   setlinewidth(1.0f);
@@ -229,5 +240,36 @@ main(void)
     move_tzp(-48.0f, plevs[iz]);
     { char buf[32]; sprintf(buf, "%4u", (unsigned)plevs[iz]); symbol(buf); }
   }
+  return 0;
+}
+
+  int
+draw_profile(obs_t *obs)
+{
+  setlinewidth(2.0f);
+  move_tp(obs->ttd[0].x-273.15f, obs->ttd[0].p);
+  for (size_t j=0; j<obs->ttd_count; j++) {
+    if (isnan(obs->ttd[j].x)) break;
+    line_tp(obs->ttd[j].x-273.15f, obs->ttd[j].p);
+  }
+  move_tp(obs->ttd[0].y-273.15f, obs->ttd[0].p);
+  for (size_t j=0; j<obs->ttd_count; j++) {
+    if (isnan(obs->ttd[j].y)) break;
+    line_tp(obs->ttd[j].y-273.15f, obs->ttd[j].p);
+  }
+  return 0;
+}
+
+
+  int
+draw_emagram(obs_t *obs, size_t obs_count)
+{
+  openpl();
+  draw_emagram_frame();
+  for (size_t i=0; i<obs_count; i++) {
+    setrgb(0, 0, i*31);
+    draw_profile(&(obs[i]));
+  }
   closepl();
+  return 0;
 }
