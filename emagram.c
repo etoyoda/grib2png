@@ -22,8 +22,15 @@ obs_t *obs = NULL;
   int
 obs_init(void)
 {
-  obs_size = 16;
-  obs = calloc(sizeof(obs_t), obs_size);
+  obs_size = 256;
+  obs = malloc(sizeof(obs_t) * obs_size);
+  for (int i=0; i<obs_size; i++) {
+    obs[i].name[0] = 0;
+    obs[i].ttd_size = 0;
+    obs[i].ttd = NULL;
+    obs[i].uv_size = 0;
+    obs[i].uv = NULL;
+  }
   return 0;
 }
 
