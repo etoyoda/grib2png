@@ -20,6 +20,7 @@ typedef struct {
   level_t *uv;
   size_t z_size;
   level_t *z;
+  float pmsl;
 } obs_t;
 
 size_t obs_size;
@@ -51,12 +52,19 @@ obs_find(const char *title)
       return obsp;
     }
     if (obsp->name[0] == '\0') {
+      // ttd
       obsp->ttd_size = 4096;
       obsp->ttd = calloc(sizeof(obs_t), obsp->ttd_size);
       for (int j=0; j<obsp->ttd_size; j++) { obsp->ttd[j].p = 0.0f; }
+      // z
+      obsp->z_size = 4096;
+      obsp->z = calloc(sizeof(obs_t), obsp->z_size);
+      for (int j=0; j<obsp->z_size; j++) { obsp->z[j].p = 0.0f; }
+      // uv
       obsp->uv_size = 4096;
       obsp->uv = calloc(sizeof(obs_t), obsp->uv_size);
       for (int j=0; j<obsp->uv_size; j++) { obsp->uv[j].p = 0.0f; }
+      // title
       strncpy(obsp->name, title, sizeof(obsp->name));
       obsp->name[sizeof(obsp->name)-1] = '\0';
       return obsp;
@@ -109,6 +117,23 @@ obs_store(obs_t *obsp, const char *sparm, const char *svlev, const char *sval)
     if (lp==NULL) return -1;
     lp->y = val;
     return 0;
+  } else if (streq("Z", sparm)) {
+    level_t *lp = level_find(obsp->z, obsp->z_size, p);
+    if (lp==NULL) return -1;
+    lp->x = val;
+    return 0;
+  } else if (streq("U", sparm)) {
+    level_t *lp = level_find(obsp->uv, obsp->uv_size, p);
+    if (lp==NULL) return -1;
+    lp->x = val;
+    return 0;
+  } else if (streq("V", sparm)) {
+    level_t *lp = level_find(obsp->uv, obsp->uv_size, p);
+    if (lp==NULL) return -1;
+    lp->y = val;
+    return 0;
+  } else if (streq("Pmsl", sparm)) {
+    obsp->pmsl = val;
   }
   return -1;
 }
@@ -149,16 +174,64 @@ loadfile(const char *fnam)
 }
 
   int
+level_compare(const void *ap, const void *bp)
+{
+  const level_t *la = ap;
+  const level_t *lb = bp;
+  if (la->p > lb->p) return 1;
+  if (la->p < lb->p) return -1;
+  return 0;
+}
+
+  int
+obs_conv(void)
+{
+  for (size_t i=0; i<obs_size; i++) {
+    obs_t *obsp = &(obs[i]);
+    if (obsp->name[0]=='\0') break;
+    size_t n;
+    // just sort z
+    for (n=0; n<obsp->z_size; n++) { if (obsp->z[n].p==0.0f) break; }
+    qsort(obsp->z, n, sizeof(level_t), level_compare);
+    // just sort wind
+    for (n=0; n<obsp->uv_size; n++) { if (obsp->uv[n].p==0.0f) break; }
+    qsort(obsp->uv, n, sizeof(level_t), level_compare);
+    // sort ttd and then convert rh to td
+    for (n=0; n<obsp->ttd_size; n++) { if (obsp->ttd[n].p==0.0f) break; }
+    qsort(obsp->ttd, n, sizeof(level_t), level_compare);
+    for (size_t j=0; j<n; j++) {
+      float td = t2td(obsp->ttd+j);
+      obsp->ttd[j].y = td;
+    }
+  }
+  return 0;
+}
+
+  int
 obs_print(void)
 {
   for (size_t i=0; i<obs_size; i++) {
     obs_t *obsp = &(obs[i]);
     if (obsp->name[0]=='\0') break;
     printf("= obs #%zu (%s)\n", i, obsp->name);
+    printf("== Pmsl %8.1f\n", obsp->pmsl);
+    printf("== t td\n");
     for (size_t j=0; j<obsp->ttd_size; j++) {
       if (obsp->ttd[j].p==0.0f) break;
       printf("%8.1f %8.1f %8.1f\n", obsp->ttd[j].p,
       obsp->ttd[j].x, obsp->ttd[j].y);
+    }
+    printf("== z\n");
+    for (size_t j=0; j<obsp->z_size; j++) {
+      if (obsp->z[j].p==0.0f) break;
+      printf("%8.1f %8.1f\n", obsp->z[j].p,
+      obsp->z[j].x);
+    }
+    printf("== u v\n");
+    for (size_t j=0; j<obsp->uv_size; j++) {
+      if (obsp->uv[j].p==0.0f) break;
+      printf("%8.1f %8.1f %8.1f\n", obsp->uv[j].p,
+      obsp->uv[j].x, obsp->uv[j].y);
     }
   }
 }
@@ -174,6 +247,7 @@ main(int argc, const char **argv)
       loadfile(argv[i]);
     }
   }
+  obs_conv();
   obs_print();
   return 0;
 }
