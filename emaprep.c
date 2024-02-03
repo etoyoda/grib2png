@@ -244,8 +244,30 @@ draw_emagram_frame(void)
 }
 
   int
-draw_profile(obs_t *obs)
+profile_color(unsigned i)
 {
+  switch (i) {
+  case 0u:
+  default:
+    setrgb(1u, 1u, 1u);
+    break;
+  case 1u:
+    setrgb(255u, 0u, 0u);
+    break;
+  case 2u:
+    setrgb(0u, 0u, 255u);
+    break;
+  case 3u:
+    setrgb(0u, 255u, 0u);
+    break;
+  }
+  return 0;
+}
+
+  int
+draw_profile(obs_t *obs, unsigned i)
+{
+  profile_color(i);
   setlinewidth(2.0f);
   move_tp(obs->ttd[0].x-273.15f, obs->ttd[0].p);
   for (size_t j=0; j<obs->ttd_count; j++) {
@@ -257,9 +279,11 @@ draw_profile(obs_t *obs)
     if (isnan(obs->ttd[j].y)) break;
     line_tp(obs->ttd[j].y-273.15f, obs->ttd[j].p);
   }
+  setfontsize(28);
+  moveto(40.0f, 984.0f-(float)i*32.0f);
+  symbol(obs->name);
   return 0;
 }
-
 
   int
 draw_emagram(obs_t *obs, size_t obs_count)
@@ -267,8 +291,7 @@ draw_emagram(obs_t *obs, size_t obs_count)
   openpl();
   draw_emagram_frame();
   for (size_t i=0; i<obs_count; i++) {
-    setrgb(0, 0, i*31);
-    draw_profile(&(obs[i]));
+    draw_profile(&(obs[i]), i);
   }
   closepl();
   return 0;

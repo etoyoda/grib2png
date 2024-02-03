@@ -149,11 +149,11 @@ loadfile(const char *fnam)
     sname = strtok(NULL, ","); while (isspace(*sname)) { sname++; }
     sval = strtok(NULL, ",\r\n");
     // 観測識別名titleを生成
-    char title[32];
+    char title[64];
     float ftime = (atof(sftime) + atof(sdura))/60.0f;
     int plus = '+';
     if (*smemb!='-') plus = '-';
-    snprintf(title, 32, "%s%c%g %s", sreftime, plus, ftime, sname);
+    snprintf(title, 64, "%s%c%02.0f %s", sreftime, plus, ftime, sname);
     // プロファイルを探索
     obs_t *obsp = obs_find(title);
     if (obsp == NULL) continue; // 収容不能な数のプロファイルは捨てる

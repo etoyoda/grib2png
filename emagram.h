@@ -7,7 +7,7 @@ typedef struct {
 } level_t;
 
 typedef struct {
-  char name[32];
+  char name[64];
   size_t ttd_size;
   size_t ttd_count;
   level_t *ttd;
