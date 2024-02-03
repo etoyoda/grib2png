@@ -193,13 +193,21 @@ draw_emagram_frame(void)
   setlinewidth(1.0f);
   setrgb(200, 0, 200);
   setfontsize(20);
-  for (float t=-54.0f; t<=36.0f; t+=6.0f) {
+  for (float t=-42.0f; t<=36.0f; t+=6.0f) {
     move_tp(t, 100.0f);
     for (float p=100.0f; p<=1000.0f; p+=25.0f){
       line_tp(t, p);
     }
     move_tp(t, 1060.0f);
-    { char buf[32]; sprintf(buf, "%3d", (int)t); symbol(buf); }
+    { char buf[32]; sprintf(buf, "%+3d", (int)t); symbol(buf); }
+  }
+  for (float t=-66.0f; t<=-48.0f; t+=6.0f) {
+    move_tp(t, 70.0f);
+    for (float p=100.0f; p<=500.0f; p+=25.0f){
+      line_tp(t, p);
+    }
+    move_tp(t, 70.0f);
+    { char buf[32]; sprintf(buf, "%+3d", (int)t); symbol(buf); }
   }
   setfontsize(18);
   setrgb(0, 0, 255);
@@ -216,7 +224,7 @@ draw_emagram_frame(void)
     { char buf[32]; sprintf(buf, "%3u", (unsigned)th); symbol(buf); }
   }
   setrgb(0, 200, 0);
-  for (float th=250.0f; th<=390.0f; th+=20.0f) {
+  for (float th=250.0f; th<=410.0f; th+=20.0f) {
     float t;
     t = inv_ept(th, 100.0f);
     move_tp(t-273.15f, 100.0f);
@@ -280,7 +288,7 @@ profile_color(unsigned i)
 draw_profile(obs_t *obs, unsigned i)
 {
   profile_color(i);
-  setlinewidth(2.0f);
+  setlinewidth(3.0f);
   move_tp(obs->ttd[0].x-273.15f, obs->ttd[0].p);
   for (size_t j=0; j<obs->ttd_count; j++) {
     if (isnan(obs->ttd[j].x)) break;
@@ -291,8 +299,8 @@ draw_profile(obs_t *obs, unsigned i)
     if (isnan(obs->ttd[j].y)) break;
     line_tp(obs->ttd[j].y-273.15f, obs->ttd[j].p);
   }
-  setfontsize(28);
-  moveto(40.0f, 984.0f-(float)i*32.0f);
+  setfontsize(24);
+  moveto(7.0f, 1000.0f-(float)i*24.0f);
   symbol(obs->name);
   return 0;
 }
