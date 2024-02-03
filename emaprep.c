@@ -260,6 +260,18 @@ profile_color(unsigned i)
   case 3u:
     setrgb(0u, 255u, 0u);
     break;
+  case 4u:
+    setrgb(255u, 160u, 0u);
+    break;
+  case 5u:
+    setrgb(160u, 0u, 255u);
+    break;
+  case 6u:
+    setrgb(0u, 255u, 160u);
+    break;
+  case 7u:
+    setrgb(255u, 0u, 160u);
+    break;
   }
   return 0;
 }
