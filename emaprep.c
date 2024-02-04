@@ -308,6 +308,23 @@ draw_profile(obs_t *obs, unsigned i)
   setfontsize(24);
   moveto(7.0f, 1000.0f-(float)i*24.0f);
   symbol(obs->name);
+  // skip z and wind
+  if (i > 0) return 0;
+  setfontsize(18);
+  for (size_t j=0; j<obs->z_count; j++) {
+    char text[32];
+    unsigned p = roundf(obs->z[j].p);
+    switch (p) {
+    case 1000: case 925: case 850: case 700: case 500:
+    case 300: case 250: case 200: case 150: case 100:
+      move_tzp(33.0f, p*0.99f);
+      snprintf(text, 32, "%5.0fm", obs->z[j].x);
+      symbol(text);
+      break;
+    default:
+      break;
+    }
+  }
   return 0;
 }
 
