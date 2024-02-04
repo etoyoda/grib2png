@@ -188,10 +188,12 @@ line_tzp(float tc, float p)
   int
 draw_emagram_frame(void)
 {
+  // 全画面白で塗りつぶし
   setrgb(255, 255, 255);
   box(0, 0, 1023, 1023);
+  // 等温線
   setlinewidth(1.0f);
-  setrgb(200, 0, 200);
+  setrgb(220, 64, 220);
   setfontsize(20);
   for (float t=-42.0f; t<=36.0f; t+=6.0f) {
     move_tp(t, 100.0f);
@@ -209,8 +211,9 @@ draw_emagram_frame(void)
     move_tp(t, 70.0f);
     { char buf[32]; sprintf(buf, "%+3d", (int)t); symbol(buf); }
   }
+  // 乾燥断熱線（等温位線）
   setfontsize(18);
-  setrgb(0, 0, 255);
+  setrgb(64, 64, 255);
   for (float th=240.0f; th<=400.0f; th+=20.0f) {
     float t;
     t= inv_potemp(th, 100.0f);
@@ -223,7 +226,8 @@ draw_emagram_frame(void)
     move_tp(t-273.15f, 98.0f);
     { char buf[32]; sprintf(buf, "%3u", (unsigned)th); symbol(buf); }
   }
-  setrgb(0, 200, 0);
+  // 湿潤断熱線（等相当温位線）
+  setrgb(64, 255, 64);
   for (float th=250.0f; th<=410.0f; th+=20.0f) {
     float t;
     t = inv_ept(th, 100.0f);
@@ -236,9 +240,11 @@ draw_emagram_frame(void)
     move_tp(t-273.15f, 98.0f);
     { char buf[32]; sprintf(buf, "%3u", (unsigned)th); symbol(buf); }
   }
+  // 左右を白箱でマスク
   setrgb(255, 255, 255);
   box(0, 0, 100, 1023);
   box(900, 0, 1023, 1023);
+  // 等圧線
   setlinewidth(1.0f);
   setrgb(0, 0, 0);
   setfontsize(28);
@@ -256,29 +262,29 @@ profile_color(unsigned i)
 {
   switch (i) {
   case 0u:
-  default:
-    setrgb(1u, 1u, 1u);
+    setrgb(180u, 0u, 104u);
     break;
   case 1u:
-    setrgb(255u, 0u, 0u);
+    setrgb(255u, 40u, 0u);
     break;
   case 2u:
-    setrgb(0u, 0u, 255u);
+    setrgb(255u, 153u, 0u);
     break;
   case 3u:
-    setrgb(0u, 255u, 0u);
+    setrgb(240u, 235u, 0u);
     break;
   case 4u:
-    setrgb(255u, 160u, 0u);
+    setrgb(0u, 65u, 255u);
     break;
   case 5u:
-    setrgb(160u, 0u, 255u);
+    setrgb(33u, 140u, 255u);
     break;
   case 6u:
-    setrgb(0u, 255u, 160u);
+    setrgb(150u, 200u, 255u);
     break;
+  default:
   case 7u:
-    setrgb(255u, 0u, 160u);
+    setrgb(210u, 190u, 252u);
     break;
   }
   return 0;
