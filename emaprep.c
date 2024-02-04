@@ -185,6 +185,113 @@ line_tzp(float tc, float p)
   lineto(xz, y);
 }
 
+void
+arrow(float tc, float p, float u, float v)
+{
+  const float stem = 40.0f;
+  const float barb = 20.0f;
+  float wf = hypotf(u, v);
+  unsigned knot = roundf(wf * 3600.0f / 1852.0f / 5.0f) * 5.0f;
+  if ((knot == 0) && (wf > 0.5)) { knot = 5u; }
+  float xdum, x0, ydum, y0;
+  xyconv(tc, 1000.0f, &x0, &ydum);
+  xyconv(tc, p, &xdum, &y0);
+  if (knot == 0) {
+    moveto(x0+2, y0);
+    lineto(x0, y0+2);
+    lineto(x0-2, y0);
+    lineto(x0, y0-2);
+    lineto(x0+2, y0);
+    return;
+  }
+  float eu = -u / wf;
+  float ev = -v / wf;
+  moveto(x0, y0);
+  lineto(x0+eu*stem, y0+ev*stem);
+  float fu = 0.342f * eu + 0.940f * ev;
+  float fv = -0.940f * eu + 0.342f * ev;
+
+  // SHORTER BARBS
+  switch (knot) {
+  case 5: case 15: case 55:
+    moveto(x0+0.85f*eu*stem, y0+0.85f*ev*stem);
+    lineto(x0+0.85f*eu*stem+0.5f*fu*barb, y0+0.85f*ev*stem+0.5f*fv*barb);
+    break;
+  case 25: case 65: case 105:
+    moveto(x0+0.70f*eu*stem, y0+0.70f*ev*stem);
+    lineto(x0+0.70f*eu*stem+0.5f*fu*barb, y0+0.70f*ev*stem+0.5f*fv*barb);
+    break;
+  case 35: case 75: case 115: case 155:
+    moveto(x0+0.55f*eu*stem, y0+0.55f*ev*stem);
+    lineto(x0+0.55f*eu*stem+0.5f*fu*barb, y0+0.55f*ev*stem+0.5f*fv*barb);
+    break;
+  case 45: case 85: case 125: case 165:
+    moveto(x0+0.40f*eu*stem, y0+0.40f*ev*stem);
+    lineto(x0+0.40f*eu*stem+0.5f*fu*barb, y0+0.40f*ev*stem+0.5f*fv*barb);
+    break;
+  case 95: case 135: case 175:
+    moveto(x0+0.25f*eu*stem, y0+0.25f*ev*stem);
+    lineto(x0+0.25f*eu*stem+0.5f*fu*barb, y0+0.25f*ev*stem+0.5f*fv*barb);
+    break;
+  case 145: case 185:
+    moveto(x0+0.10f*eu*stem, y0+0.10f*ev*stem);
+    lineto(x0+0.10f*eu*stem+0.5f*fu*barb, y0+0.10f*ev*stem+0.5f*fv*barb);
+    break;
+  }
+
+  // MAIN BARBS
+  switch (knot) {
+  case 190: case 195:
+    moveto(x0+0.2f*eu*stem, y0+0.2f*ev*stem);
+    lineto(x0+0.2f*eu*stem+fu*barb, y0+0.2f*ev*stem+fv*barb);
+  case 180: case 185:
+  case 140: case 145:
+    moveto(x0+0.35f*eu*stem, y0+0.35f*ev*stem);
+    lineto(x0+0.35f*eu*stem+fu*barb, y0+0.35f*ev*stem+fv*barb);
+  case 170: case 175:
+  case 130: case 135:
+  case 90: case 95:
+    moveto(x0+0.4f*eu*stem, y0+0.4f*ev*stem);
+    lineto(x0+0.4f*eu*stem+fu*barb, y0+0.4f*ev*stem+fv*barb);
+  case 160: case 165:
+  case 120: case 125:
+  case 80: case 85:
+  case 40: case 45:
+    moveto(x0+0.55f*eu*stem, y0+0.55f*ev*stem);
+    lineto(x0+0.55f*eu*stem+fu*barb, y0+0.55f*ev*stem+fv*barb);
+  case 150: case 155:
+  case 110: case 115:
+  case 70: case 75:
+  case 30: case 35:
+    moveto(x0+0.7f*eu*stem, y0+0.7f*ev*stem);
+    lineto(x0+0.7f*eu*stem+fu*barb, y0+0.7f*ev*stem+fv*barb);
+  case 100: case 105:
+  case 60: case 65:
+  case 20: case 25:
+    moveto(x0+0.85f*eu*stem, y0+0.85f*ev*stem);
+    lineto(x0+0.85f*eu*stem+fu*barb, y0+0.85f*ev*stem+fv*barb);
+  case 50: case 55:
+  case 10:
+    moveto(x0+eu*stem, y0+ev*stem);
+    lineto(x0+eu*stem+fu*barb, y0+ev*stem+fv*barb);
+  }
+
+  // PENNANTS
+  if (knot >= 50) {
+    moveto(x0+eu*stem+fu*barb, y0+ev*stem+fv*barb);
+    lineto(x0+0.85f*eu*stem, y0+0.85f*ev*stem);
+  }
+  if (knot >= 100) {
+    moveto(x0+0.85f*eu*stem+fu*barb, y0+0.85f*ev*stem+fv*barb);
+    lineto(x0+0.7f*eu*stem, y0+0.7f*ev*stem);
+  }
+  if (knot >= 150) {
+    moveto(x0+0.7f*eu*stem+fu*barb, y0+0.7f*ev*stem+fv*barb);
+    lineto(x0+0.55f*eu*stem, y0+0.55f*ev*stem);
+  }
+
+}
+
   int
 draw_emagram_frame(void)
 {
@@ -294,6 +401,7 @@ profile_color(unsigned i)
 draw_profile(obs_t *obs, unsigned i)
 {
   profile_color(i);
+  // display t and td
   setlinewidth(3.0f);
   move_tp(obs->ttd[0].x-273.15f, obs->ttd[0].p);
   for (size_t j=0; j<obs->ttd_count; j++) {
@@ -305,11 +413,13 @@ draw_profile(obs_t *obs, unsigned i)
     if (isnan(obs->ttd[j].y)) break;
     line_tp(obs->ttd[j].y-273.15f, obs->ttd[j].p);
   }
+  // display name of obs
   setfontsize(24);
   moveto(7.0f, 1000.0f-(float)i*24.0f);
   symbol(obs->name);
   // skip z and wind
   if (i > 0) return 0;
+  // display z
   setfontsize(18);
   for (size_t j=0; j<obs->z_count; j++) {
     char text[32];
@@ -324,6 +434,11 @@ draw_profile(obs_t *obs, unsigned i)
     default:
       break;
     }
+  }
+  // display wind
+  setlinewidth(1.0f);
+  for (size_t j=0; j<obs->uv_count; j++) {
+    arrow(46.0f, obs->uv[j].p, obs->uv[j].x, obs->uv[j].y);
   }
   return 0;
 }

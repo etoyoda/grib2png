@@ -96,11 +96,13 @@ obs_store(obs_t *obsp, const char *sparm, const char *svlev, const char *sval)
   float p = vlev(svlev);
   float val = atof(sval);
   if (streq("T", sparm)) {
+    if (p == VLEV_Z2M) { return 0; } // skip for now
     level_t *lp = level_find(obsp->ttd, obsp->ttd_size, p);
     if (lp==NULL) return -1;
     lp->x = val;
     return 0;
   } else if (streq("RH", sparm)) {
+    if (p == VLEV_Z2M) { return 0; } // skip for now
     level_t *lp = level_find(obsp->ttd, obsp->ttd_size, p);
     if (lp==NULL) return -1;
     lp->y = val;
@@ -111,11 +113,13 @@ obs_store(obs_t *obsp, const char *sparm, const char *svlev, const char *sval)
     lp->x = val;
     return 0;
   } else if (streq("U", sparm)) {
+    if (p == VLEV_Z10M) { return 0; } // skip for now
     level_t *lp = level_find(obsp->uv, obsp->uv_size, p);
     if (lp==NULL) return -1;
     lp->x = val;
     return 0;
   } else if (streq("V", sparm)) {
+    if (p == VLEV_Z10M) { return 0; } // skip for now
     level_t *lp = level_find(obsp->uv, obsp->uv_size, p);
     if (lp==NULL) return -1;
     lp->y = val;
