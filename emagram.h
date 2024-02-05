@@ -20,5 +20,12 @@ typedef struct {
   float pmsl;
 } obs_t;
 
+typedef enum {
+  GR_SKEWT = 0,
+  GR_POTEMP = 1,
+  GR_EMAGRAM = 2
+} grtype_t;
+
 extern double t2td(double t, double rh, double p);
 extern int draw_emagram(obs_t *obs, size_t obs_count);
+extern int setgraphtype(grtype_t gt);

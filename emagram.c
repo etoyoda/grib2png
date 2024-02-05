@@ -249,7 +249,13 @@ main(int argc, const char **argv)
   obs_init();
   for (int i=1; i<argc; i++) {
     if (argv[i][0] == '-') {
-      fprintf(stderr, "unknown option %s\n", argv[i]);
+      if (argv[i][1] == 'e') {
+        setgraphtype(GR_EMAGRAM);
+      } else if (argv[i][1] == 'p') {
+        setgraphtype(GR_POTEMP);
+      } else {
+        fprintf(stderr, "unknown option %s\n", argv[i]);
+      }
     } else {
       loadfile(argv[i]);
     }

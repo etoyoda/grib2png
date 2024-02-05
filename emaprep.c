@@ -141,13 +141,31 @@ main(int argc, char **argv)
 #define X_SPAN 800.0f
 #define X_RIGHT (X_LEFT + X_SPAN)
 
+static grtype_t cgrtype = GR_SKEWT;
+  int
+setgraphtype(grtype_t gt)
+{
+  cgrtype = gt;
+  return 0;
+}
+
 void
 xyconv(float tc, float p, float *xp, float *yp)
 {
   float y = (3.0f - log10f(p)) * Y_SPAN;
-  float x = (tc - -40.0f) * 0.0125 * X_SPAN;
-  *yp = Y_BOTTOM + y;
-  *xp = X_LEFT + x + y;
+  if (cgrtype == GR_EMAGRAM) {
+    float x = (tc - -70.0f) * 0.0091f * X_SPAN;
+    *yp = Y_BOTTOM + y;
+    *xp = X_LEFT + x;
+  } else if (cgrtype == GR_POTEMP) {
+    float x = (potemp(tc+273.15, p) - 230.0f) * 0.01f * X_SPAN;
+    *yp = Y_BOTTOM + y;
+    *xp = X_LEFT + x;
+  } else {  // GR_SKEWT and default
+    float x = (tc - -40.0f) * 0.0125f * X_SPAN;
+    *yp = Y_BOTTOM + y;
+    *xp = X_LEFT + x + y;
+  }
 //printf(":: %8.1f %8.1f %8.1f %8.1f\n", (double)tc, (double)p, *xp, *yp);
 }
 
