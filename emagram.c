@@ -193,6 +193,8 @@ dz_hydro(float t1, float t2, float p1, float p2)
 fix_t_profile(obs_t *obsp)
 {
   size_t jlast = obsp->ttd_count-1;
+  // 実ゾンデデータを処理した場合の対策：
+  // 鉛直30層（経験的閾値）以上あればこの関数は何もしない
   if (jlast > 30u) return 0;
   for (size_t j=0; j<jlast; j++) {
     size_t k1, k2;
@@ -217,7 +219,8 @@ K2_FOUND:
     dz, dz0, dz/dz0
     );
     jlast++;
-    // とりあえず中間点に保管
+    // とりあえず中間点に温度特異点を挿入
+    // もうちょっと場所は工夫すべき
     obsp->ttd[jlast].p = 0.5 * (obsp->ttd[j].p + obsp->ttd[j+1].p);
     obsp->ttd[jlast].y = 0.5 * (obsp->ttd[j].y + obsp->ttd[j+1].y);
     obsp->ttd[jlast].x = 0.5 * (obsp->ttd[j].x + obsp->ttd[j+1].x)
