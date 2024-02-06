@@ -177,6 +177,60 @@ level_compare(const void *ap, const void *bp)
   return 0;
 }
 
+// 測高公式により高度差を与える
+  float
+dz_hydro(float t1, float t2, float p1, float p2)
+{
+  const float R_g = 287.0f / 9.80665f;  // 乾燥空気の気体定数 [J/kg/K] / 重力 [m/s2]
+  // 仮温度 [K], 湿度は面倒なので 60% と仮定している
+  float tv = (t1 + t2) * 0.5f;
+  tv += 0.4f * powf(2.0f, ((tv - 273.15f) * 0.1f));
+  return R_g * tv * logf(p1 / p2);
+}
+
+// T-Z 整合性をチェックして必要なら温度中間点を挿入
+  int
+fix_t_profile(obs_t *obsp)
+{
+  size_t jlast = obsp->ttd_count-1;
+  if (jlast > 30u) return 0;
+  for (size_t j=0; j<jlast; j++) {
+    size_t k1, k2;
+    for (k1=0; k1<(obsp->z_count-1); k1++) {
+      if (obsp->z[k1].p==obsp->ttd[j].p) goto K1_FOUND;
+    }
+    goto NEXT_J;
+K1_FOUND:
+    for (k2=k1+1; k2<obsp->z_count; k2++) {
+      if (obsp->z[k2].p==obsp->ttd[j+1].p) goto K2_FOUND;
+    }
+    goto NEXT_J;
+    float dz0, dz;
+K2_FOUND:
+    dz0 = dz_hydro(obsp->ttd[j].x, obsp->ttd[j+1].x, obsp->ttd[j].p, obsp->ttd[j+1].p);
+    dz = obsp->z[k2].x - obsp->z[k1].x;
+    if ((dz > 0.998f * dz0)&&(dz < 1.002f * dz0)) goto NEXT_J;
+    printf("p %g %g t %g %g z %g %g dz %g %g %5.3f\n",
+    obsp->ttd[j].p, obsp->ttd[j+1].p,
+    obsp->ttd[j].x, obsp->ttd[j+1].x,
+    obsp->z[k1].x, obsp->z[k2].x,
+    dz, dz0, dz/dz0
+    );
+    jlast++;
+    // とりあえず中間点に保管
+    obsp->ttd[jlast].p = 0.5 * (obsp->ttd[j].p + obsp->ttd[j+1].p);
+    obsp->ttd[jlast].y = 0.5 * (obsp->ttd[j].y + obsp->ttd[j+1].y);
+    obsp->ttd[jlast].x = 0.5 * (obsp->ttd[j].x + obsp->ttd[j+1].x)
+      * ((dz*2.0f-dz0)/dz0);
+NEXT_J: ;
+  }
+  if (jlast > obsp->ttd_count-1) {
+    obsp->ttd_count = jlast+1;
+    return 1;
+  }
+  return 0;
+}
+
   int
 obs_conv(void)
 {
@@ -205,13 +259,20 @@ obs_conv(void)
       if (obsp->ttd[n].p==0.0f) { obsp->ttd_count=n; break; }
     }
     qsort(obsp->ttd, obsp->ttd_count, sizeof(level_t), level_compare);
-    // 要素変換
+    // 要素変換: RH を TD でおきかえる
     for (size_t j=0; j<obsp->ttd_count; j++) {
       obsp->ttd[j].y = t2td(obsp->ttd[j].x, obsp->ttd[j].y, obsp->ttd[j].p);
+    }
+    // T-Z整合性チェック
+    if (fix_t_profile(obsp)) {
+      // 真を返した場合は温度特異点が追加されているのでソートしなおし
+      qsort(obsp->ttd, obsp->ttd_count, sizeof(level_t), level_compare);
     }
   }
   return 0;
 }
+
+int verbose = 0;
 
   int
 obs_print(void)
@@ -253,6 +314,8 @@ main(int argc, const char **argv)
         setgraphtype(GR_EMAGRAM);
       } else if (argv[i][1] == 'p') {
         setgraphtype(GR_POTEMP);
+      } else if (argv[i][1] == 'v') {
+        verbose = 1;
       } else {
         fprintf(stderr, "unknown option %s\n", argv[i]);
       }
@@ -262,6 +325,6 @@ main(int argc, const char **argv)
   }
   obs_conv();
   draw_emagram(obs, obs_count);
-  obs_print();
+  if (verbose) obs_print();
   return 0;
 }
