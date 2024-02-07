@@ -212,12 +212,14 @@ K2_FOUND:
     dz0 = dz_hydro(obsp->ttd[j].x, obsp->ttd[j+1].x, obsp->ttd[j].p, obsp->ttd[j+1].p);
     dz = obsp->z[k2].x - obsp->z[k1].x;
     if ((dz > 0.998f * dz0)&&(dz < 1.002f * dz0)) goto NEXT_J;
-    printf("p %g %g t %g %g z %g %g dz %g %g %5.3f\n",
-    obsp->ttd[j].p, obsp->ttd[j+1].p,
-    obsp->ttd[j].x, obsp->ttd[j+1].x,
-    obsp->z[k1].x, obsp->z[k2].x,
-    dz, dz0, dz/dz0
-    );
+    if (verbose) {
+      printf("p %g %g t %g %g z %g %g dz %g %g %5.3f\n",
+      obsp->ttd[j].p, obsp->ttd[j+1].p,
+      obsp->ttd[j].x, obsp->ttd[j+1].x,
+      obsp->z[k1].x, obsp->z[k2].x,
+      dz, dz0, dz/dz0
+      );
+    }
     jlast++;
     // とりあえず中間点に温度特異点を挿入
     // もうちょっと場所は工夫すべき
