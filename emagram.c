@@ -239,17 +239,28 @@ K3_FOUND:
     if ((g01 < g12) && (g12 < g23) && (dz < dz_est)) {
       bendtype = 'T';
     } else {
-      bendtype = '*';
+      bendtype = 'B';
     }
     // 按分点に温度特異点を挿入
     jlast++;
-    float w0, w1;
+    float w0, w1, dzmid, g1mid;
     w0 = fabsf(g23-g12)/(fabsf(g23-g12)+fabsf(g12-g01));
     w1 = 1.0f - w0;
+RETRY:
     obsp->ttd[jlast].p = w0*obsp->ttd[j].p + w1*obsp->ttd[j+1].p;
     obsp->ttd[jlast].y = w0*obsp->ttd[j].y + w1*obsp->ttd[j+1].y;
     obsp->ttd[jlast].x = (w0*obsp->ttd[j].x + w1*obsp->ttd[j+1].x)
       * ((dz*2.0f-dz_est)/dz_est);
+    // 下側の気温減率をチェック
+    dzmid = dz_hydro(obsp->ttd[j].x, obsp->ttd[jlast].x,
+      obsp->ttd[j].p, obsp->ttd[jlast].p);
+    g1mid = (obsp->ttd[jlast].x - obsp->ttd[j].x) / dzmid * 1000.0f;
+    if ((bendtype != 'R')&&(g1mid < -9.8f)) {
+      bendtype = 'R';
+      w0 = w0 * 0.5f;
+      w1 = 1.0f - w0;
+      goto RETRY;
+    }
     if (verbose) {
       printf("p %g %g t %g %g z %g %g dz %g %g %5.3f",
       obsp->ttd[j].p, obsp->ttd[j+1].p,
