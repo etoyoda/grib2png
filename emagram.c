@@ -198,7 +198,7 @@ fix_t_profile(obs_t *obsp)
   // 実ゾンデデータを処理した場合の対策：
   // 鉛直30層（経験的閾値）以上あればこの関数は何もしない
   if (jlast > 30u) return 0;
-  for (size_t j=1; j<jlast; j++) {
+  for (size_t j=1; j<jlast-2; j++) {
     size_t k0, k1, k2, k3;
     // k0 := j-1 と同じ気圧を持つ点
     for (k0=0; k0<(obsp->z_count-3); k0++) {
@@ -228,21 +228,37 @@ K3_FOUND:
     dz_est = dz_hydro(obsp->ttd[j].x, obsp->ttd[j+1].x, obsp->ttd[j].p, obsp->ttd[j+1].p);
     dz = obsp->z[k2].x - obsp->z[k1].x;
     if ((dz > 0.998f * dz_est)&&(dz < 1.002f * dz_est)) goto NEXT_J;
+    float g01, g12, g23;
+    int bendtype;
+    g01 = (obsp->ttd[j].x - obsp->ttd[j-1].x) /
+      (obsp->z[k1].x - obsp->z[k0].x) * 1000.0f;
+    g12 = (obsp->ttd[j+1].x - obsp->ttd[j].x) /
+      (obsp->z[k2].x - obsp->z[k1].x) * 1000.0f;
+    g23 = (obsp->ttd[j+2].x - obsp->ttd[j+1].x) /
+      (obsp->z[k3].x - obsp->z[k2].x) * 1000.0f;
+    if ((g01 < g12) && (g12 < g23) && (dz < dz_est)) {
+      bendtype = 'T';
+    } else {
+      bendtype = '*';
+    }
+    // 按分点に温度特異点を挿入
+    jlast++;
+    float w0, w1;
+    w0 = fabsf(g23-g12)/(fabsf(g23-g12)+fabsf(g12-g01));
+    w1 = 1.0f - w0;
+    obsp->ttd[jlast].p = w0*obsp->ttd[j].p + w1*obsp->ttd[j+1].p;
+    obsp->ttd[jlast].y = w0*obsp->ttd[j].y + w1*obsp->ttd[j+1].y;
+    obsp->ttd[jlast].x = (w0*obsp->ttd[j].x + w1*obsp->ttd[j+1].x)
+      * ((dz*2.0f-dz_est)/dz_est);
     if (verbose) {
-      printf("p %g %g t %g %g z %g %g dz %g %g %5.3f\n",
+      printf("p %g %g t %g %g z %g %g dz %g %g %5.3f",
       obsp->ttd[j].p, obsp->ttd[j+1].p,
       obsp->ttd[j].x, obsp->ttd[j+1].x,
       obsp->z[k1].x, obsp->z[k2].x,
-      dz, dz_est, dz/dz_est
-      );
+      dz, dz_est, dz/dz_est);
+      printf(" g %g %g %g %c %g\n", g01, g12, g23, bendtype,
+        obsp->ttd[jlast].p);
     }
-    jlast++;
-    // とりあえず中間点に温度特異点を挿入
-    // もうちょっと場所は工夫すべき
-    obsp->ttd[jlast].p = 0.5 * (obsp->ttd[j].p + obsp->ttd[j+1].p);
-    obsp->ttd[jlast].y = 0.5 * (obsp->ttd[j].y + obsp->ttd[j+1].y);
-    obsp->ttd[jlast].x = 0.5 * (obsp->ttd[j].x + obsp->ttd[j+1].x)
-      * ((dz*2.0f-dz_est)/dz_est);
 NEXT_J: ;
   }
   if (jlast > obsp->ttd_count-1) {
