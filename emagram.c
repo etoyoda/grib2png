@@ -5,6 +5,8 @@
 #include <math.h>
 #include "emagram.h"
 
+int verbose = 0;
+
 #define streq(a,b) (strcmp((a),(b))==0)
 
 size_t obs_size, obs_count;
@@ -196,28 +198,42 @@ fix_t_profile(obs_t *obsp)
   // 実ゾンデデータを処理した場合の対策：
   // 鉛直30層（経験的閾値）以上あればこの関数は何もしない
   if (jlast > 30u) return 0;
-  for (size_t j=0; j<jlast; j++) {
-    size_t k1, k2;
-    for (k1=0; k1<(obsp->z_count-1); k1++) {
+  for (size_t j=1; j<jlast; j++) {
+    size_t k0, k1, k2, k3;
+    // k0 := j-1 と同じ気圧を持つ点
+    for (k0=0; k0<(obsp->z_count-3); k0++) {
+      if (obsp->z[k0].p==obsp->ttd[j-1].p) goto K0_FOUND;
+    }
+    goto NEXT_J; // 探索失敗 - 当該jの処理を打ち切り
+K0_FOUND:
+    // k1 := j と同じ気圧を持つ点
+    for (k1=k0+1; k1<(obsp->z_count-2); k1++) {
       if (obsp->z[k1].p==obsp->ttd[j].p) goto K1_FOUND;
     }
-    goto NEXT_J;
+    goto NEXT_J; // 探索失敗 - 当該jの処理を打ち切り
 K1_FOUND:
-    for (k2=k1+1; k2<obsp->z_count; k2++) {
+    // k2 := j+1 と同じ気圧を持つ点
+    for (k2=k1+1; k2<obsp->z_count-1; k2++) {
       if (obsp->z[k2].p==obsp->ttd[j+1].p) goto K2_FOUND;
     }
-    goto NEXT_J;
-    float dz0, dz;
+    goto NEXT_J; // 探索失敗 - 当該jの処理を打ち切り
 K2_FOUND:
-    dz0 = dz_hydro(obsp->ttd[j].x, obsp->ttd[j+1].x, obsp->ttd[j].p, obsp->ttd[j+1].p);
+    // k3 := j+2 と同じ気圧を持つ点
+    for (k3=k2+1; k3<obsp->z_count; k3++) {
+      if (obsp->z[k3].p==obsp->ttd[j+2].p) goto K3_FOUND;
+    }
+    goto NEXT_J; // 探索失敗 - 当該jの処理を打ち切り
+    float dz_est, dz;
+K3_FOUND:
+    dz_est = dz_hydro(obsp->ttd[j].x, obsp->ttd[j+1].x, obsp->ttd[j].p, obsp->ttd[j+1].p);
     dz = obsp->z[k2].x - obsp->z[k1].x;
-    if ((dz > 0.998f * dz0)&&(dz < 1.002f * dz0)) goto NEXT_J;
+    if ((dz > 0.998f * dz_est)&&(dz < 1.002f * dz_est)) goto NEXT_J;
     if (verbose) {
       printf("p %g %g t %g %g z %g %g dz %g %g %5.3f\n",
       obsp->ttd[j].p, obsp->ttd[j+1].p,
       obsp->ttd[j].x, obsp->ttd[j+1].x,
       obsp->z[k1].x, obsp->z[k2].x,
-      dz, dz0, dz/dz0
+      dz, dz_est, dz/dz_est
       );
     }
     jlast++;
@@ -226,7 +242,7 @@ K2_FOUND:
     obsp->ttd[jlast].p = 0.5 * (obsp->ttd[j].p + obsp->ttd[j+1].p);
     obsp->ttd[jlast].y = 0.5 * (obsp->ttd[j].y + obsp->ttd[j+1].y);
     obsp->ttd[jlast].x = 0.5 * (obsp->ttd[j].x + obsp->ttd[j+1].x)
-      * ((dz*2.0f-dz0)/dz0);
+      * ((dz*2.0f-dz_est)/dz_est);
 NEXT_J: ;
   }
   if (jlast > obsp->ttd_count-1) {
@@ -277,8 +293,6 @@ obs_conv(void)
   return 0;
 }
 
-int verbose = 0;
-
   int
 obs_print(void)
 {
@@ -320,7 +334,7 @@ main(int argc, const char **argv)
       } else if (argv[i][1] == 'p') {
         setgraphtype(GR_POTEMP);
       } else if (argv[i][1] == 'v') {
-        verbose = 1;
+        verbose++;
       } else {
         fprintf(stderr, "unknown option %s\n", argv[i]);
       }
@@ -330,6 +344,6 @@ main(int argc, const char **argv)
   }
   obs_conv();
   draw_emagram(obs, obs_count);
-  if (verbose) obs_print();
+  if (verbose > 1) obs_print();
   return 0;
 }
