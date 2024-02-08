@@ -16,7 +16,9 @@ static float cgreen = 0.0;
 static float cblue = 0.0;
 static char cname[256] = "/tmp/plotXXXXXX";
 
-
+// openpl() - API to initialize the plot library;
+//  can be called multiple times safely;
+//  CAUTION: cannot be called after closepl();
   int
 openpl(void)
 {
@@ -27,6 +29,7 @@ openpl(void)
   return 0;
 }
 
+// newpath() - internal function to issue "newpath"
   int
 newpath(void)
 {
