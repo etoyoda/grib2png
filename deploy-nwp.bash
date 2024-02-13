@@ -1,4 +1,5 @@
-for file in wisgsmpng.bash grib2png gribslim makelist.sh gribpick emagram
+for file in wisgsmpng.bash grib2png gribslim makelist.sh gribpick emagram \
+ run-emagram.bash
 do
   sudo -u nwp install -m 0755 $file /nwp/bin
 done
