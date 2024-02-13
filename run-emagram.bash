@@ -67,9 +67,10 @@ test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC61.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-42.50 141.25 42.5N141.3E_Shiraoi
-43.75 141.25 43.8N141.3E_Mashike
-45.00 141.25 45.0N141.3E_Rishiri
+42.50 141.25 42.5N141E_Shiraoi
+43.75 141.25 43.8N141E_Mashike
+45.00 141.25 45.0N141E_Rishiri
+41.25 141.25 41.3N141E_Mutsu
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram zmodel.txt zobs.txt
@@ -83,7 +84,7 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 36.25 135.00 36.3N135.0E_Tango
 36.25 136.25 36.3N136.3E_Awara
 37.50 137.50 37.5N137.5E_Suzu
-38.75 138.75 38.8N138.8E_Awashima
+38.75 138.75 38.8N138.8E_Sado
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram zmodel.txt zobs.txt
@@ -109,7 +110,9 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC71.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 28.75 130.00 28.8N130.0E_Amami
+27.50 128.75 27.5N128.8E_O.Erabu
 26.25 127.50 26.3N127.5E_Okinawa
+25.00 126.25 25.0N126.3E
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram zmodel.txt zobs.txt
@@ -120,7 +123,10 @@ test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC72.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-23.75 123.75 23.8N123.8E_Yaeyama
+23.75 123.75 23.8N123.8E_Hateruma
+25.00 122.50 25.0N122.5E_Yonaguni
+25.00 125.00 25.0N125.0E_Miyakojima
+26.25 123.75 26.3N123.8E
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram zmodel.txt zobs.txt
