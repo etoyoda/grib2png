@@ -415,6 +415,15 @@ profile_color(unsigned i)
   return 0;
 }
 
+static int selected_idx = 0;
+
+  int
+set_zw_profile(int i)
+{
+  selected_idx = i;
+  return 0;
+}
+
   int
 draw_profile(obs_t *obs, unsigned i)
 {
@@ -436,7 +445,7 @@ draw_profile(obs_t *obs, unsigned i)
   moveto(7.0f, 1000.0f-(float)i*24.0f);
   symbol(obs->name);
   // skip z and wind
-  if (i > 0) return 0;
+  if (i != selected_idx) return 0;
   // display z
   setfontsize(18);
   for (size_t j=0; j<obs->z_count; j++) {

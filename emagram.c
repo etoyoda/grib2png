@@ -360,6 +360,8 @@ main(int argc, const char **argv)
         setgraphtype(GR_EMAGRAM);
       } else if (argv[i][1] == 'p') {
         setgraphtype(GR_POTEMP);
+      } else if (argv[i][1] == 's') {
+        set_zw_profile(atoi(argv[i]+2));
       } else if (argv[i][1] == 'v') {
         verbose++;
       } else {

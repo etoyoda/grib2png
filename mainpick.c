@@ -15,7 +15,7 @@ static const char *sfilter = "p[U]=p[V]=p[T]=p[RH]=|||,v10000>,g0=,&&";
 struct ptlist_t {
   float lat;
   float lon;
-  char tag[16];
+  char tag[32];
 } *ptlist = NULL;
 
 const unsigned maxline = 256;
@@ -35,7 +35,7 @@ ptlist_read(FILE *fp)
     int r;
     struct ptlist_t *cursor;
     cursor = ptlist + nl;
-    r = sscanf(line, "%g%g%s", &(cursor->lat), &(cursor->lon), cursor->tag);
+    r = sscanf(line, "%g%g%31s", &(cursor->lat), &(cursor->lon), cursor->tag);
     if (r < 3) {
       fprintf(stderr, "W Bad format <%s>\n", line);
     } else {

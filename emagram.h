@@ -29,3 +29,4 @@ typedef enum {
 extern double t2td(double t, double rh, double p);
 extern int draw_emagram(obs_t *obs, size_t obs_count);
 extern int setgraphtype(grtype_t gt);
+extern int set_zw_profile(int i);
