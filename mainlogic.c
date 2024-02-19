@@ -405,6 +405,8 @@ project_ept(const grib2secs_t *gsp_rh, double *dbuf_rh,
     IPARM_papT, PALETTE_papT, ept_bolton, NULL);
 }
 
+/*=== traps - 2個データを受けて処理する関数を起動する機構 ===*/
+
 typedef struct trap_t {
   // 先に保存せねばならないデータ
   grib2secs_t *keep_gsp; // 変数
