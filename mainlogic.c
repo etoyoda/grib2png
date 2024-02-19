@@ -455,8 +455,10 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
   long ftime2_gsp = get_ftime(gsp) + get_duration(gsp);
   gribscan_err_t r = GSE_OKAY;
   for (int i = 0; i < N_TRAPS; i++) {
+    // traps[i] のkeep条件に合致するなら gsp を複製して保存する
     if (iparm_gsp == traps[i].keep_parm && vlev_gsp == traps[i].keep_vlev
     && ftime2_gsp == traps[i].keep_ftime2) {
+      // ありえないが一応：既に keep されているなら破棄
       if (traps[i].keep_gsp) {
         if (traps[i].keep_gsp->omake) myfree(traps[i].keep_gsp->omake);
         del_grib2secs(traps[i].keep_gsp);
@@ -464,6 +466,8 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
       traps[i].keep_gsp = dup_grib2secs(gsp);
       traps[i].keep_gsp->omake = mydup(dbuf, sizeof(double) * npixels);
     }
+    // traps[i] のkeepが既にあって wait 条件に合致するなら関数を駆動してから
+    // keep を破棄
     if (traps[i].keep_gsp && iparm_gsp == traps[i].wait_parm
     && vlev_gsp == traps[i].wait_vlev
     && ftime2_gsp == traps[i].wait_ftime2) {
