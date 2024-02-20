@@ -478,8 +478,28 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
       myfree(traps[i].keep_gsp->omake);
       del_grib2secs(traps[i].keep_gsp);
       traps[i].keep_gsp = NULL;
+      if (r != GSE_OKAY) break;
     }
   }
+  return r;
+}
+
+  gribscan_err_t
+check_sfcanal(const struct grib2secs *gsp, double *dbuf,
+  outframe_t *ofp, char **textv)
+{
+  long ftime2_gsp = get_ftime(gsp) + get_duration(gsp);
+  if (ftime2_gsp != 360.0) {
+    return GSE_OKAY;
+  }
+  double vlev_gsp = get_vlevel(gsp);
+  if ((vlev_gsp != 101324.0) && (vlev_gsp != VLEVEL_Z10M)) {
+    return GSE_OKAY;
+  }
+  iparm_t iparm_gsp = get_parameter(gsp);
+  size_t npixels = get_npixels(gsp);
+  gribscan_err_t r = GSE_OKAY;
+  printf("%ld %g %u\n", ftime2_gsp, vlev_gsp, iparm_gsp);
   return r;
 }
 
@@ -516,6 +536,9 @@ NOSAVE: ;
   }
   if (r == GSE_OKAY) {
     r = check_traps(gsp, dbuf, &outf, textv);
+  }
+  if (r == GSE_OKAY) {
+    r = check_sfcanal(gsp, dbuf, &outf, textv);
   }
   //--- end memory section
   free(dbuf);
