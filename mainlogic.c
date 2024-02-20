@@ -473,7 +473,7 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
     if (traps[i].keep_gsp && iparm_gsp == traps[i].wait_parm
     && vlev_gsp == traps[i].wait_vlev
     && ftime2_gsp == traps[i].wait_ftime2) {
-      traps[i].projecter(gsp, dbuf, traps[i].keep_gsp,
+      r = traps[i].projecter(gsp, dbuf, traps[i].keep_gsp,
         traps[i].keep_gsp->omake, ofp, textv);
       myfree(traps[i].keep_gsp->omake);
       del_grib2secs(traps[i].keep_gsp);
