@@ -493,8 +493,15 @@ typedef struct sfctrap_t {
 
 enum { N_SFCTRAPS = 1 };
 sfctrap_t sfctrap[N_SFCTRAPS] = {
-  { 0, NULL, NULL, NULL }
+  { 360, NULL, NULL, NULL }
 };
+
+  gribscan_err_t
+sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
+{
+  puts("===");
+  return GSE_OKAY;
+}
 
   gribscan_err_t
 check_sfcanal(const struct grib2secs *gsp, double *dbuf,
@@ -508,6 +515,8 @@ check_sfcanal(const struct grib2secs *gsp, double *dbuf,
   long ftime2_gsp = get_ftime(gsp) + get_duration(gsp);
   iparm_t iparm_gsp = get_parameter(gsp);
   gribscan_err_t r = GSE_OKAY;
+  size_t npixels = get_npixels(gsp);
+printf("@1 \n");
   for (int i=0; i<N_SFCTRAPS; i++) {
     // phase 2: keep
     grib2secs_t **gspp;
@@ -524,11 +533,16 @@ check_sfcanal(const struct grib2secs *gsp, double *dbuf,
       del_grib2secs(*gspp); *gspp = NULL;
     }
     *gspp = dup_grib2secs(gsp);
+    (*gspp)->omake = mydup(dbuf, sizeof(double) * npixels);
     // phase 3: fire
-    if (!(sfctrap[i].gsp_u && sfctrap[i].gsp_v && sfctrap[i].gsp_pmsl)) {
+printf("@2 %u %u %u\n", !sfctrap[i].gsp_u, !sfctrap[i].gsp_v, !sfctrap[i].gsp_pmsl);
+    if (!sfctrap[i].gsp_u || !sfctrap[i].gsp_v || !sfctrap[i].gsp_pmsl) {
       continue;
     }
-    fire;
+    r = sfcanal(&(sfctrap[i]), ofp, textv);
+    myfree(sfctrap[i].gsp_u->omake);
+    myfree(sfctrap[i].gsp_v->omake);
+    myfree(sfctrap[i].gsp_pmsl->omake);
     del_grib2secs(sfctrap[i].gsp_u);
     del_grib2secs(sfctrap[i].gsp_v);
     del_grib2secs(sfctrap[i].gsp_pmsl);
