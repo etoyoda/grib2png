@@ -484,22 +484,56 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
   return r;
 }
 
+typedef struct sfctrap_t {
+  long ftime2;
+  grib2secs_t *gsp_pmsl;
+  grib2secs_t *gsp_u;
+  grib2secs_t *gsp_v;
+} sfctrap_t;
+
+enum { N_SFCTRAPS = 1 };
+sfctrap_t sfctrap[N_SFCTRAPS] = {
+  { 0, NULL, NULL, NULL }
+};
+
   gribscan_err_t
 check_sfcanal(const struct grib2secs *gsp, double *dbuf,
   outframe_t *ofp, char **textv)
 {
-  long ftime2_gsp = get_ftime(gsp) + get_duration(gsp);
-  if (ftime2_gsp != 360.0) {
-    return GSE_OKAY;
-  }
+  // phase 1: filter
   double vlev_gsp = get_vlevel(gsp);
   if ((vlev_gsp != 101324.0) && (vlev_gsp != VLEVEL_Z10M)) {
     return GSE_OKAY;
   }
+  long ftime2_gsp = get_ftime(gsp) + get_duration(gsp);
   iparm_t iparm_gsp = get_parameter(gsp);
-  size_t npixels = get_npixels(gsp);
   gribscan_err_t r = GSE_OKAY;
-  printf("%ld %g %u\n", ftime2_gsp, vlev_gsp, iparm_gsp);
+  for (int i=0; i<N_SFCTRAPS; i++) {
+    // phase 2: keep
+    grib2secs_t **gspp;
+    if (sfctrap[i].ftime2 != ftime2_gsp) { continue; }
+    gspp = NULL;
+    switch (iparm_gsp) {
+    case IPARM_U: gspp = &(sfctrap[i].gsp_u); break;
+    case IPARM_V: gspp = &(sfctrap[i].gsp_v); break;
+    case IPARM_Pmsl: gspp = &(sfctrap[i].gsp_pmsl); break;
+    default: ; break;
+    }
+    if (gspp == NULL) { continue; }
+    if (*gspp) {
+      del_grib2secs(*gspp); *gspp = NULL;
+    }
+    *gspp = dup_grib2secs(gsp);
+    // phase 3: fire
+    if (!(sfctrap[i].gsp_u && sfctrap[i].gsp_v && sfctrap[i].gsp_pmsl)) {
+      continue;
+    }
+    fire;
+    del_grib2secs(sfctrap[i].gsp_u);
+    del_grib2secs(sfctrap[i].gsp_v);
+    del_grib2secs(sfctrap[i].gsp_pmsl);
+    sfctrap[i].gsp_u = sfctrap[i].gsp_v = sfctrap[i].gsp_pmsl = NULL;
+  }
   return r;
 }
 
