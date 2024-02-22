@@ -509,6 +509,11 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     npixels, b.ni, b.nj, b.ni*b.nj);
     return ERR_BADGRIB;
   }
+  // 東西端の処理が変わるので
+  if (b.wraplon != 0) {
+    fprintf(stderr, "regional data\n");
+    return ERR_BADGRIB;
+  }
 puts("@@@");
   // 水平差分計算。南北端では南北微分をゼロにする
   double *dxp = mymalloc(sizeof(double)*npixels);
