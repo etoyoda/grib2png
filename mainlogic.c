@@ -143,7 +143,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
   size_t ony = ofp->yz - ofp->ya + 1;
   gribscan_err_t r = decode_gds(gsp, &b);
   //--- begin memory section
-  gbuf = malloc(sizeof(double) * onx * ony);
+  gbuf = mymalloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf, ofp);
   switch (get_parameter(gsp)) {
@@ -167,7 +167,7 @@ project_ds(const struct grib2secs *gsp, double *dbuf, const outframe_t *ofp,
   }
   mkfilename(filename, sizeof filename, gsp, NULL);
   r = gridsave(gbuf, onx, ony, pal, filename, textv, NULL);
-  free(gbuf);
+  myfree(gbuf);
   //--- end memory section
   return r;
 }
@@ -204,7 +204,7 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   // dbuf と同じ（GRIB格子の）配列長
   size_t npixels = get_npixels(gsp_t);
   //--- begin memory section 1
-  double *dbuf_ept = malloc(sizeof(double) * npixels);
+  double *dbuf_ept = mymalloc(sizeof(double) * npixels);
   if (dbuf_ept == NULL) return ERR_NOMEM;
   for (size_t i = 0; i < npixels; i++) {
     dbuf_ept[i] = element_conv(dbuf_t[i], dbuf_rh[i], get_vlevel(gsp_t));
@@ -217,15 +217,15 @@ project_binop(const grib2secs_t *gsp_rh, double *dbuf_rh,
   size_t ony = ofp->yz - ofp->ya + 1;
   gribscan_err_t r = decode_gds(gsp_t, &b);
   //--- begin memory section 2
-  gbuf = malloc(sizeof(double) * onx * ony);
-  if (gbuf == NULL) { free(dbuf_ept); return ERR_NOMEM; }
+  gbuf = mymalloc(sizeof(double) * onx * ony);
+  if (gbuf == NULL) { myfree(dbuf_ept); return ERR_NOMEM; }
   reproject(gbuf, &b, dbuf_ept, ofp);
   set_parameter(gsp_t, iparm);
   mkfilename(filename, sizeof filename, gsp_t, NULL);
   r = gridsave(gbuf, onx, ony, pal, filename, textv, ubuf);
-  free(gbuf);
+  myfree(gbuf);
   //--- end memory section 2
-  free(dbuf_ept);
+  myfree(dbuf_ept);
   //--- end memory section 1
   return r;
 }
@@ -280,7 +280,7 @@ project_winddir(const grib2secs_t *gsp_u, double *dbuf_u,
   size_t ony = ofp->yz - ofp->ya + 1;
   r = decode_gds(gsp_v, &b);
   if (r != GSE_OKAY) { return r; }
-  ubuf = malloc(sizeof(double) * onx * ony * 3);
+  ubuf = mymalloc(sizeof(double) * onx * ony * 3);
   if (ubuf == NULL) { return ERR_NOMEM; }
   vbuf = ubuf + onx * ony;
   dbuf = vbuf + onx * ony;
@@ -393,7 +393,7 @@ project_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   if (r != GSE_OKAY) { return r; }
   r = project_binop(gsp_u, dbuf_u, gsp_v, dbuf_v, ofp, textv,
     IPARM_WINDS, pal, windspeed, ubuf);
-  if (ubuf) { free(ubuf); }
+  if (ubuf) { myfree(ubuf); }
   return r;
 }
 
@@ -499,7 +499,20 @@ sfctrap_t sfctrap[N_SFCTRAPS] = {
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
 {
-  puts("===");
+  size_t npixels = get_npixels(strap->gsp_u);
+  bounding_t b;
+  gribscan_err_t r;
+  r = decode_gds(strap->gsp_u, &b);
+  if (r != GSE_OKAY) { return r; }
+  if (npixels != b.ni*b.nj) {
+    fprintf(stderr, "npixels %zu != GDS %zu * %zu %zu\n",
+    npixels, b.ni, b.nj, b.ni*b.nj);
+    return ERR_BADGRIB;
+  }
+puts("@@@");
+  double *dxp = mymalloc(
+  
+  
   return GSE_OKAY;
 }
 
@@ -516,7 +529,6 @@ check_sfcanal(const struct grib2secs *gsp, double *dbuf,
   iparm_t iparm_gsp = get_parameter(gsp);
   gribscan_err_t r = GSE_OKAY;
   size_t npixels = get_npixels(gsp);
-printf("@1 \n");
   for (int i=0; i<N_SFCTRAPS; i++) {
     // phase 2: keep
     grib2secs_t **gspp;
@@ -535,7 +547,6 @@ printf("@1 \n");
     *gspp = dup_grib2secs(gsp);
     (*gspp)->omake = mydup(dbuf, sizeof(double) * npixels);
     // phase 3: fire
-printf("@2 %u %u %u\n", !sfctrap[i].gsp_u, !sfctrap[i].gsp_v, !sfctrap[i].gsp_pmsl);
     if (!sfctrap[i].gsp_u || !sfctrap[i].gsp_v || !sfctrap[i].gsp_pmsl) {
       continue;
     }
@@ -568,7 +579,7 @@ convsec7(const struct grib2secs *gsp)
   }
   iparm_t iparm_gsp = get_parameter(gsp);
   //--- begin memory section
-  if ((dbuf = malloc(sizeof(double) * npixels)) == NULL) {
+  if ((dbuf = mymalloc(sizeof(double) * npixels)) == NULL) {
     fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
@@ -589,7 +600,7 @@ NOSAVE: ;
     r = check_sfcanal(gsp, dbuf, &outf, textv);
   }
   //--- end memory section
-  free(dbuf);
+  myfree(dbuf);
   return r;
 }
 
