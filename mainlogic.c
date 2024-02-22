@@ -496,6 +496,12 @@ sfctrap_t sfctrap[N_SFCTRAPS] = {
   { 360, NULL, NULL, NULL }
 };
 
+  double
+cosdeg(double deg)
+{
+  return cos(deg * M_PI / 180.0);
+}
+
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
 {
@@ -510,7 +516,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     return ERR_BADGRIB;
   }
   // 東西端の処理が変わるので
-  if (b.wraplon != 0) {
+  if (b.wraplon == 0) {
     fprintf(stderr, "regional data\n");
     return ERR_BADGRIB;
   }
@@ -519,15 +525,18 @@ puts("@@@");
   double *dxp = mymalloc(sizeof(double)*npixels);
   double *dyp = mymalloc(sizeof(double)*npixels);
   double *pmsl = strap->gsp_pmsl->omake;
+  double invdeg = 6371.0e3 * M_PI / 180.0;
   for (size_t j=0; j<b.nj; j++) {
     size_t jp1 = (j==b.nj-1) ? j : j+1;
     size_t jm1 = (j==0) ? 0 : j-1;
+    double invdy = invdeg/(2.0*b.dj);
+    double invdx = invdeg/(2.0*b.di*cosdeg(bp_lat(&b,j)));
     // need map factor
     for (size_t i=0; i<b.ni; i++) {
       size_t ip1 = (i+1)%b.ni;
       size_t im1 = (i+b.ni-1)%b.ni;
-      dxp[i+j*b.ni] = pmsl[ip1+j*b.ni] - pmsl[im1+j*b.ni];
-      dyp[i+j*b.ni] = pmsl[i+jp1*b.ni] - pmsl[im1+jm1*b.ni];
+      dxp[i+j*b.ni] = (pmsl[ip1+j*b.ni] - pmsl[im1+j*b.ni]) * invdx;
+      dyp[i+j*b.ni] = (pmsl[i+jp1*b.ni] - pmsl[im1+jm1*b.ni]) * invdy;
     }
   }
   for (size_t i=0; i<b.ni; i++) {
