@@ -510,8 +510,24 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     return ERR_BADGRIB;
   }
 puts("@@@");
-  double *dxp = mymalloc(
-  
+  // 水平差分計算。南北端では南北微分をゼロにする
+  double *dxp = mymalloc(sizeof(double)*npixels);
+  double *dyp = mymalloc(sizeof(double)*npixels);
+  double *pmsl = strap->gsp_pmsl->omake;
+  for (size_t j=0; j<b.nj; j++) {
+    size_t jp1 = (j==b.nj-1) ? j : j+1;
+    size_t jm1 = (j==0) ? 0 : j-1;
+    // need map factor
+    for (size_t i=0; i<b.ni; i++) {
+      size_t ip1 = (i+1)%b.ni;
+      size_t im1 = (i+b.ni-1)%b.ni;
+      dxp[i+j*b.ni] = pmsl[ip1+j*b.ni] - pmsl[im1+j*b.ni];
+      dyp[i+j*b.ni] = pmsl[i+jp1*b.ni] - pmsl[im1+jm1*b.ni];
+    }
+  }
+  for (size_t i=0; i<b.ni; i++) {
+    dyp[i+0*b.ni] = dyp[i+(b.nj-1)*b.ni] = 0.0;
+  }
   
   return GSE_OKAY;
 }
