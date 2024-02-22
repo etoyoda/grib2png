@@ -105,6 +105,10 @@ extern gribscan_err_t
   void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
 extern gribscan_err_t
   decode_gds(const grib2secs_t *gsp, bounding_t *bp);
+extern double
+  bp_lat(bounding_t *bp, double j);
+extern double
+  bp_lon(bounding_t *bp, double i);
 
 extern const char *
   showtime(char *buf, size_t size, const struct tm *t);

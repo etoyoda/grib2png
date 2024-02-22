@@ -741,6 +741,20 @@ decode_gds(const grib2secs_t *gsp, bounding_t *bp)
   return GSE_OKAY;
 }
 
+// GRIB格子の緯度
+  double
+bp_lat(bounding_t *bp, double j)
+{
+  return bp->n + j * (bp->s - bp->n) / (bp->nj - 1.0);
+}
+
+// GRIB格子の経度
+  double
+bp_lon(bounding_t *bp, double i)
+{
+  return bp->w + i * (bp->e - bp->w) / (bp->ni - 1.0);
+}
+
   const char *
 level_name(double vlev)
 {
