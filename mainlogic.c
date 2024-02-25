@@ -502,6 +502,12 @@ cosdeg(double deg)
   return cos(deg * M_PI / 180.0);
 }
 
+  double
+sindeg(double deg)
+{
+  return sin(deg * M_PI / 180.0);
+}
+
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
 {
@@ -524,6 +530,7 @@ puts("@@@");
   // 水平差分計算。南北端では南北微分をゼロにする
   double *dxp = mymalloc(sizeof(double)*npixels);
   double *dyp = mymalloc(sizeof(double)*npixels);
+  double *n = mymalloc(sizeof(double)*npixels);
   double *pmsl = strap->gsp_pmsl->omake;
   double invdeg = 6371.0e3 * M_PI / 180.0;
   for (size_t j=0; j<b.nj; j++) {
@@ -541,6 +548,19 @@ puts("@@@");
   }
   for (size_t i=0; i<b.ni; i++) {
     dyp[i+0*b.ni] = dyp[i+(b.nj-1)*b.ni] = 0.0;
+  }
+
+  // make n
+  double invrho = 1.0e-3; // FAKE
+  double *u = strap->gsp_u->omake;
+  double *v = strap->gsp_v->omake;
+  for (size_t j=0; j<b.nj; j++) {
+    double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
+    for (size_t i=0; i<b.ni; i++) {
+      size_t ij = i+j*b.ni;
+      n[ij] = (u[ij]*(-f*v[ij]-invrho*dxp[ij])
+      + v[ij]*(f*u[ij]-invrho*dyp[ij]))/(u[ij]*u[ij]+v[ij]*v[ij]);
+    }
   }
   
   return GSE_OKAY;
