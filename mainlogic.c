@@ -528,39 +528,29 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   }
 puts("@@@");
   // 水平差分計算。南北端では南北微分をゼロにする
-  double *dxp = mymalloc(sizeof(double)*npixels);
-  double *dyp = mymalloc(sizeof(double)*npixels);
-  double *n = mymalloc(sizeof(double)*npixels);
-  if ((dxp==NULL)||(dyp==NULL)||(n==NULL)) { return ERR_NOMEM; }
+  double *u = strap->gsp_u->omake;
+  double *v = strap->gsp_v->omake;
+  double *rhs = mymalloc(sizeof(double)*npixels);
+  double *p = mymalloc(sizeof(double)*npixels);
+  if ((rhs==NULL)||(p==NULL)) { return ERR_NOMEM; }
   double *pmsl = strap->gsp_pmsl->omake;
   double invdeg = 6371.0e3 * M_PI / 180.0;
+  double rho = 1.0e-3;
   for (size_t j=0; j<b.nj; j++) {
     size_t jp1 = (j==b.nj-1) ? j : j+1;
     size_t jm1 = (j==0) ? 0 : j-1;
-    double invdy = invdeg/(2.0*b.dj);
+    double invdy = -invdeg/(2.0*b.dj);
     double invdx = invdeg/(2.0*b.di*cosdeg(bp_lat(&b,j)));
+    double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
     // need map factor
     for (size_t i=0; i<b.ni; i++) {
       size_t ip1 = (i+1)%b.ni;
       size_t im1 = (i+b.ni-1)%b.ni;
-      dxp[i+j*b.ni] = (pmsl[ip1+j*b.ni] - pmsl[im1+j*b.ni]) * invdx;
-      dyp[i+j*b.ni] = (pmsl[i+jp1*b.ni] - pmsl[im1+jm1*b.ni]) * invdy;
-    }
-  }
-  for (size_t i=0; i<b.ni; i++) {
-    dyp[i+0*b.ni] = dyp[i+(b.nj-1)*b.ni] = 0.0;
-  }
-
-  // make n
-  double invrho = 1.0e-3; // FAKE
-  double *u = strap->gsp_u->omake;
-  double *v = strap->gsp_v->omake;
-  for (size_t j=0; j<b.nj; j++) {
-    double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
-    for (size_t i=0; i<b.ni; i++) {
-      size_t ij = i+j*b.ni;
-      n[ij] = (u[ij]*(-f*v[ij]-invrho*dxp[ij])
-      + v[ij]*(f*u[ij]-invrho*dyp[ij]))/(u[ij]*u[ij]+v[ij]*v[ij]);
+      rhs[i+j*b.ni] = rho * f * (
+        (u[i+jp1*b.ni] - u[i+jm1*b.ni]) * invdy
+      - (v[ip1+j*b.ni] - v[im1+j*b.ni]) * invdx
+      );
+      p[i+j*b.ni] = pmsl[i+j*b.ni];
     }
   }
 
@@ -569,15 +559,15 @@ puts("@@@");
   size_t ony = ofp->yz - ofp->ya + 1;
   double *gbuf = mymalloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
-  reproject(gbuf, &b, n, ofp);
+  reproject(gbuf, &b, p, ofp);
   set_parameter(strap->gsp_v, IPARM_Pres);
   char filename[256];
   mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
-  gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  gridsave(gbuf, onx, ony, PALETTE_Pmsl, filename, textv, NULL);
   
-  myfree(dxp);
-  myfree(dyp);
-  myfree(n);
+  myfree(gbuf);
+  myfree(p);
+  myfree(rhs);
   return GSE_OKAY;
 }
 
