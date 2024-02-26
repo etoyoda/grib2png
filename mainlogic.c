@@ -531,6 +531,7 @@ puts("@@@");
   double *dxp = mymalloc(sizeof(double)*npixels);
   double *dyp = mymalloc(sizeof(double)*npixels);
   double *n = mymalloc(sizeof(double)*npixels);
+  if ((dxp==NULL)||(dyp==NULL)||(n==NULL)) { return ERR_NOMEM; }
   double *pmsl = strap->gsp_pmsl->omake;
   double invdeg = 6371.0e3 * M_PI / 180.0;
   for (size_t j=0; j<b.nj; j++) {
@@ -562,7 +563,21 @@ puts("@@@");
       + v[ij]*(f*u[ij]-invrho*dyp[ij]))/(u[ij]*u[ij]+v[ij]*v[ij]);
     }
   }
+
+  // save
+  size_t onx = ofp->xz - ofp->xa + 1;
+  size_t ony = ofp->yz - ofp->ya + 1;
+  double *gbuf = mymalloc(sizeof(double) * onx * ony);
+  if (gbuf == NULL) { return ERR_NOMEM; }
+  reproject(gbuf, &b, n, ofp);
+  set_parameter(strap->gsp_v, IPARM_Pres);
+  char filename[256];
+  mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
+  gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
   
+  myfree(dxp);
+  myfree(dyp);
+  myfree(n);
   return GSE_OKAY;
 }
 
