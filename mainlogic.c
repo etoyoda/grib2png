@@ -534,23 +534,63 @@ puts("@@@");
   double *p = mymalloc(sizeof(double)*npixels);
   if ((rhs==NULL)||(p==NULL)) { return ERR_NOMEM; }
   double *pmsl = strap->gsp_pmsl->omake;
-  double invdeg = 6371.0e3 * M_PI / 180.0;
+  memcpy(p, pmsl, sizeof(double)*npixels);
+  // degree_lat = 6371.e3 * (M_PI/180.0)
+  double invdeg = 180.0/(M_PI*6371.e3);
   double rho = 1.0e-3;
-  for (size_t j=0; j<b.nj; j++) {
-    size_t jp1 = (j==b.nj-1) ? j : j+1;
-    size_t jm1 = (j==0) ? 0 : j-1;
-    double invdy = -invdeg/(2.0*b.dj);
-    double invdx = invdeg/(2.0*b.di*cosdeg(bp_lat(&b,j)));
+
+  for (size_t j=1; j<(b.nj-1); j++) {
+    size_t jp1 = j+1;
+    size_t jm1 = j-1;
+    double invdy = -invdeg/b.dj;
+    double invdx = invdeg/(b.di*cosdeg(bp_lat(&b,j)));
     double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
     // need map factor
     for (size_t i=0; i<b.ni; i++) {
       size_t ip1 = (i+1)%b.ni;
       size_t im1 = (i+b.ni-1)%b.ni;
-      rhs[i+j*b.ni] = rho * f * (
-        (u[i+jp1*b.ni] - u[i+jm1*b.ni]) * invdy
-      - (v[ip1+j*b.ni] - v[im1+j*b.ni]) * invdx
+      double rhofzeta = rho * f * (
+        (u[i+jp1*b.ni] - u[i+jm1*b.ni]) * 0.5 * invdy
+      - (v[ip1+j*b.ni] - v[im1+j*b.ni]) * 0.5 * invdx
       );
-      p[i+j*b.ni] = pmsl[i+j*b.ni];
+      double laplace_p = (
+        (p[i+(j+1)*b.ni] + p[i+(j-1)*b.ni] - 2.0*p[i+j*b.ni]) * invdy * invdy
+       +(p[ip1+j*b.ni] + p[im1+j*b.ni] - 2.0*p[i+j*b.ni]) * invdx * invdx
+      );
+      rhs[i+j*b.ni] = 0.75 * rhofzeta + 0.25 * laplace_p;
+    }
+  }
+
+  const size_t NITER = 10000;
+  const double accel = 30.0;
+  const double shuusoku = 0.001;
+  double first2res = 0.0;
+  for (size_t iter=0; iter<NITER; iter++) {
+    double sum2res = 0.0;
+    double sum2dif = 0.0;
+    for (size_t j=1; j<b.nj-1; j++) {
+      double invdydy = pow(invdeg/b.dj, 2.0);
+      double invdxdx = pow(invdeg/(b.di*cosdeg(bp_lat(&b,j))), 2.0);
+      double dxdx = accel/invdeg;
+      for (size_t i=0; i<b.ni; i++) {
+        size_t ip1 = (i+1)%b.ni;
+        size_t im1 = (i+b.ni-1)%b.ni;
+        double laplace_p = (
+          (p[i+(j+1)*b.ni] + p[i+(j-1)*b.ni] - 2.0*p[i+j*b.ni]) * invdydy
++         (p[ip1+j*b.ni] + p[im1+j*b.ni] - 2.0*p[i+j*b.ni]) * invdxdx
+        );
+        double res = rhs[i+j*b.ni] - laplace_p;
+        p[i+j*b.ni] -= res * dxdx;
+        sum2res += res*res;
+        sum2dif += pow(p[i+j*b.ni]-pmsl[i+j*b.ni], 2.0);
+      }
+    }
+    printf("iter=%zu st.res=%g st.dif=%g\n", iter, sqrt(sum2res/npixels),
+      sqrt(sum2dif/npixels));
+    if (iter == 0) {
+      first2res = sum2res;
+    } else if (sum2res < shuusoku*first2res) {
+      break;
     }
   }
 
@@ -568,7 +608,8 @@ puts("@@@");
   myfree(gbuf);
   myfree(p);
   myfree(rhs);
-  return GSE_OKAY;
+  return 8;
+  //return GSE_OKAY;
 }
 
   gribscan_err_t
