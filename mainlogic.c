@@ -532,7 +532,8 @@ puts("@@@");
   double *v = strap->gsp_v->omake;
   double *rhs = mymalloc(sizeof(double)*npixels);
   double *p = mymalloc(sizeof(double)*npixels);
-  if ((rhs==NULL)||(p==NULL)) { return ERR_NOMEM; }
+  double *cor = mymalloc(sizeof(double)*npixels);
+  if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
   double *pmsl = strap->gsp_pmsl->omake;
   memcpy(p, pmsl, sizeof(double)*npixels);
   // degree_lat = 6371.e3 * (M_PI/180.0)
@@ -579,9 +580,14 @@ puts("@@@");
           (p[i+(j+1)*b.ni] + p[i+(j-1)*b.ni] - 2.0*p[i+j*b.ni]) * invdydy
 +         (p[ip1+j*b.ni] + p[im1+j*b.ni] - 2.0*p[i+j*b.ni]) * invdxdx
         );
-        double res = rhs[i+j*b.ni] - laplace_p;
-        p[i+j*b.ni] -= res * dxdx;
-        sum2res += res*res;
+        double residual = rhs[i+j*b.ni] - laplace_p;
+        cor[i+j*b.ni] = residual*dxdx;
+        sum2res += residual*residual;
+      }
+    }
+    for (size_t j=1; j<b.nj-1; j++) {
+      for (size_t i=0; i<b.ni; i++) {
+        p[i+j*b.ni] -= cor[i+j*b.ni];
         sum2dif += pow(p[i+j*b.ni]-pmsl[i+j*b.ni], 2.0);
       }
     }
