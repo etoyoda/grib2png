@@ -549,18 +549,24 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     return ERR_BADGRIB;
   }
 puts("@@@");
+  // u, v は 0.1m/s 単位 (SIの10倍値)で与えられる
   double *u = strap->gsp_u->omake;
   double *v = strap->gsp_v->omake;
-  double *rhs = mymalloc(sizeof(double)*npixels);
+  // pmsl は 0.1hPa 単位 (SIの1/10値)で与えられる
+  // 以下、気圧やその微分の次元の式は、SIの1/10で計算する
+  double *pmsl = strap->gsp_pmsl->omake;
+  // 緩和法の結果として返される、変数としての流線気圧
   double *p = mymalloc(sizeof(double)*npixels);
+  // laplace p の式の右辺、緩和法のターゲット
+  double *rhs = mymalloc(sizeof(double)*npixels);
+  // pの次回サイクルの補正量
   double *cor = mymalloc(sizeof(double)*npixels);
   if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
-  double *pmsl = strap->gsp_pmsl->omake;
   memcpy(p, pmsl, sizeof(double)*npixels);
   printa(u, npixels, "u");
   printa(v, npixels, "v");
   printa(p, npixels, "p");
-  // degree_lat = 6371.e3 * (M_PI/180.0)
+  // degree_lat = (6371.e3*M_PI)/180.0
   double invdeg = 180.0/(M_PI*6371.e3);
   double rho = 1.0e-3;
 
