@@ -508,6 +508,27 @@ sindeg(double deg)
   return sin(deg * M_PI / 180.0);
 }
 
+  void
+printa(double *ary, size_t n, char *name)
+{
+  double min, max, sum, sqsm, absm, avr;
+  min = HUGE_VAL;
+  max = -HUGE_VAL;
+  sum = sqsm = absm = 0.0;
+  for (size_t i=0; i<n; i++) {
+    sum += ary[i];
+    absm += fabs(ary[i]);
+    if (ary[i] < min) min = ary[i];
+    if (ary[i] > max) max = ary[i];
+  }
+  avr = sum/n;
+  for (size_t i=0; i<n; i++) {
+    sqsm += (ary[i]-avr)*(ary[i]-avr);
+  }
+  printf("%-6s min%.3g max%.3g avg%.3g sd%.3g avg.abs%.3g\n",
+  name, min, max, avr, sqrt(sqsm/n), absm/n);
+}
+
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
 {
@@ -536,6 +557,9 @@ puts("@@@");
   if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
   double *pmsl = strap->gsp_pmsl->omake;
   memcpy(p, pmsl, sizeof(double)*npixels);
+  printa(u, npixels, "u");
+  printa(v, npixels, "v");
+  printa(p, npixels, "p");
   // degree_lat = 6371.e3 * (M_PI/180.0)
   double invdeg = 180.0/(M_PI*6371.e3);
   double rho = 1.0e-3;
