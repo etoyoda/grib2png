@@ -558,30 +558,32 @@ puts("@@@");
         (p[i+(j+1)*b.ni] + p[i+(j-1)*b.ni] - 2.0*p[i+j*b.ni]) * invdy * invdy
        +(p[ip1+j*b.ni] + p[im1+j*b.ni] - 2.0*p[i+j*b.ni]) * invdx * invdx
       );
-      rhs[i+j*b.ni] = 0.75 * rhofzeta + 0.25 * laplace_p;
+      rhs[i+j*b.ni] = 0.875 * rhofzeta + 0.125 * laplace_p;
     }
   }
 
   const size_t NITER = 10000;
-  const double accel = 30.0;
-  const double shuusoku = 0.001;
+  const double shuusoku = 0.01;
+  double accel = 0.25;
   double first2res = 0.0;
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
     double sum2dif = 0.0;
     for (size_t j=1; j<b.nj-1; j++) {
+      size_t jp1 = j+1;
+      size_t jm1 = j-1;
       double invdydy = pow(invdeg/b.dj, 2.0);
       double invdxdx = pow(invdeg/(b.di*cosdeg(bp_lat(&b,j))), 2.0);
-      double dxdx = accel/invdeg;
+      double dxdx = accel/invdxdx;
       for (size_t i=0; i<b.ni; i++) {
         size_t ip1 = (i+1)%b.ni;
         size_t im1 = (i+b.ni-1)%b.ni;
         double laplace_p = (
-          (p[i+(j+1)*b.ni] + p[i+(j-1)*b.ni] - 2.0*p[i+j*b.ni]) * invdydy
-+         (p[ip1+j*b.ni] + p[im1+j*b.ni] - 2.0*p[i+j*b.ni]) * invdxdx
+          (p[i+jp1*b.ni]+p[i+jm1*b.ni]-2.0*p[i+j*b.ni]) * invdydy
+        + (p[ip1+j*b.ni]+p[im1+j*b.ni]-2.0*p[i+j*b.ni]) * invdxdx
         );
-        double residual = rhs[i+j*b.ni] - laplace_p;
-        cor[i+j*b.ni] = residual*dxdx;
+        double residual = (rhs[i+j*b.ni] - laplace_p)*dxdx;
+        cor[i+j*b.ni] = residual;
         sum2res += residual*residual;
       }
     }
@@ -591,10 +593,15 @@ puts("@@@");
         sum2dif += pow(p[i+j*b.ni]-pmsl[i+j*b.ni], 2.0);
       }
     }
-    printf("iter=%zu st.res=%g st.dif=%g\n", iter, sqrt(sum2res/npixels),
+    printf("iter=%zu avgres=%g avgdif=%g\n", iter, sqrt(sum2res/npixels),
       sqrt(sum2dif/npixels));
     if (iter == 0) {
       first2res = sum2res;
+    } else if (isnan(sum2res) || isinf(sum2res)) {
+      printf("explosion %g\n", sum2res);
+    } else if (sum2res > 2.0*first2res) {
+      accel *= 0.125;
+      printf("detected exploding; accel := %g\n", accel);
     } else if (sum2res < shuusoku*first2res) {
       break;
     }
