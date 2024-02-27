@@ -508,6 +508,7 @@ sindeg(double deg)
   return sin(deg * M_PI / 180.0);
 }
 
+#if 0
   void
 printa(double *ary, size_t n, char *name)
 {
@@ -528,6 +529,10 @@ printa(double *ary, size_t n, char *name)
   printf("%-6s min%.3g max%.3g avg%.3g sd%.3g avg.abs%.3g\n",
   name, min, max, avr, sqrt(sqsm/n), absm/n);
 }
+  printa(u, npixels, "u");
+  printa(v, npixels, "v");
+  printa(p, npixels, "p");
+#endif
 
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
@@ -548,7 +553,6 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     fprintf(stderr, "regional data\n");
     return ERR_BADGRIB;
   }
-puts("@@@");
   // u, v は 0.1m/s 単位 (SIの10倍値)で与えられる
   double *u = strap->gsp_u->omake;
   double *v = strap->gsp_v->omake;
@@ -563,9 +567,6 @@ puts("@@@");
   double *cor = mymalloc(sizeof(double)*npixels);
   if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
   memcpy(p, pmsl, sizeof(double)*npixels);
-  printa(u, npixels, "u");
-  printa(v, npixels, "v");
-  printa(p, npixels, "p");
   // 緯度一度の長さ deglat = (6371.e3*M_PI)/180.0 の逆数 [1/m]
   const double invdeg = 180.0/(M_PI*6371.e3);
   // 密度 [100 kg/m3] - SIの1/100値にしているのはu,pmslの単位の皺寄せ
@@ -637,15 +638,18 @@ puts("@@@");
         sum2dif += pow(p[i+j*bni]-pmsl[i+j*bni], 2.0);
       }
     }
+#if 0
     printf("iter=%zu avgres=%g avgdif=%g\n", iter, sqrt(sum2res/npixels),
       sqrt(sum2dif/npixels));
+#endif
     if (iter == 0) {
       first2res = sum2res;
     } else if (isnan(sum2res) || isinf(sum2res)) {
-      printf("explosion %g\n", sum2res);
+      fprintf(stderr, "explosion %g\n", sum2res);
+      return ERR_BADGRIB;
     } else if (sum2res > 2.0*first2res) {
       accel *= 0.125;
-      printf("detected exploding; accel := %g\n", accel);
+      fprintf(stderr, "detected exploding; accel := %g\n", accel);
     } else if (sum2res < shuusoku*first2res) {
       break;
     }
@@ -665,8 +669,8 @@ puts("@@@");
   myfree(gbuf);
   myfree(p);
   myfree(rhs);
-  return 8;
-  //return GSE_OKAY;
+  //return 8;
+  return GSE_OKAY;
 }
 
   gribscan_err_t
