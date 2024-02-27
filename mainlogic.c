@@ -598,11 +598,12 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         (p[i+jp1*bni] + p[i+jm1*bni] - 2.0*p[i+j*bni]) * invdy * invdy
        +(p[ip1+j*bni] + p[im1+j*bni] - 2.0*p[i+j*bni]) * invdx * invdx
       );
+      double windythr = 150.0 - is_tropical*50.0;
       double is_windy = 0.5+0.5*tanh(
-        (hypot(u[i+j*bni],v[i+j*bni])-100.0)*0.5
+        (hypot(u[i+j*bni],v[i+j*bni])-windythr)*0.5
       );
-      // 熱帯で風が強い場合
-      double mix = 0.60 - is_tropical*is_windy*0.59;
+      // 風が強い場合 laplace_p 
+      double mix = 0.60 - is_windy*0.59;
       rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
     }
   }
