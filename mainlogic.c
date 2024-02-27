@@ -521,13 +521,13 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     npixels, b.ni, b.nj, b.ni*b.nj);
     return ERR_BADGRIB;
   }
-  // 東西端の処理が変わるので
+  size_t bni = b.ni;
+  // 東西周期条件を確認
   if (b.wraplon == 0) {
     fprintf(stderr, "regional data\n");
     return ERR_BADGRIB;
   }
 puts("@@@");
-  // 水平差分計算。南北端では南北微分をゼロにする
   double *u = strap->gsp_u->omake;
   double *v = strap->gsp_v->omake;
   double *rhs = mymalloc(sizeof(double)*npixels);
@@ -544,21 +544,28 @@ puts("@@@");
     size_t jp1 = j+1;
     size_t jm1 = j-1;
     double invdy = -invdeg/b.dj;
-    double invdx = invdeg/(b.di*cosdeg(bp_lat(&b,j)));
+    double lat = bp_lat(&b,j);
+    double invdx = invdeg/(b.di*cosdeg(lat));
     double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
-    // need map factor
-    for (size_t i=0; i<b.ni; i++) {
-      size_t ip1 = (i+1)%b.ni;
-      size_t im1 = (i+b.ni-1)%b.ni;
+    for (size_t i=0; i<bni; i++) {
+      size_t ip1 = (i+1)%bni;
+      size_t im1 = (i+bni-1)%bni;
+      double mix = 0.875;
       double rhofzeta = rho * f * (
-        (u[i+jp1*b.ni] - u[i+jm1*b.ni]) * 0.5 * invdy
-      - (v[ip1+j*b.ni] - v[im1+j*b.ni]) * 0.5 * invdx
+        (u[i+jp1*bni] - u[i+jm1*bni]) * 0.5 * invdy
+      - (v[ip1+j*bni] - v[im1+j*bni]) * 0.5 * invdx
       );
       double laplace_p = (
-        (p[i+(j+1)*b.ni] + p[i+(j-1)*b.ni] - 2.0*p[i+j*b.ni]) * invdy * invdy
-       +(p[ip1+j*b.ni] + p[im1+j*b.ni] - 2.0*p[i+j*b.ni]) * invdx * invdx
+        (p[i+jp1*bni] + p[i+jm1*bni] - 2.0*p[i+j*bni]) * invdy * invdy
+       +(p[ip1+j*bni] + p[im1+j*bni] - 2.0*p[i+j*bni]) * invdx * invdx
       );
-      rhs[i+j*b.ni] = 0.875 * rhofzeta + 0.125 * laplace_p;
+      // 熱帯で風が強い場合
+      if ((fabs(lat)<20.0)&&(hypot(u[i+j*bni],v[i+j*bni])>10.0)) {
+        mix = 0.01;
+      } else {
+        mix = 0.875;
+      }
+      rhs[i+j*bni] = mix*rhofzeta + (1.-mix)*laplace_p;
     }
   }
 
@@ -575,22 +582,22 @@ puts("@@@");
       double invdydy = pow(invdeg/b.dj, 2.0);
       double invdxdx = pow(invdeg/(b.di*cosdeg(bp_lat(&b,j))), 2.0);
       double dxdx = accel/invdxdx;
-      for (size_t i=0; i<b.ni; i++) {
-        size_t ip1 = (i+1)%b.ni;
-        size_t im1 = (i+b.ni-1)%b.ni;
+      for (size_t i=0; i<bni; i++) {
+        size_t ip1 = (i+1)%bni;
+        size_t im1 = (i+bni-1)%bni;
         double laplace_p = (
-          (p[i+jp1*b.ni]+p[i+jm1*b.ni]-2.0*p[i+j*b.ni]) * invdydy
-        + (p[ip1+j*b.ni]+p[im1+j*b.ni]-2.0*p[i+j*b.ni]) * invdxdx
+          (p[i+jp1*bni]+p[i+jm1*bni]-2.0*p[i+j*bni]) * invdydy
+        + (p[ip1+j*bni]+p[im1+j*bni]-2.0*p[i+j*bni]) * invdxdx
         );
-        double residual = (rhs[i+j*b.ni] - laplace_p)*dxdx;
-        cor[i+j*b.ni] = residual;
+        double residual = (rhs[i+j*bni] - laplace_p)*dxdx;
+        cor[i+j*bni] = residual;
         sum2res += residual*residual;
       }
     }
     for (size_t j=1; j<b.nj-1; j++) {
-      for (size_t i=0; i<b.ni; i++) {
-        p[i+j*b.ni] -= cor[i+j*b.ni];
-        sum2dif += pow(p[i+j*b.ni]-pmsl[i+j*b.ni], 2.0);
+      for (size_t i=0; i<bni; i++) {
+        p[i+j*bni] -= cor[i+j*bni];
+        sum2dif += pow(p[i+j*bni]-pmsl[i+j*bni], 2.0);
       }
     }
     printf("iter=%zu avgres=%g avgdif=%g\n", iter, sqrt(sum2res/npixels),
