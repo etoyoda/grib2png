@@ -552,23 +552,26 @@ puts("@@@");
   // u, v は 0.1m/s 単位 (SIの10倍値)で与えられる
   double *u = strap->gsp_u->omake;
   double *v = strap->gsp_v->omake;
-  // pmsl は 0.1hPa 単位 (SIの1/10値)で与えられる
+  // pmsl は 0.1hPa = 10Pa 単位 (SIの1/10値)で与えられる
   // 以下、気圧やその微分の次元の式は、SIの1/10で計算する
   double *pmsl = strap->gsp_pmsl->omake;
-  // 緩和法の結果として返される、変数としての流線気圧
+  // 緩和法の結果として返される、変数としての流線気圧 [10Pa]
   double *p = mymalloc(sizeof(double)*npixels);
-  // laplace p の式の右辺、緩和法のターゲット
+  // laplace p の式の右辺、緩和法のターゲット [10Pa/m2]
   double *rhs = mymalloc(sizeof(double)*npixels);
-  // pの次回サイクルの補正量
+  // pの次回サイクルの補正量 [10Pa]
   double *cor = mymalloc(sizeof(double)*npixels);
   if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
   memcpy(p, pmsl, sizeof(double)*npixels);
   printa(u, npixels, "u");
   printa(v, npixels, "v");
   printa(p, npixels, "p");
-  // degree_lat = (6371.e3*M_PI)/180.0
-  double invdeg = 180.0/(M_PI*6371.e3);
-  double rho = 1.0e-3;
+  // 緯度一度の長さ deglat = (6371.e3*M_PI)/180.0 の逆数 [1/m]
+  const double invdeg = 180.0/(M_PI*6371.e3);
+  // 密度 [100 kg/m3] - SIの1/100値にしているのはu,pmslの単位の皺寄せ
+  double rho = 0.01 * 101325.0 * 28.96e-3 / (8.31432 * 273.15);
+  // 摩擦: fとの比率
+  double nfric_ratio = 0.3;
 
   for (size_t j=1; j<(b.nj-1); j++) {
     size_t jp1 = j+1;
@@ -577,25 +580,29 @@ puts("@@@");
     double lat = bp_lat(&b,j);
     double invdx = invdeg/(b.di*cosdeg(lat));
     double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
+    double is_tropical = 0.5+0.5*tanh((22.5-fabs(lat))*0.5);
     for (size_t i=0; i<bni; i++) {
       size_t ip1 = (i+1)%bni;
       size_t im1 = (i+bni-1)%bni;
-      double mix = 0.875;
       double rhofzeta = rho * f * (
         (u[i+jp1*bni] - u[i+jm1*bni]) * 0.5 * invdy
       - (v[ip1+j*bni] - v[im1+j*bni]) * 0.5 * invdx
+      );
+      double nfric = fabs(f) * nfric_ratio;
+      double friction = rho * nfric * (
+        (u[ip1+j*bni] - u[im1+j*bni]) * 0.5 * invdy
+      + (v[i+jp1*bni] - v[i+jm1*bni]) * 0.5 * invdx
       );
       double laplace_p = (
         (p[i+jp1*bni] + p[i+jm1*bni] - 2.0*p[i+j*bni]) * invdy * invdy
        +(p[ip1+j*bni] + p[im1+j*bni] - 2.0*p[i+j*bni]) * invdx * invdx
       );
+      double is_windy = 0.5+0.5*tanh(
+        (hypot(u[i+j*bni],v[i+j*bni])-100.0)*0.5
+      );
       // 熱帯で風が強い場合
-      if ((fabs(lat)<20.0)&&(hypot(u[i+j*bni],v[i+j*bni])>10.0)) {
-        mix = 0.01;
-      } else {
-        mix = 0.875;
-      }
-      rhs[i+j*bni] = mix*rhofzeta + (1.-mix)*laplace_p;
+      double mix = 0.60 - is_tropical*is_windy*0.59;
+      rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
     }
   }
 
