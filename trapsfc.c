@@ -132,9 +132,10 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   }
 
   const size_t NITER = 200;
-  const double shuusoku = 0.015;
+  const double converge_mr = 0.9;
   double accel = 0.25;
-  double first2res = 0.0;
+  double firstres = 0.0;
+  double movavrres = 0.0;
   double diftoomuch = 20.0;
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
@@ -164,23 +165,26 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       }
     }
     double dif = sqrt(sum2dif/npixels);
+    double res = sqrt(sum2res/npixels);
     if (verbose) {
-      printf("iter=%zu avgres=%g avgdif=%g\n", iter, sqrt(sum2res/npixels), dif);
+      printf("iter=%04zu avgres=%8.3f %8.3f %8.3f avgdif=%8.3f\n", iter, res, movavrres, res/movavrres, dif);
     }
     if (iter == 0) {
-      first2res = sum2res;
+      firstres = res;
+      movavrres = res * 4.0;
     } else if (isnan(sum2res) || isinf(sum2res)) {
-      fprintf(stderr, "explosion %g\n", sum2res);
+      fprintf(stderr, "explosion %g: abort\n", sum2res);
       return ERR_BADGRIB;
-    } else if (sum2res > 2.0*first2res) {
-      accel *= 0.125;
-      fprintf(stderr, "detected exploding; accel := %g\n", accel);
+    } else if (res > 2.0*firstres) {
+      accel *= 0.25;
+      fprintf(stderr, "explosion; accel := %g\n", accel);
     } else if (dif > diftoomuch) {
       fprintf(stderr, "too much diff %g\n", dif);
       break;
-    } else if (sum2res < shuusoku*first2res) {
+    } else if (res > converge_mr*movavrres) {
       break;
     }
+    movavrres = 0.25 * (3. * movavrres + res);
   }
 
   // save
@@ -197,7 +201,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   myfree(gbuf);
   myfree(p);
   myfree(rhs);
-  //return 8;
+  return 8;
   return GSE_OKAY;
 }
 
