@@ -1,4 +1,4 @@
-OBJS=gribscan.o mainlogic.o visual.o mymalloc.o
+OBJS=gribscan.o mainlogic.o trapbin.o trapsfc.o visual.o mymalloc.o
 OBJS2=gribscan.o mainslim.o mymalloc.o filter.o
 OBJS3=gribscan.o mainpick.o mymalloc.o filter.o
 OBJS4=emagram.o emaprep.o plot.o
@@ -33,7 +33,9 @@ testv: testv.c visual.o
 
 mymalloc.o: mymalloc.h
 gribscan.o: gribscan.h mymalloc.h
-mainlogic.o: gribscan.h visual.h mymalloc.h
+mainlogic.o: grib2png.h gribscan.h visual.h mymalloc.h
+trapbin.o: grib2png.h gribscan.h
+trapsfc.o: grib2png.h gribscan.h
 visual.o: visual.h mymalloc.h
 filter.o: gribscan.h
 plot.o: plot.h
