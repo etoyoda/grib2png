@@ -8,6 +8,8 @@
 #include "visual.h"
 #include "mymalloc.h" // only for mymemstat();
 
+int verbose = 0;
+
   void
 mkfilename(char *filename, size_t fnlen, const struct grib2secs *gsp,
   const char *suffix)
@@ -572,7 +574,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   // 密度 [100 kg/m3] - SIの1/100値にしているのはu,pmslの単位の皺寄せ
   double rho = 0.01 * 101325.0 * 28.96e-3 / (8.31432 * 273.15);
   // 摩擦: fとの比率
-  double nfric_ratio = 0.3;
+  double nfric_ratio = 0.4;
 
   for (size_t j=1; j<(b.nj-1); j++) {
     size_t jp1 = j+1;
@@ -603,15 +605,16 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         (hypot(u[i+j*bni],v[i+j*bni])-windythr)*0.5
       );
       // 風が強い場合 laplace_p 
-      double mix = 0.60 - is_windy*0.59;
+      double mix = 0.60 - is_windy*0.60;
       rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
     }
   }
 
-  const size_t NITER = 10000;
-  const double shuusoku = 0.01;
+  const size_t NITER = 200;
+  const double shuusoku = 0.015;
   double accel = 0.25;
   double first2res = 0.0;
+  double diftoomuch = 20.0;
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
     double sum2dif = 0.0;
@@ -639,10 +642,10 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         sum2dif += pow(p[i+j*bni]-pmsl[i+j*bni], 2.0);
       }
     }
-#if 0
-    printf("iter=%zu avgres=%g avgdif=%g\n", iter, sqrt(sum2res/npixels),
-      sqrt(sum2dif/npixels));
-#endif
+    double dif = sqrt(sum2dif/npixels);
+    if (verbose) {
+      printf("iter=%zu avgres=%g avgdif=%g\n", iter, sqrt(sum2res/npixels), dif);
+    }
     if (iter == 0) {
       first2res = sum2res;
     } else if (isnan(sum2res) || isinf(sum2res)) {
@@ -651,6 +654,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     } else if (sum2res > 2.0*first2res) {
       accel *= 0.125;
       fprintf(stderr, "detected exploding; accel := %g\n", accel);
+    } else if (dif > diftoomuch) {
+      fprintf(stderr, "too much diff %g\n", dif);
+      break;
     } else if (sum2res < shuusoku*first2res) {
       break;
     }
@@ -870,6 +876,9 @@ argscan(int argc, const char **argv)
         } else if (argv[i][2] == 'j') {
           gflg_jet_lower = 1;
         }
+        break;
+      case 'v':
+        verbose++;
         break;
       default:
         fprintf(stderr, "%s: unknown option\n", argv[i]);
