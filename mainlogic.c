@@ -7,6 +7,7 @@
 #include "gribscan.h"
 #include "visual.h"
 #include "mymalloc.h" // only for mymemstat();
+#include "grib2png.h"
 
 int verbose = 0;
 
