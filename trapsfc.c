@@ -137,6 +137,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   double firstres = 0.0;
   double movavrres = 0.0;
   double diftoomuch = 20.0;
+  double low_magic = 0.5;
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
     double sum2dif = 0.0;
@@ -154,7 +155,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         + (p[ip1+j*bni]+p[im1+j*bni]-2.0*p[i+j*bni]) * invdxdx
         );
         double residual = (rhs[i+j*bni] - laplace_p)*dxdx;
-        cor[i+j*bni] = residual;
+        double is_low = 0.5+0.5*tanh(990.e1-pmsl[i+j*bni]);
+        cor[i+j*bni] = residual-low_magic*is_low*(pmsl[i+j*bni]-p[i+j*bni]);
         sum2res += residual*residual;
       }
     }
