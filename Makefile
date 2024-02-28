@@ -34,8 +34,8 @@ testv: testv.c visual.o
 mymalloc.o: mymalloc.h
 gribscan.o: gribscan.h mymalloc.h
 mainlogic.o: grib2png.h gribscan.h visual.h mymalloc.h
-trapbin.o: grib2png.h gribscan.h
-trapsfc.o: grib2png.h gribscan.h
+trapbin.o: grib2png.h gribscan.h visual.h mymalloc.h
+trapsfc.o: grib2png.h gribscan.h visual.h mymalloc.h
 visual.o: visual.h mymalloc.h
 filter.o: gribscan.h
 plot.o: plot.h
