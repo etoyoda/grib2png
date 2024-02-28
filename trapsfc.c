@@ -126,7 +126,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         (hypot(u[i+j*bni],v[i+j*bni])-windythr)*0.5
       );
       // 風が強い場合 laplace_p 
-      double mix = 0.60 - is_windy*0.60;
+      double mix = 0.8 - is_windy*0.8;
       rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
     }
   }
