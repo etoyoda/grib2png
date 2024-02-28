@@ -46,4 +46,4 @@ clean:
 	rm -f $(OBJS) grib2png *.png
 
 tags: mainlogic.c gribscan.c gribscan.h visual.c visual.h filter.c
-	ctags mainlogic.c gribscan.c gribscan.h visual.c visual.h filter.c
+	ctags *.c *.h
