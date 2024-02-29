@@ -8,7 +8,8 @@ typedef struct outframe_t {
   unsigned yz; // max x axis
 } outframe_t;
 
-extern int verbose;
+extern unsigned verbose;
+extern unsigned debug;
 extern void
 mkfilename(char *filename, size_t fnlen, const struct grib2secs *gsp,
   const char *suffix);

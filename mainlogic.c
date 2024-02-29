@@ -9,7 +9,8 @@
 #include "visual.h"
 #include "grib2png.h"
 
-int verbose = 0;
+unsigned verbose = 0u;
+unsigned debug = 0u;
 
 // filename (長さfnlen) に gsp に相当したファイル名を作成格納する
   void
@@ -317,6 +318,8 @@ argscan(int argc, const char **argv)
           gflg_rvor_with_wd = 1;
         } else if (argv[i][2] == 'j') {
           gflg_jet_lower = 1;
+        } else if (argv[i][2] == 'd') {
+          debug++;
         }
         break;
       case 'v':

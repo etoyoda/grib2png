@@ -203,7 +203,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   myfree(gbuf);
   myfree(p);
   myfree(rhs);
-  //return 8;
+  if (debug) {
+    return 8;
+  }
   return GSE_OKAY;
 }
 
