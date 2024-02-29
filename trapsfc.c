@@ -135,63 +135,42 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     }
   }
 
-  double *vort = calloc(sizeof(double),npixels);
+  double *vort = mymalloc(sizeof(double)*npixels);
+  for (size_t i=0; i<npixels; i++) { vort[i] = 0.0; }
+  if (vort==NULL) { return ERR_NOMEM; }
 
-  // search for vortex
-  for (size_t j=16; j<(b.nj-16); j++) {
-    size_t jp1 = j+1;
-    size_t jm1 = j-1;
+  for (size_t j=0; j<b.nj; j++) {
     double lat = bp_lat(&b,j);
     for (size_t i=0; i<bni; i++) {
       size_t ip1 = (i+1)%bni;
-      size_t im1 = (i+bni-1)%bni;
-      if (u[i+jp1*bni]*lat>=0.0) continue;
-      if (u[i+jm1*bni]*lat<=0.0) continue;
-      if (v[ip1+j*bni]*lat<=0.0) continue;
-      if (v[im1+j*bni]*lat>=0.0) continue;
-      double n2 = 0.0;
-      double n4 = 0.0;
-      double n9 = 0.0;
-      double srot2 = 0.0;
-      double srot4 = 0.0;
-      double srot9 = 0.0;
-      for (ssize_t dj=-16; dj<=16; dj++) {
-        size_t cj = (size_t)(dj+(ssize_t)j);
-        for (ssize_t di=-24; di<=24; di++) {
-          if ((di==0)&&(dj==0)) continue;
-          double distance = hypot(di*cosdeg(lat),dj);
-          double is200km = 0.5+0.5*tanh((200.e3-deglat*distance)*2.e-5);
-          double is400km = 0.5+0.5*tanh((400.e3-deglat*distance)*1.e-5);
-          double is900km = 0.5+0.5*tanh((900.e3-deglat*distance)*1.e-5);
-          size_t ci = (size_t)(di+(ssize_t)i)%bni;
-          double ni = di*cosdeg(lat)/distance;
-          double nj = dj/distance;
-          double match = (-nj*u[ci+cj*bni]+ni*v[ci+cj*bni])
-            / hypot(u[ci+cj*bni], v[ci+cj*bni]);
-          n2 += is200km;
-          n4 += is400km;
-          n9 += is900km;
-          srot2 += is200km*match;
-          srot4 += is400km*match;
-          srot9 += is900km*match;
+      if ((lat*v[i+j*bni]<=0.0)&&(lat*v[ip1+j*bni]>0.0)) {
+        vort[i+j*bni] += 1.0;
+      }
+    }
+  }
+  for (size_t i=0; i<bni; i++) {
+    for (size_t j=4; j<b.nj-1-4; j++) {
+      double lat = bp_lat(&b,j);
+      size_t jp1 = j+1;
+      if ((lat*u[i+j*bni]<=0.0)&&(lat*u[i+jp1*bni]>0.0)) {
+        vort[i+j*bni] += 2.0;
+        if (vort[i+j*bni]==3.0) {
+          vort[i+j*bni] = 128.0;
+          size_t ip1 = (i+1)%bni;
+          double ci = i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
+          double cj = j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
+          printf("ci%6.2f cj%6.2f lat%6.1f lon%6.1f\n", ci, cj, bp_lat(&b,cj), bp_lon(&b,ci));
         }
       }
-      if (lat < 0.0) {
-        srot2 = -srot2;
-        srot4 = -srot4;
-        srot9 = -srot9;
-      }
-      vort[i+j*bni] = srot4/n4*128.0;
-      if ((srot4/n4<0.6)&&(srot9/n9<0.6)) continue;
-      printf("%5.1f %5.1f 2/%5.3f 4/%5.3f 9/%5.3f\n",
-      lat, bp_lon(&b,i), srot2/n2, srot4/n4, srot9/n9);
     }
   }
 
+  for (size_t i=0; i<npixels; i++) { vort[i] *= 2.0; }
   reproject(gbuf, &b, vort, ofp);
   set_parameter(strap->gsp_v, IPARM_PSI);
   mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
   gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  myfree(vort);
 
   const size_t NITER = 200;
   const double converge_mr = 0.9;
