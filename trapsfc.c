@@ -31,7 +31,6 @@ sindeg(double deg)
   return sin(deg * M_PI / 180.0);
 }
 
-#if 0
   void
 printa(double *ary, size_t n, char *name)
 {
@@ -52,10 +51,6 @@ printa(double *ary, size_t n, char *name)
   printf("%-6s min%.3g max%.3g avg%.3g sd%.3g avg.abs%.3g\n",
   name, min, max, avr, sqrt(sqsm/n), absm/n);
 }
-  printa(u, npixels, "u");
-  printa(v, npixels, "v");
-  printa(p, npixels, "p");
-#endif
 
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
@@ -91,12 +86,21 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
   memcpy(p, pmsl, sizeof(double)*npixels);
   // 緯度一度の長さ deglat = (6371.e3*M_PI)/180.0 の逆数 [1/m]
+  const double deglat = (6371.e3*M_PI)/180.0;
   const double invdeg = 180.0/(M_PI*6371.e3);
   // 密度 [100 kg/m3] - SIの1/100値にしているのはu,pmslの単位の皺寄せ
   double rho = 0.01 * 101325.0 * 28.96e-3 / (8.31432 * 273.15);
   // 摩擦: fとの比率
   double nfric_ratio = 0.4;
 
+  // ファイル出力用バッファ(使いまわす)
+  char filename[256];
+  size_t onx = ofp->xz - ofp->xa + 1;
+  size_t ony = ofp->yz - ofp->ya + 1;
+  double *gbuf = mymalloc(sizeof(double) * onx * ony);
+  if (gbuf == NULL) { return ERR_NOMEM; }
+
+  // forcing term
   for (size_t j=1; j<(b.nj-1); j++) {
     size_t jp1 = j+1;
     size_t jm1 = j-1;
@@ -131,11 +135,69 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     }
   }
 
+  double *vort = calloc(sizeof(double),npixels);
+
+  // search for vortex
+  for (size_t j=16; j<(b.nj-16); j++) {
+    size_t jp1 = j+1;
+    size_t jm1 = j-1;
+    double lat = bp_lat(&b,j);
+    for (size_t i=0; i<bni; i++) {
+      size_t ip1 = (i+1)%bni;
+      size_t im1 = (i+bni-1)%bni;
+      if (u[i+jp1*bni]*lat>=0.0) continue;
+      if (u[i+jm1*bni]*lat<=0.0) continue;
+      if (v[ip1+j*bni]*lat<=0.0) continue;
+      if (v[im1+j*bni]*lat>=0.0) continue;
+      double n2 = 0.0;
+      double n4 = 0.0;
+      double n9 = 0.0;
+      double srot2 = 0.0;
+      double srot4 = 0.0;
+      double srot9 = 0.0;
+      for (ssize_t dj=-16; dj<=16; dj++) {
+        size_t cj = (size_t)(dj+(ssize_t)j);
+        for (ssize_t di=-24; di<=24; di++) {
+          if ((di==0)&&(dj==0)) continue;
+          double distance = hypot(di*cosdeg(lat),dj);
+          double is200km = 0.5+0.5*tanh((200.e3-deglat*distance)*2.e-5);
+          double is400km = 0.5+0.5*tanh((400.e3-deglat*distance)*1.e-5);
+          double is900km = 0.5+0.5*tanh((900.e3-deglat*distance)*1.e-5);
+          size_t ci = (size_t)(di+(ssize_t)i)%bni;
+          double ni = di*cosdeg(lat)/distance;
+          double nj = dj/distance;
+          double match = (-nj*u[ci+cj*bni]+ni*v[ci+cj*bni])
+            / hypot(u[ci+cj*bni], v[ci+cj*bni]);
+          n2 += is200km;
+          n4 += is400km;
+          n9 += is900km;
+          srot2 += is200km*match;
+          srot4 += is400km*match;
+          srot9 += is900km*match;
+        }
+      }
+      if (lat < 0.0) {
+        srot2 = -srot2;
+        srot4 = -srot4;
+        srot9 = -srot9;
+      }
+      vort[i+j*bni] = srot4/n4*128.0;
+      if ((srot4/n4<0.6)&&(srot9/n9<0.6)) continue;
+      printf("%5.1f %5.1f 2/%5.3f 4/%5.3f 9/%5.3f\n",
+      lat, bp_lon(&b,i), srot2/n2, srot4/n4, srot9/n9);
+    }
+  }
+
+  reproject(gbuf, &b, vort, ofp);
+  set_parameter(strap->gsp_v, IPARM_PSI);
+  mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
+  gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+
   const size_t NITER = 200;
   const double converge_mr = 0.9;
   double accel = 0.25;
   double firstres = 0.0;
-  double movavrres = 0.0;
+  double movavrres = HUGE_VAL; 
   double diftoomuch = 20.0;
   double low_magic = 0.5;
   for (size_t iter=0; iter<NITER; iter++) {
@@ -189,17 +251,12 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     movavrres = 0.25 * (3. * movavrres + res);
   }
 
-  // save
-  size_t onx = ofp->xz - ofp->xa + 1;
-  size_t ony = ofp->yz - ofp->ya + 1;
-  double *gbuf = mymalloc(sizeof(double) * onx * ony);
-  if (gbuf == NULL) { return ERR_NOMEM; }
+  // pを保存
   reproject(gbuf, &b, p, ofp);
   set_parameter(strap->gsp_v, IPARM_Pres);
-  char filename[256];
   mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
   gridsave(gbuf, onx, ony, PALETTE_Pmsl, filename, textv, NULL);
-  
+
   myfree(gbuf);
   myfree(p);
   myfree(rhs);
