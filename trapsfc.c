@@ -135,11 +135,13 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     }
   }
 
-  printa(rhs, npixels, "rhs");
-  reproject(gbuf, &b, rhs, ofp);
-  set_parameter(strap->gsp_v, IPARM_CHI);
-  mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
-  gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  if (verbose) {
+    printa(rhs, npixels, "rhs");
+    reproject(gbuf, &b, rhs, ofp);
+    set_parameter(strap->gsp_v, IPARM_CHI);
+    mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
+    gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  }
 
   double *cfug = mymalloc(sizeof(double)*npixels);
   double *turn = mymalloc(sizeof(double)*npixels);
@@ -225,11 +227,13 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     }
   }
 
-  printa(cfug, npixels, "cfug");
-  reproject(gbuf, &b, cfug, ofp);
-  set_parameter(strap->gsp_v, IPARM_PSI);
-  mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
-  gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  if (verbose) {
+    printa(cfug, npixels, "cfug");
+    reproject(gbuf, &b, cfug, ofp);
+    set_parameter(strap->gsp_v, IPARM_PSI);
+    mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
+    gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  }
 
   for (size_t i=0; i<npixels; i++) { rhs[i] += cfug[i]; }
   myfree(turn);
