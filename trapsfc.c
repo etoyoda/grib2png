@@ -157,9 +157,36 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         if (vort[i+j*bni]==3.0) {
           vort[i+j*bni] = 128.0;
           size_t ip1 = (i+1)%bni;
-          double ci = i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
-          double cj = j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
-          printf("ci%6.2f cj%6.2f lat%6.1f lon%6.1f\n", ci, cj, bp_lat(&b,cj), bp_lon(&b,ci));
+          double ci = (double)i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
+          double cj = (double)j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
+          double n2, n4, s2, s4, m2, m4;
+          n2=n4=s2=s4=m2=m4=0.0;
+          for (size_t rj=j-4; rj<=j+4; rj++) {
+            for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
+              size_t ri = (size_t)(ris+bni)%bni;
+              double d, isd2, isd4;
+              d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
+              isd2 = 0.5+0.5*tanh((200.e3-d*deglat)/50.e3);
+              isd4 = 0.5+0.5*tanh((400.e3-d*deglat)/100.e3) - isd2;
+              n2 += isd2;
+              n4 += isd4;
+              // 低気圧回転の方向ベクトル
+              // jは南に増えることに注意
+              double unit_i = ((double)rj-cj)/d;
+              double unit_j = ((double)ris-ci)*cosdeg(lat)/d;
+              double match = (u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j)
+              / hypot(u[ri+rj*bni],v[ri+rj*bni]);
+              if (lat<0.0) { match = -match; }
+              m2 += isd2 * match;
+              m4 += isd4 * match;
+            }
+          }
+          m2 /= n2;
+          m4 /= n4;
+          if (!((m2>0.7)||(m4>0.7))) continue;
+          printf("ci%6.2f cj%6.2f lat%6.1f lon%6.1f %g %g\n",
+          ci, cj, bp_lat(&b,cj), bp_lon(&b,ci), m2, m4);
+          vort[i+j*bni]=-128;
         }
       }
     }
