@@ -130,21 +130,28 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         (hypot(u[i+j*bni],v[i+j*bni])-windythr)*0.5
       );
       // 風が強い場合 laplace_p 
-      double mix = 0.8 - is_windy*0.8;
+      double mix = 0.85 - is_windy*0.85;
       rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
     }
   }
 
-  double *vort = mymalloc(sizeof(double)*npixels);
-  for (size_t i=0; i<npixels; i++) { vort[i] = 0.0; }
-  if (vort==NULL) { return ERR_NOMEM; }
+  printa(rhs, npixels, "rhs");
+  reproject(gbuf, &b, rhs, ofp);
+  set_parameter(strap->gsp_v, IPARM_CHI);
+  mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
+  gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+
+  double *cfug = mymalloc(sizeof(double)*npixels);
+  double *turn = mymalloc(sizeof(double)*npixels);
+  if ((cfug==NULL)||(turn==NULL)) { return ERR_NOMEM; }
+  for (size_t i=0; i<npixels; i++) { cfug[i] = turn[i] = 0.0; }
 
   for (size_t j=0; j<b.nj; j++) {
     double lat = bp_lat(&b,j);
     for (size_t i=0; i<bni; i++) {
       size_t ip1 = (i+1)%bni;
       if ((lat*v[i+j*bni]<=0.0)&&(lat*v[ip1+j*bni]>0.0)) {
-        vort[i+j*bni] += 1.0;
+        turn[i+j*bni] += 1.0;
       }
     }
   }
@@ -153,51 +160,80 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       double lat = bp_lat(&b,j);
       size_t jp1 = j+1;
       if ((lat*u[i+j*bni]<=0.0)&&(lat*u[i+jp1*bni]>0.0)) {
-        vort[i+j*bni] += 2.0;
-        if (vort[i+j*bni]==3.0) {
-          vort[i+j*bni] = 128.0;
+        turn[i+j*bni] += 2.0;
+        if (turn[i+j*bni]==3.0) {
           size_t ip1 = (i+1)%bni;
           double ci = (double)i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
           double cj = (double)j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
-          double n2, n4, s2, s4, m2, m4;
-          n2=n4=s2=s4=m2=m4=0.0;
+          double n2, n4, n6, s2, s4, s6, m2, m4, m6;
+          n2=n4=n6=s2=s4=s6=m2=m4=m6=0.0;
           for (size_t rj=j-4; rj<=j+4; rj++) {
             for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
               size_t ri = (size_t)(ris+bni)%bni;
-              double d, isd2, isd4;
-              d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
-              isd2 = 0.5+0.5*tanh((200.e3-d*deglat)/50.e3);
-              isd4 = 0.5+0.5*tanh((400.e3-d*deglat)/100.e3) - isd2;
+              double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
+              double isd2 = 0.5+0.5*tanh((200.e3-d*deglat)/50.e3);
+              double isd4 = 0.5+0.5*tanh((400.e3-d*deglat)/100.e3) - isd2;
+              double isd6 = 0.5+0.5*tanh((600.e3-d*deglat)/100.e3) - isd4;
               n2 += isd2;
               n4 += isd4;
+              n6 += isd6;
               // 低気圧回転の方向ベクトル
               // jは南に増えることに注意
               double unit_i = ((double)rj-cj)/d;
               double unit_j = ((double)ris-ci)*cosdeg(lat)/d;
-              double match = (u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j)
-              / hypot(u[ri+rj*bni],v[ri+rj*bni]);
+              double wspd = hypot(u[ri+rj*bni],v[ri+rj*bni]);
+              double match = (u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j) / wspd;
               if (lat<0.0) { match = -match; }
               m2 += isd2 * match;
               m4 += isd4 * match;
+              m6 += isd6 * match;
+              s2 += isd2 * wspd;
+              s4 += isd4 * wspd;
+              s6 += isd6 * wspd;
             }
           }
-          m2 /= n2;
-          m4 /= n4;
+          m2 /= n2; s2 /= n2; m4 /= n4; s4 /= n4; m6 /= n6; s6 /= n6;
           if (!((m2>0.7)||(m4>0.7))) continue;
-          printf("ci%6.2f cj%6.2f lat%6.1f lon%6.1f %g %g\n",
-          ci, cj, bp_lat(&b,cj), bp_lon(&b,ci), m2, m4);
-          vort[i+j*bni]=-128;
+          if (m6<=0.7) {
+            s6=0.0;
+            if (m4<=0.7) { s4=0.0; }
+          }
+          if (verbose) {
+            printf("lat%6.1f lon%5.1f"
+            " %6.3f %6.3f %6.3f %6.1f %6.1f %6.1f\n",
+            bp_lat(&b,cj), bp_lon(&b,ci),
+            m2, m4, m6, s2/10., s4/10., s6/10.);
+          }
+          for (size_t rj=j-4; rj<=j+4; rj++) {
+            for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
+              size_t ri = (size_t)(ris+bni)%bni;
+              double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
+              double dd = d*d*deglat*deglat;
+              double isd2 = 0.5+0.5*tanh((200.e3-d*deglat)/50.e3);
+              double isd4 = 0.5+0.5*tanh((400.e3-d*deglat)/100.e3) - isd2;
+              double isd6 = 0.5+0.5*tanh((600.e3-d*deglat)/100.e3) - isd4;
+              isd2 -= 0.5+0.5*tanh((150.e3-d*deglat)/10.e3);
+              cfug[ri+rj*bni] = 0.1*rho*(
+                isd2*s2*s2/dd
+                +isd4*s4*s4/dd
+                +isd6*s6*s6/dd
+                );
+            }
+          }
         }
       }
     }
   }
 
-  for (size_t i=0; i<npixels; i++) { vort[i] *= 2.0; }
-  reproject(gbuf, &b, vort, ofp);
+  printa(cfug, npixels, "cfug");
+  reproject(gbuf, &b, cfug, ofp);
   set_parameter(strap->gsp_v, IPARM_PSI);
   mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
   gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
-  myfree(vort);
+
+  for (size_t i=0; i<npixels; i++) { rhs[i] += cfug[i]; }
+  myfree(turn);
+  myfree(cfug);
 
   const size_t NITER = 200;
   const double converge_mr = 0.9;
