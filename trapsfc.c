@@ -157,6 +157,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       }
     }
   }
+  double match_min = 0.7;
   for (size_t i=0; i<bni; i++) {
     for (size_t j=4; j<b.nj-1-4; j++) {
       double lat = bp_lat(&b,j);
@@ -195,10 +196,10 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
             }
           }
           m2 /= n2; s2 /= n2; m4 /= n4; s4 /= n4; m6 /= n6; s6 /= n6;
-          if (!((m2>0.7)||(m4>0.7))) continue;
-          if (m6<=0.7) {
+          if (!((m2>match_min)||(m4>match_min))) continue;
+          if (m6<=match_min) {
             s6=0.0;
-            if (m4<=0.7) { s4=0.0; }
+            if (m4<=match_min) { s4=0.0; }
           }
           if (verbose) {
             printf("lat%6.1f lon%5.1f"
