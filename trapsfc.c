@@ -196,17 +196,23 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
             }
           }
           m2 /= n2; s2 /= n2; m4 /= n4; s4 /= n4; m6 /= n6; s6 /= n6;
-          if (!((m2>match_min)||(m4>match_min))) continue;
+          if (verbose) {
+            printf("vortex %6.1f %5.1f"
+            " m %6.3f %6.3f %6.3f s %6.1f %6.1f %6.1f",
+            bp_lat(&b,cj), bp_lon(&b,ci),
+            m2, m4, m6, s2/10., s4/10., s6/10.);
+          }
+          if (!((m2>match_min)||(m4>match_min))) {
+            if (verbose) {
+              printf(" skip(match)\n");
+            }
+            continue;
+          }
           if (m6<=match_min) {
             s6=0.0;
             if (m4<=match_min) { s4=0.0; }
           }
-          if (verbose) {
-            printf("lat%6.1f lon%5.1f"
-            " %6.3f %6.3f %6.3f %6.1f %6.1f %6.1f\n",
-            bp_lat(&b,cj), bp_lon(&b,ci),
-            m2, m4, m6, s2/10., s4/10., s6/10.);
-          }
+          if (verbose) { printf("\n"); }
           for (size_t rj=j-4; rj<=j+4; rj++) {
             for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
               size_t ri = (size_t)(ris+bni)%bni;
