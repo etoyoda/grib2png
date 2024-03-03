@@ -200,7 +200,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
             printf("vortex %6.1f %5.1f"
             " m %6.3f %6.3f %6.3f s %6.1f %6.1f %6.1f",
             bp_lat(&b,cj), bp_lon(&b,ci),
-            m2, m4, m6, s2/10., s4/10., s6/10.);
+            m2, m4, m6, s2*0.1, s4*0.1, s6*0.1);
           }
           if (!((m2>match_min)||(m4>match_min))) {
             if (verbose) {
