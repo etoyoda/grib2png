@@ -126,16 +126,19 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
           size_t ip1 = (i+1)%bni;
           double ci = (double)i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
           double cj = (double)j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
-          double n2, n4, n6, s2, s4, s6, m2, m4, m6;
-          n2=n4=n6=s2=s4=s6=m2=m4=m6=0.0;
+          double n2, n3, n4, n6, s2, s3, s4, s6, m2, m3, m4, m6;
+          n2=n3=n4=n6=s2=s3=s4=s6=m2=m3=m4=m6=0.0;
           for (size_t rj=j-4; rj<=j+4; rj++) {
             for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
               size_t ri = (size_t)(ris+bni)%bni;
               double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
-              double isd2 = 0.5+0.5*tanh((200.e3-d*deglat)/50.e3);
-              double isd4 = 0.5+0.5*tanh((400.e3-d*deglat)/100.e3) - isd2;
-              double isd6 = 0.5+0.5*tanh((600.e3-d*deglat)/100.e3) - isd4;
+              double isd1 = 0.5+0.5*tanh((150.e3-d*deglat)/20.e3);
+              double isd2 = 0.5+0.5*tanh((250.e3-d*deglat)/20.e3) - isd1;
+              double isd3 = 0.5+0.5*tanh((350.e3-d*deglat)/20.e3) - isd2;
+              double isd4 = 0.5+0.5*tanh((500.e3-d*deglat)/50.e3) - isd3;
+              double isd6 = 0.5+0.5*tanh((700.e3-d*deglat)/50.e3) - isd4;
               n2 += isd2;
+              n3 += isd3;
               n4 += isd4;
               n6 += isd6;
               // 低気圧回転の方向ベクトル
@@ -143,48 +146,71 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
               double unit_i = ((double)rj-cj)/d;
               double unit_j = ((double)ris-ci)*cosdeg(lat)/d;
               double wspd = hypot(u[ri+rj*bni],v[ri+rj*bni]);
-              double match = (u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j) / wspd;
-              if (lat<0.0) { match = -match; }
+              double iprod = u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j;
+              if (lat<0.0) { iprod = -iprod; }
+              double match = iprod / wspd;
               m2 += isd2 * match;
+              m3 += isd3 * match;
               m4 += isd4 * match;
               m6 += isd6 * match;
-              s2 += isd2 * wspd;
-              s4 += isd4 * wspd;
-              s6 += isd6 * wspd;
+              s2 += isd2 * iprod;
+              s3 += isd3 * iprod;
+              s4 += isd4 * iprod;
+              s6 += isd6 * iprod;
             }
           }
-          m2 /= n2; s2 /= n2; m4 /= n4; s4 /= n4; m6 /= n6; s6 /= n6;
-          if (verbose) {
-            printf("vortex %6.1f %5.1f"
-            " m %6.3f %6.3f %6.3f s %6.1f %6.1f %6.1f",
-            bp_lat(&b,cj), bp_lon(&b,ci),
-            m2, m4, m6, s2*0.1, s4*0.1, s6*0.1);
-          }
-          if (!((m2>match_min)||(m4>match_min))) {
-            if (verbose) {
-              printf(" skip(match)\n");
+          m2 /= n2; s2 /= n2;
+          m3 /= n3; s3 /= n3;
+          m4 /= n4; s4 /= n4;
+          m6 /= n6; s6 /= n6;
+          double rmax, vmax;
+          if (m6 > match_min) {
+            if ((s6>s4)&&(s6>s3)&&(s6>s2)) {
+              rmax = 600.e3; vmax = s6; goto RVMAX_SET;
             }
+            goto TRY4;
+          }
+        TRY4:
+          if (m4 > match_min) {
+            if ((s4>s3)&&(s4>s2)) {
+              rmax = 400.e3; vmax = s4; goto RVMAX_SET;
+            }
+            goto TRY3;
+          }
+        TRY3:
+          if (m3 > match_min) {
+            if (s3>s2) {
+              rmax = 300.e3; vmax = s3; goto RVMAX_SET;
+            }
+            goto TRY2;
+          }
+        TRY2:
+          if (m2 > match_min) {
+            rmax = 200.e3; vmax = s2; goto RVMAX_SET;
+          } else {
+            // skip this vortex candidate
             continue;
           }
-          if (m6<=match_min) {
-            s6=0.0;
-            if (m4<=match_min) { s4=0.0; }
+        RVMAX_SET:
+          if (verbose) {
+            printf("vortex %+6.1f %+6.1f"
+            " %3d %3d %3d %3d %4d %4d %4d %4d %5.1f %4d\n",
+            bp_lat(&b,cj), bp_lon(&b,ci),
+            (int)round(m2*100.), (int)round(m3*100.),
+            (int)round(m4*100.), (int)round(m6*100.),
+            (int)round(s2), (int)round(s3), (int)round(s4), (int)round(s6),
+            rmax*0.001, (int)round(vmax));
           }
-          if (verbose) { printf("\n"); }
           for (size_t rj=j-4; rj<=j+4; rj++) {
             for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
               size_t ri = (size_t)(ris+bni)%bni;
-              double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
-              double dd = d*d*deglat*deglat;
-              double isd2 = 0.5+0.5*tanh((200.e3-d*deglat)/50.e3);
-              double isd4 = 0.5+0.5*tanh((400.e3-d*deglat)/100.e3) - isd2;
-              double isd6 = 0.5+0.5*tanh((600.e3-d*deglat)/100.e3) - isd4;
-              isd2 -= 0.5+0.5*tanh((150.e3-d*deglat)/10.e3);
-              cfug[ri+rj*bni] = 0.1*rho*(
-                isd2*s2*s2/dd
-                +isd4*s4*s4/dd
-                +isd6*s6*s6/dd
-                );
+              double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj)
+               * deglat;
+              if (d < rmax) {
+                cfug[ri+rj*bni] = 0.1*rho*vmax*vmax/(rmax*rmax);
+              } else {
+                cfug[ri+rj*bni] = 0.1*rho*vmax*vmax*rmax*rmax*pow(d,-4.0);
+              }
             }
           }
         }
