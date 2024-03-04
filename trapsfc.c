@@ -200,10 +200,6 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
   }
 
-  for (size_t i=0; i<npixels; i++) { rhs[i] += cfug[i]; }
-  myfree(turn);
-  myfree(cfug);
-
   // forcing term
   for (size_t j=1; j<(b.nj-1); j++) {
     size_t jp1 = j+1;
@@ -235,7 +231,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       );
       // 風が強い場合 laplace_p 
       double mix = 0.85 - is_windy*0.85;
-      rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
+      rhs[i+j*bni] = mix*(rhofzeta+friction+cfug[i+j*bni])
+      + (1.-mix)*laplace_p;
     }
   }
 
@@ -246,6 +243,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
   }
+
+  myfree(turn);
+  myfree(cfug);
 
   const size_t NITER = 200;
   const double converge_mr = 0.9;
