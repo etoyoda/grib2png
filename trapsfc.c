@@ -100,49 +100,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   double *gbuf = mymalloc(sizeof(double) * onx * ony);
   if (gbuf == NULL) { return ERR_NOMEM; }
 
-  // forcing term
-  for (size_t j=1; j<(b.nj-1); j++) {
-    size_t jp1 = j+1;
-    size_t jm1 = j-1;
-    double invdy = -invdeg/b.dj;
-    double lat = bp_lat(&b,j);
-    double invdx = invdeg/(b.di*cosdeg(lat));
-    double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
-    double is_tropical = 0.5+0.5*tanh((22.5-fabs(lat))*0.5);
-    for (size_t i=0; i<bni; i++) {
-      size_t ip1 = (i+1)%bni;
-      size_t im1 = (i+bni-1)%bni;
-      double rhofzeta = rho * f * (
-        (u[i+jp1*bni] - u[i+jm1*bni]) * 0.5 * invdy
-      - (v[ip1+j*bni] - v[im1+j*bni]) * 0.5 * invdx
-      );
-      double nfric = fabs(f) * nfric_ratio;
-      double friction = rho * nfric * (
-        (u[ip1+j*bni] - u[im1+j*bni]) * 0.5 * invdy
-      + (v[i+jp1*bni] - v[i+jm1*bni]) * 0.5 * invdx
-      );
-      double laplace_p = (
-        (p[i+jp1*bni] + p[i+jm1*bni] - 2.0*p[i+j*bni]) * invdy * invdy
-       +(p[ip1+j*bni] + p[im1+j*bni] - 2.0*p[i+j*bni]) * invdx * invdx
-      );
-      double windythr = 150.0 - is_tropical*50.0;
-      double is_windy = 0.5+0.5*tanh(
-        (hypot(u[i+j*bni],v[i+j*bni])-windythr)*0.5
-      );
-      // 風が強い場合 laplace_p 
-      double mix = 0.85 - is_windy*0.85;
-      rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
-    }
-  }
-
-  if (verbose) {
-    printa(rhs, npixels, "rhs");
-    reproject(gbuf, &b, rhs, ofp);
-    set_parameter(strap->gsp_v, IPARM_CHI);
-    mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
-    gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
-  }
-
+  // 遠心力項
   double *cfug = mymalloc(sizeof(double)*npixels);
   double *turn = mymalloc(sizeof(double)*npixels);
   if ((cfug==NULL)||(turn==NULL)) { return ERR_NOMEM; }
@@ -245,6 +203,49 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   for (size_t i=0; i<npixels; i++) { rhs[i] += cfug[i]; }
   myfree(turn);
   myfree(cfug);
+
+  // forcing term
+  for (size_t j=1; j<(b.nj-1); j++) {
+    size_t jp1 = j+1;
+    size_t jm1 = j-1;
+    double invdy = -invdeg/b.dj;
+    double lat = bp_lat(&b,j);
+    double invdx = invdeg/(b.di*cosdeg(lat));
+    double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
+    double is_tropical = 0.5+0.5*tanh((22.5-fabs(lat))*0.5);
+    for (size_t i=0; i<bni; i++) {
+      size_t ip1 = (i+1)%bni;
+      size_t im1 = (i+bni-1)%bni;
+      double rhofzeta = rho * f * (
+        (u[i+jp1*bni] - u[i+jm1*bni]) * 0.5 * invdy
+      - (v[ip1+j*bni] - v[im1+j*bni]) * 0.5 * invdx
+      );
+      double nfric = fabs(f) * nfric_ratio;
+      double friction = rho * nfric * (
+        (u[ip1+j*bni] - u[im1+j*bni]) * 0.5 * invdy
+      + (v[i+jp1*bni] - v[i+jm1*bni]) * 0.5 * invdx
+      );
+      double laplace_p = (
+        (p[i+jp1*bni] + p[i+jm1*bni] - 2.0*p[i+j*bni]) * invdy * invdy
+       +(p[ip1+j*bni] + p[im1+j*bni] - 2.0*p[i+j*bni]) * invdx * invdx
+      );
+      double windythr = 150.0 - is_tropical*50.0;
+      double is_windy = 0.5+0.5*tanh(
+        (hypot(u[i+j*bni],v[i+j*bni])-windythr)*0.5
+      );
+      // 風が強い場合 laplace_p 
+      double mix = 0.85 - is_windy*0.85;
+      rhs[i+j*bni] = mix*(rhofzeta+friction) + (1.-mix)*laplace_p;
+    }
+  }
+
+  if (verbose) {
+    printa(rhs, npixels, "rhs");
+    reproject(gbuf, &b, rhs, ofp);
+    set_parameter(strap->gsp_v, IPARM_CHI);
+    mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
+    gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  }
 
   const size_t NITER = 200;
   const double converge_mr = 0.9;
