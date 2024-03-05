@@ -110,8 +110,13 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     double lat = bp_lat(&b,j);
     for (size_t i=0; i<bni; i++) {
       size_t ip1 = (i+1)%bni;
+      // 低気圧回転
       if ((lat*v[i+j*bni]<=0.0)&&(lat*v[ip1+j*bni]>0.0)) {
         turn[i+j*bni] += 1.0;
+      }
+      // 高気圧回転
+      if ((lat*v[i+j*bni]>=0.0)&&(lat*v[ip1+j*bni]<0.0)) {
+        turn[i+j*bni] -= 1.0;
       }
     }
   }
@@ -123,87 +128,98 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       double is_tropical = 0.5+0.5*tanh((22.5-fabs(lat))*0.5);
       size_t jp1 = j+1;
       if ((lat*u[i+j*bni]<=0.0)&&(lat*u[i+jp1*bni]>0.0)) {
+        // 低気圧回転
         turn[i+j*bni] += 2.0;
-        if (turn[i+j*bni]==3.0) {
-          size_t ip1 = (i+1)%bni;
-          double ci = (double)i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
-          double cj = (double)j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
-          double n1, n2, n3, n4, s1, s2, s3, m1, m2, m3;
-          n1=n2=n3=n4=s1=s2=s3=m1=m2=m3=0.0;
-          double p0 = pmsl[i+j*bni];
-          double p4 = 0.0;
-          for (size_t rj=j-4; rj<=j+4; rj++) {
-            for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
-              size_t ri = (size_t)(ris+bni)%bni;
-              double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
-              double isd0 = 0.5+0.5*tanh((50.e3-d*deglat)/20.e3);
-              double isd1 = 0.5+0.5*tanh((150.e3-d*deglat)/20.e3) - isd0;
-              double isd2 = 0.5+0.5*tanh((250.e3-d*deglat)/20.e3) - isd1;
-              double isd3 = 0.5+0.5*tanh((350.e3-d*deglat)/20.e3) - isd2;
-              double isd4 = 0.5+0.5*tanh((500.e3-d*deglat)/50.e3) - isd3;
-              n1 += isd1;
-              n2 += isd2;
-              n3 += isd3;
-              n4 += isd4;
-              // 低気圧回転の方向ベクトル
-              // jは南に増えることに注意
-              double unit_i = ((double)rj-cj)/d;
-              double unit_j = ((double)ris-ci)*cosdeg(lat)/d;
-              double wspd = hypot(u[ri+rj*bni],v[ri+rj*bni]);
-              double iprod = u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j;
-              if (lat<0.0) { iprod = -iprod; }
-              double match = iprod / wspd;
-              m1 += isd1 * match;
-              m2 += isd2 * match;
-              m3 += isd3 * match;
-              s1 += isd1 * iprod;
-              s2 += isd2 * iprod;
-              s3 += isd3 * iprod;
-              p4 += isd4 * pmsl[ri+rj*bni];
-            }
-          }
-          m1 /= n1; s1 /= n1;
-          m2 /= n2; s2 /= n2;
-          m3 /= n3; s3 /= n3;
-          p4 /= n4;
-          double rmax, vmax;
-          if (m2 > match_min) {
-            if (s2>s1*1.5) {
-              rmax = 200.e3; vmax = s2; goto RVMAX_SET;
-            }
-          }
-          if (m1 > match_min) {
-            rmax = 100.e3; vmax = s1; goto RVMAX_SET;
+      }
+      if ((lat*u[i+j*bni]>=0.0)&&(lat*u[i+jp1*bni]<0.0)) {
+        // 高気圧回転
+        turn[i+j*bni] -= 2.0;
+      }
+      if (!((turn[i+j*bni]==3.0)||(turn[i+j*bni]==-3.0))) {
+        continue;
+      }
+      size_t ip1 = (i+1)%bni;
+      double ci = (double)i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
+      double cj = (double)j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
+      double n1, n2, n3, n4, s1, s2, s3, m1, m2, m3;
+      n1=n2=n3=n4=s1=s2=s3=m1=m2=m3=0.0;
+      double p0 = pmsl[i+j*bni];
+      double p4 = 0.0;
+      for (size_t rj=j-4; rj<=j+4; rj++) {
+        for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
+          size_t ri = (size_t)(ris+bni)%bni;
+          double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
+          double isd0 = 0.5+0.5*tanh((50.e3-d*deglat)/20.e3);
+          double isd1 = 0.5+0.5*tanh((150.e3-d*deglat)/20.e3) - isd0;
+          double isd2 = 0.5+0.5*tanh((250.e3-d*deglat)/20.e3) - isd1;
+          double isd3 = 0.5+0.5*tanh((350.e3-d*deglat)/20.e3) - isd2;
+          double isd4 = 0.5+0.5*tanh((500.e3-d*deglat)/50.e3) - isd3;
+          n1 += isd1;
+          n2 += isd2;
+          n3 += isd3;
+          n4 += isd4;
+          // 北半球で低気圧回転の方向ベクトル
+          // jは南に増えることに注意
+          double unit_i = ((double)rj-cj)/d;
+          double unit_j = ((double)ris-ci)*cosdeg(lat)/d;
+          double wspd = hypot(u[ri+rj*bni],v[ri+rj*bni]);
+          double iprod = u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j;
+          // 南半球で反転
+          if (lat<0.0) { iprod = -iprod; }
+          double match = iprod / wspd;
+          m1 += isd1 * match;
+          m2 += isd2 * match;
+          m3 += isd3 * match;
+          s1 += isd1 * iprod;
+          s2 += isd2 * iprod;
+          s3 += isd3 * iprod;
+          p4 += isd4 * pmsl[ri+rj*bni];
+        }
+      }
+      m1 /= n1; s1 /= n1;
+      m2 /= n2; s2 /= n2;
+      m3 /= n3; s3 /= n3;
+      p4 /= n4;
+      double rmax, vmax;
+      if (m2 > match_min) {
+        if (s2>s1*1.5) {
+          rmax = 200.e3; vmax = s2; goto CYCLONE;
+        }
+      }
+      if (m1 > match_min) {
+        rmax = 100.e3; vmax = s1; goto CYCLONE;
+      }
+      if (m3 < -match_min) {
+        rmax = 100.e3; vmax = -70.0; goto ANTI_CYCLONE;
+      }
+      // skip this vortex candidate
+      continue;
+    CYCLONE:
+      vmax *= 1.0 + is_tropical * 3.0;
+      double vmaxp = sqrt((p4-p0)/(0.1*rho)) * vmaxpmagic;
+      if (vmaxp > vmax) {
+        vmax = vmaxp;
+      }
+    ANTI_CYCLONE:
+      if (verbose) {
+        printf("vortex %+6.1f %+6.1f"
+        " %3d %3d %3d %4d %4d %4d %5.1f %5.1f %4d\n",
+        bp_lat(&b,cj), bp_lon(&b,ci),
+        (int)round(m1*100.), (int)round(m2*100.), (int)round(m3*100.),
+        (int)round(s1), (int)round(s2), (int)round(s3),
+        (p4-p0)*0.1,
+        rmax*0.001, (int)round(vmax));
+      }
+      for (size_t rj=j-4; rj<=j+4; rj++) {
+        for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
+          size_t ri = (size_t)(ris+bni)%bni;
+          double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj)
+           * deglat;
+          double isinside = 0.5+0.5*tanh((rmax*1.5-d)/(0.5*deglat));
+          if (vmax<0.0) {
+            cfug[ri+rj*bni] -= 0.1*rho*vmax*vmax/(rmax*rmax)*isinside;
           } else {
-            // skip this vortex candidate
-            continue;
-          }
-        RVMAX_SET:
-          vmax *= 1.0 + is_tropical;
-          double vmaxp = sqrt((p4-p0)/(0.1*rho)) * vmaxpmagic;
-          if (vmaxp > vmax) {
-            vmax = vmaxp;
-          }
-          if (verbose) {
-            printf("vortex %+6.1f %+6.1f"
-            " %3d %3d %3d %4d %4d %4d %5.1f %5.1f %4d\n",
-            bp_lat(&b,cj), bp_lon(&b,ci),
-            (int)round(m1*100.), (int)round(m2*100.), (int)round(m3*100.),
-            (int)round(s1), (int)round(s2), (int)round(s3),
-            (p4-p0)*0.1,
-            rmax*0.001, (int)round(vmax));
-          }
-          for (size_t rj=j-4; rj<=j+4; rj++) {
-            for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
-              size_t ri = (size_t)(ris+bni)%bni;
-              double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj)
-               * deglat;
-              if (d < rmax) {
-                cfug[ri+rj*bni] += 0.1*rho*vmax*vmax/(rmax*rmax);
-              } else {
-                cfug[ri+rj*bni] += 0.3*rho*vmax*vmax*rmax*rmax*pow(d,-4.0);
-              }
-            }
+            cfug[ri+rj*bni] += 0.1*rho*vmax*vmax/(rmax*rmax)*isinside;
           }
         }
       }
