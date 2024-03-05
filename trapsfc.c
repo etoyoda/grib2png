@@ -115,7 +115,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       }
     }
   }
-  double match_min = 0.7;
+  double match_min = 0.5;
   for (size_t i=0; i<bni; i++) {
     for (size_t j=4; j<b.nj-1-4; j++) {
       double lat = bp_lat(&b,j);
