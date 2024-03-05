@@ -221,6 +221,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   if (verbose) {
     printa(cfug, npixels, "cfug");
     reproject(gbuf, &b, cfug, ofp);
+    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e11; }
     set_parameter(strap->gsp_v, IPARM_PSI);
     mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
@@ -265,6 +266,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   if (verbose) {
     printa(rhs, npixels, "rhs");
     reproject(gbuf, &b, rhs, ofp);
+    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e10; }
     set_parameter(strap->gsp_v, IPARM_CHI);
     mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
