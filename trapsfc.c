@@ -174,6 +174,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
           s2 += isd2 * iprod;
           s3 += isd3 * iprod;
           p4 += isd4 * pmsl[ri+rj*bni];
+          if (pmsl[ri+rj*bni] < p0) {
+            p0 += isd2 * (pmsl[ri+rj*bni]-p0);
+          }
         }
       }
       m1 /= n1; s1 /= n1;
