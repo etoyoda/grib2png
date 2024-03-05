@@ -231,6 +231,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
 
   if (verbose) {
     printa(cfug, npixels, "cfug");
+  }
+  if (verbose>=2) {
     reproject(gbuf, &b, cfug, ofp);
     for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e10; }
     set_parameter(strap->gsp_v, IPARM_PSI);
@@ -276,6 +278,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
 
   if (verbose) {
     printa(rhs, npixels, "rhs");
+  }
+  if (verbose>=2) {
     reproject(gbuf, &b, rhs, ofp);
     for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e10; }
     set_parameter(strap->gsp_v, IPARM_CHI);
