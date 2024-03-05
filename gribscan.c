@@ -752,7 +752,9 @@ bp_lat(bounding_t *bp, double j)
   double
 bp_lon(bounding_t *bp, double i)
 {
-  return bp->w + i * (bp->e - bp->w) / (bp->ni - 1.0);
+  double r = bp->w + i * (bp->e - bp->w) / (bp->ni - 1.0);
+  if (r>180.0) r-=360.0;
+  return r;
 }
 
   const char *
