@@ -116,9 +116,11 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     }
   }
   double match_min = 0.5;
+  double vmaxpmagic = 0.5;
   for (size_t i=0; i<bni; i++) {
     for (size_t j=4; j<b.nj-1-4; j++) {
       double lat = bp_lat(&b,j);
+      double is_tropical = 0.5+0.5*tanh((22.5-fabs(lat))*0.5);
       size_t jp1 = j+1;
       if ((lat*u[i+j*bni]<=0.0)&&(lat*u[i+jp1*bni]>0.0)) {
         turn[i+j*bni] += 2.0;
@@ -126,21 +128,23 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
           size_t ip1 = (i+1)%bni;
           double ci = (double)i+fabs(v[i+j*bni])/fabs(v[i+j*bni]-v[ip1+j*bni]);
           double cj = (double)j+fabs(u[i+j*bni])/fabs(u[i+j*bni]-u[i+jp1*bni]);
-          double n2, n3, n4, n6, s2, s3, s4, s6, m2, m3, m4, m6;
-          n2=n3=n4=n6=s2=s3=s4=s6=m2=m3=m4=m6=0.0;
+          double n1, n2, n3, n4, s1, s2, s3, m1, m2, m3;
+          n1=n2=n3=n4=s1=s2=s3=m1=m2=m3=0.0;
+          double p0 = pmsl[i+j*bni];
+          double p4 = 0.0;
           for (size_t rj=j-4; rj<=j+4; rj++) {
             for (ssize_t ris=(ssize_t)i-4; ris<=(ssize_t)i+4; ris++) {
               size_t ri = (size_t)(ris+bni)%bni;
               double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj);
-              double isd1 = 0.5+0.5*tanh((150.e3-d*deglat)/20.e3);
+              double isd0 = 0.5+0.5*tanh((50.e3-d*deglat)/20.e3);
+              double isd1 = 0.5+0.5*tanh((150.e3-d*deglat)/20.e3) - isd0;
               double isd2 = 0.5+0.5*tanh((250.e3-d*deglat)/20.e3) - isd1;
               double isd3 = 0.5+0.5*tanh((350.e3-d*deglat)/20.e3) - isd2;
               double isd4 = 0.5+0.5*tanh((500.e3-d*deglat)/50.e3) - isd3;
-              double isd6 = 0.5+0.5*tanh((700.e3-d*deglat)/50.e3) - isd4;
+              n1 += isd1;
               n2 += isd2;
               n3 += isd3;
               n4 += isd4;
-              n6 += isd6;
               // 低気圧回転の方向ベクトル
               // jは南に増えることに注意
               double unit_i = ((double)rj-cj)/d;
@@ -149,56 +153,44 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
               double iprod = u[ri+rj*bni]*unit_i+v[ri+rj*bni]*unit_j;
               if (lat<0.0) { iprod = -iprod; }
               double match = iprod / wspd;
+              m1 += isd1 * match;
               m2 += isd2 * match;
               m3 += isd3 * match;
-              m4 += isd4 * match;
-              m6 += isd6 * match;
+              s1 += isd1 * iprod;
               s2 += isd2 * iprod;
               s3 += isd3 * iprod;
-              s4 += isd4 * iprod;
-              s6 += isd6 * iprod;
+              p4 += isd4 * pmsl[ri+rj*bni];
             }
           }
+          m1 /= n1; s1 /= n1;
           m2 /= n2; s2 /= n2;
           m3 /= n3; s3 /= n3;
-          m4 /= n4; s4 /= n4;
-          m6 /= n6; s6 /= n6;
+          p4 /= n4;
           double rmax, vmax;
-          if (m6 > match_min) {
-            if ((s6>s4)&&(s6>s3)&&(s6>s2)) {
-              rmax = 600.e3; vmax = s6; goto RVMAX_SET;
-            }
-            goto TRY4;
-          }
-        TRY4:
-          if (m4 > match_min) {
-            if ((s4>s3)&&(s4>s2)) {
-              rmax = 400.e3; vmax = s4; goto RVMAX_SET;
-            }
-            goto TRY3;
-          }
-        TRY3:
-          if (m3 > match_min) {
-            if (s3>s2) {
-              rmax = 300.e3; vmax = s3; goto RVMAX_SET;
-            }
-            goto TRY2;
-          }
-        TRY2:
           if (m2 > match_min) {
-            rmax = 200.e3; vmax = s2; goto RVMAX_SET;
+            if (s2>s1*1.5) {
+              rmax = 200.e3; vmax = s2; goto RVMAX_SET;
+            }
+          }
+          if (m1 > match_min) {
+            rmax = 100.e3; vmax = s1; goto RVMAX_SET;
           } else {
             // skip this vortex candidate
             continue;
           }
         RVMAX_SET:
+          vmax *= 1.0 + is_tropical;
+          double vmaxp = sqrt((p4-p0)/(0.1*rho)) * vmaxpmagic;
+          if (vmaxp > vmax) {
+            vmax = vmaxp;
+          }
           if (verbose) {
             printf("vortex %+6.1f %+6.1f"
-            " %3d %3d %3d %3d %4d %4d %4d %4d %5.1f %4d\n",
+            " %3d %3d %3d %4d %4d %4d %5.1f %5.1f %4d\n",
             bp_lat(&b,cj), bp_lon(&b,ci),
-            (int)round(m2*100.), (int)round(m3*100.),
-            (int)round(m4*100.), (int)round(m6*100.),
-            (int)round(s2), (int)round(s3), (int)round(s4), (int)round(s6),
+            (int)round(m1*100.), (int)round(m2*100.), (int)round(m3*100.),
+            (int)round(s1), (int)round(s2), (int)round(s3),
+            (p4-p0)*0.1,
             rmax*0.001, (int)round(vmax));
           }
           for (size_t rj=j-4; rj<=j+4; rj++) {
@@ -207,9 +199,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
               double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj)
                * deglat;
               if (d < rmax) {
-                cfug[ri+rj*bni] = 0.1*rho*vmax*vmax/(rmax*rmax);
+                cfug[ri+rj*bni] += 0.1*rho*vmax*vmax/(rmax*rmax);
               } else {
-                cfug[ri+rj*bni] = 0.1*rho*vmax*vmax*rmax*rmax*pow(d,-4.0);
+                cfug[ri+rj*bni] += 0.3*rho*vmax*vmax*rmax*rmax*pow(d,-4.0);
               }
             }
           }
@@ -221,7 +213,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   if (verbose) {
     printa(cfug, npixels, "cfug");
     reproject(gbuf, &b, cfug, ofp);
-    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e11; }
+    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e10; }
     set_parameter(strap->gsp_v, IPARM_PSI);
     mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
