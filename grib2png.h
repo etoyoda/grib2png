@@ -26,8 +26,8 @@ check_traps(const struct grib2secs *gsp, double *dbuf,
   outframe_t *ofp, char **textv);
 
 // trapsfc.c
-extern double gmagic_vortex_minmatch;
-extern double gmagic_friction_ratio;
+extern int
+magic_parameters(const char *arg);
 
 extern gribscan_err_t
 check_sfcanal(const struct grib2secs *gsp, double *dbuf,

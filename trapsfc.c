@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
@@ -53,8 +54,41 @@ printa(double *ary, size_t n, char *name)
 }
 
 double gmagic_vortex_minmatch = 0.5;
-  // 摩擦: fとの比率
+// 摩擦: fとの比率
 double gmagic_friction_ratio = 0.4;
+// 渦強制の熱帯加算比率
+double gmagic_tropicalvortex = 1.0;
+// 低気圧部の気圧傾度強制比率
+double gmagic_low = 0.5;
+// 緩和法の加速率。不安定になりがちなので小さめにする
+double gmagic_accel = 0.25;
+double gmagic_mix = 0.85;
+double gmagic_converge = 0.9;
+
+#define strhead(a,b) (0==strncmp((a),(b),strlen((b))))
+
+  int
+magic_parameters(const char *arg)
+{
+  if (strhead(arg,"vxmm=")) {
+    gmagic_vortex_minmatch = atof(arg+5);
+  } else if (strhead(arg,"fric=")) {
+    gmagic_friction_ratio = atof(arg+5);
+  } else if (strhead(arg,"trpv=")) {
+    gmagic_tropicalvortex = atof(arg+5);
+  } else if (strhead(arg,"low=")) {
+    gmagic_low = atof(arg+4);
+  } else if (strhead(arg,"acel=")) {
+    gmagic_accel = atof(arg+5);
+  } else if (strhead(arg,"mix=")) {
+    gmagic_mix = atof(arg+4);
+  } else if (strhead(arg,"cnvg=")) {
+    gmagic_converge = atof(arg+5);
+  } else {
+    return -1;
+  }
+  return 0;
+}
 
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
@@ -199,7 +233,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       // skip this vortex candidate
       continue;
     CYCLONE:
-      vmax *= 1.0 + is_tropical * 1.0;
+      vmax *= 1.0 + is_tropical * gmagic_tropicalvortex;
       double vmaxp = sqrt((p4-p0)/(0.1*rho)) * vmaxpmagic;
       if (vmaxp > vmax) {
         vmax = vmaxp;
@@ -272,7 +306,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         (hypot(u[i+j*bni],v[i+j*bni])-windythr)*0.5
       );
       // 風が強い場合 laplace_p 
-      double mix = 0.85 - is_windy*0.85;
+      double mix = gmagic_mix - is_windy*gmagic_mix;
       rhs[i+j*bni] = mix*(rhofzeta+friction+cfug[i+j*bni])
       + (1.-mix)*laplace_p;
     }
@@ -293,12 +327,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   myfree(cfug);
 
   const size_t NITER = 200;
-  const double converge_mr = 0.9;
-  double accel = 0.25;
   double firstres = 0.0;
   double movavrres = HUGE_VAL; 
   double diftoomuch = 20.0;
-  double low_magic = 0.5;
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
     double sum2dif = 0.0;
@@ -307,7 +338,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       size_t jm1 = j-1;
       double invdydy = pow(invdeg/b.dj, 2.0);
       double invdxdx = pow(invdeg/(b.di*cosdeg(bp_lat(&b,j))), 2.0);
-      double dxdx = accel/invdxdx;
+      double dxdx = gmagic_accel/invdxdx;
       for (size_t i=0; i<bni; i++) {
         size_t ip1 = (i+1)%bni;
         size_t im1 = (i+bni-1)%bni;
@@ -317,7 +348,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         );
         double residual = (rhs[i+j*bni] - laplace_p)*dxdx;
         double is_low = 0.5+0.5*tanh(990.e1-pmsl[i+j*bni]);
-        cor[i+j*bni] = residual-low_magic*is_low*(pmsl[i+j*bni]-p[i+j*bni]);
+        cor[i+j*bni] = residual-gmagic_low*is_low*(pmsl[i+j*bni]-p[i+j*bni]);
         sum2res += residual*residual;
       }
     }
@@ -339,12 +370,12 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       fprintf(stderr, "explosion %g: abort\n", sum2res);
       return ERR_BADGRIB;
     } else if (res > 2.0*firstres) {
-      accel *= 0.25;
-      fprintf(stderr, "explosion; accel := %g\n", accel);
+      gmagic_accel *= 0.25;
+      fprintf(stderr, "explosion; accel := %g\n", gmagic_accel);
     } else if (dif > diftoomuch) {
       fprintf(stderr, "too much diff %g\n", dif);
       break;
-    } else if (res > converge_mr*movavrres) {
+    } else if (res > gmagic_converge*movavrres) {
       break;
     }
     movavrres = 0.25 * (3. * movavrres + res);
