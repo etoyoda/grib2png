@@ -202,6 +202,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       double vmaxp = sqrt((p4-p0)/(0.1*rho)) * vmaxpmagic;
       if (vmaxp > vmax) {
         vmax = vmaxp;
+        rmax = 100.e3;
       }
     ANTI_CYCLONE:
       if (verbose) {
