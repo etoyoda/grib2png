@@ -198,7 +198,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       // skip this vortex candidate
       continue;
     CYCLONE:
-      vmax *= 1.0 + is_tropical * 2.0;
+      vmax *= 1.0 + is_tropical * 1.0;
       double vmaxp = sqrt((p4-p0)/(0.1*rho)) * vmaxpmagic;
       if (vmaxp > vmax) {
         vmax = vmaxp;
