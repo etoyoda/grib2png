@@ -17,12 +17,17 @@ extern gribscan_err_t
 reproject(double *gbuf, const bounding_t *bp, const double *dbuf,
   const outframe_t *ofp);
 
+// trapbin.c
 extern FILE *text_fp;
 extern int gflg_rvor_with_wd;
 extern int gflg_jet_lower;
 extern gribscan_err_t
 check_traps(const struct grib2secs *gsp, double *dbuf,
   outframe_t *ofp, char **textv);
+
+// trapsfc.c
+extern double gmagic_vortex_minmatch;
+extern double gmagic_friction_ratio;
 
 extern gribscan_err_t
 check_sfcanal(const struct grib2secs *gsp, double *dbuf,

@@ -298,6 +298,21 @@ END_NORMAL:
   return r;
 }
 
+#define streq(a,b) (0==strcmp((a),(b)))
+
+  int
+magic_parameters(const char *arg)
+{
+  if (streq(arg,"vxmm=")) {
+    gmagic_vortex_minmatch = atof(arg+5);
+  } else if (streq(arg,"fric=")) {
+    gmagic_friction_ratio = atof(arg+5);
+  } else {
+    return -1;
+  }
+  return 0;
+}
+
 /* コマンドライン引数 argc, argv を左からチェックして、
  * 要すれば入力ファイルを開く。
  * （いずれコマンドラインオプションを処理する建設予定地）
@@ -320,11 +335,17 @@ argscan(int argc, const char **argv)
           gflg_jet_lower = 1;
         } else if (argv[i][2] == 'd') {
           debug++;
+        } 
+        break;
+      case 'M':
+        if (-1==magic_parameters(argv[i]+2)) {
+          goto BADOPT;
         }
         break;
       case 'v':
         verbose++;
         break;
+      BADOPT:
       default:
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         break;

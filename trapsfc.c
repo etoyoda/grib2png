@@ -52,6 +52,10 @@ printa(double *ary, size_t n, char *name)
   name, min, max, avr, sqrt(sqsm/n), absm/n);
 }
 
+double gmagic_vortex_minmatch = 0.5;
+  // 摩擦: fとの比率
+double gmagic_friction_ratio = 0.4;
+
   gribscan_err_t
 sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
 {
@@ -90,8 +94,6 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   const double invdeg = 180.0/(M_PI*6371.e3);
   // 密度 [100 kg/m3] - SIの1/100値にしているのはu,pmslの単位の皺寄せ
   double rho = 0.01 * 101325.0 * 28.96e-3 / (8.31432 * 273.15);
-  // 摩擦: fとの比率
-  double nfric_ratio = 0.4;
 
   // ファイル出力用バッファ(使いまわす)
   char filename[256];
@@ -120,7 +122,6 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       }
     }
   }
-  double match_min = 0.5;
   double vmaxpmagic = 0.5;
   for (size_t i=0; i<bni; i++) {
     for (size_t j=4; j<b.nj-1-4; j++) {
@@ -184,15 +185,15 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       m3 /= n3; s3 /= n3;
       p4 /= n4;
       double rmax, vmax;
-      if (m2 > match_min) {
+      if (m2 > gmagic_vortex_minmatch) {
         if (s2>s1*1.5) {
           rmax = 200.e3; vmax = s2; goto CYCLONE;
         }
       }
-      if (m1 > match_min) {
+      if (m1 > gmagic_vortex_minmatch) {
         rmax = 100.e3; vmax = s1; goto CYCLONE;
       }
-      if (m3 < -match_min) {
+      if (m3 < -gmagic_vortex_minmatch) {
         rmax = 100.e3; vmax = -70.0; goto ANTI_CYCLONE;
       }
       // skip this vortex candidate
@@ -257,7 +258,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         (u[i+jp1*bni] - u[i+jm1*bni]) * 0.5 * invdy
       - (v[ip1+j*bni] - v[im1+j*bni]) * 0.5 * invdx
       );
-      double nfric = fabs(f) * nfric_ratio;
+      double nfric = fabs(f) * gmagic_friction_ratio;
       double friction = rho * nfric * (
         (u[ip1+j*bni] - u[im1+j*bni]) * 0.5 * invdy
       + (v[i+jp1*bni] - v[i+jm1*bni]) * 0.5 * invdx
