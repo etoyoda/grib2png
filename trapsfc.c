@@ -337,7 +337,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
     double sum2dif = 0.0;
-    double sum2dir = 0.0;
+    double sum2wdf = 0.0;
     for (size_t j=1; j<b.nj-1; j++) {
       size_t jp1 = j+1;
       size_t jm1 = j-1;
@@ -345,6 +345,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       double invdxdx = pow(invdeg/(b.di*cosdeg(bp_lat(&b,j))), 2.0);
       double dxdx = gmagic_accel/invdxdx;
       // 風向との整合チェック用
+      double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
+      double nfric = fabs(f) * gmagic_friction_ratio;
       double invdx = invdeg/(b.di*cosdeg(bp_lat(&b,j))*2.0);
       double invdy = -0.5*invdeg/b.dj;
       for (size_t i=0; i<bni; i++) {
@@ -362,6 +364,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         // 風向との整合チェック用
         double dpdx = (p[ip1+j*bni]-p[im1+j*bni])*invdx;
         double dpdy = (p[i+jp1*bni]-p[i+jm1*bni])*invdy;
+        double fx = rho*(-f*v[i+j*bni]-nfric*u[i+j*bni]);
+        double fy = rho*(f*u[i+j*bni]-nfric*v[i+j*bni]);
+        sum2wdf += hypot(dpdx-fx,dpdy-fy);
       }
     }
     for (size_t j=1; j<b.nj-1; j++) {
@@ -372,8 +377,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     }
     double dif = sqrt(sum2dif/npixels);
     double res = sqrt(sum2res/npixels);
+    double wdf = sum2wdf/npixels;
     if (verbose) {
-      printf("iter=%04zu res=%6.2f %6.2f %5.3f dif=%6.2f\n", iter, res, movavrres, res/movavrres, dif);
+      printf("iter=%04zu res=%6.2f %6.2f %5.3f dif=%6.2f wdf=%6.2f\n", iter, res, movavrres, res/movavrres, dif, wdf*deglat*0.1);
     }
     if (iter == 0) {
       firstres = res;
