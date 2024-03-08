@@ -327,8 +327,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
   }
 
-  myfree(turn);
   myfree(cfug);
+  for (size_t i=0; i<npixels; i++) turn[i] = 0.0;
 
   const size_t NITER = 200;
   double firstres = 0.0;
@@ -366,7 +366,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         double dpdy = (p[i+jp1*bni]-p[i+jm1*bni])*invdy;
         double fx = rho*(-f*v[i+j*bni]-nfric*u[i+j*bni]);
         double fy = rho*(f*u[i+j*bni]-nfric*v[i+j*bni]);
-        sum2wdf += hypot(dpdx-fx,dpdy-fy);
+        double wdf = hypot(dpdx-fx, dpdy-fy);
+        sum2wdf += wdf;
+        turn[i+j*bni] = wdf;
       }
     }
     for (size_t j=1; j<b.nj-1; j++) {
@@ -398,6 +400,23 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     }
     movavrres = 0.25 * (3. * movavrres + res);
   }
+
+#if 0
+  // turn(wdf) を保存
+  if (verbose) {
+    for (size_t i=0; i<npixels; i++) { turn[i] *= (deglat*0.1); }
+    printa(turn, npixels, "wdf");
+  }
+  if (verbose >=2) {
+    reproject(gbuf, &b, turn, ofp);
+    // 何故かファイル名が設定できない
+    set_parameter(strap->gsp_v, IPARM_WDF);
+    mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
+    gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
+  }
+#endif
+
+  myfree(turn);
 
   // pを保存
   reproject(gbuf, &b, p, ofp);

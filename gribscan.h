@@ -52,6 +52,8 @@ typedef enum iparm_t {
   IPARM_CLL    = 0x000603,
   IPARM_CLM    = 0x000604,
   IPARM_CLH    = 0x000605,
+  // 独自拡張
+  IPARM_WDF    = 0x7F0201,
 } iparm_t;
 
 // map projection parameters

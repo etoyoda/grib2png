@@ -408,6 +408,7 @@ param_name(unsigned long iparm)
   case IPARM_CLL: return "CLL";
   case IPARM_CLM: return "CLM";
   case IPARM_CLH: return "CLH";
+  case IPARM_WDF: return "WDF";
   default:
     sprintf(buf, "p%02lu-%03lu-%03lu-%03lu",
       iparm >> 24, (iparm >> 16) & 0xFF,
