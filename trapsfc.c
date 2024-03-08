@@ -58,8 +58,10 @@ double gmagic_vortex_minmatch = 0.5;
 double gmagic_friction_ratio = 0.4;
 // 渦強制の熱帯加算比率
 double gmagic_tropicalvortex = 1.0;
-// 低気圧部の気圧傾度強制比率
-double gmagic_low = 0.5;
+// 低気圧部の気圧強制比率
+double gmagic_drip = 0.0;
+// 低気圧部の気圧強制比率
+double gmagic_driplow = 0.5;
 // 緩和法の加速率。不安定になりがちなので小さめにする
 double gmagic_accel = 0.25;
 double gmagic_mix = 0.85;
@@ -76,12 +78,14 @@ magic_parameters(const char *arg)
     gmagic_friction_ratio = atof(arg+5);
   } else if (strhead(arg,"trpv=")) {
     gmagic_tropicalvortex = atof(arg+5);
-  } else if (strhead(arg,"low=")) {
-    gmagic_low = atof(arg+4);
+  } else if (strhead(arg,"drph=")) {
+    gmagic_drip = atof(arg+5);
+  } else if (strhead(arg,"drpl=")) {
+    gmagic_driplow = atof(arg+5);
   } else if (strhead(arg,"acel=")) {
     gmagic_accel = atof(arg+5);
-  } else if (strhead(arg,"mix=")) {
-    gmagic_mix = atof(arg+4);
+  } else if (strhead(arg,"mix1=")) {
+    gmagic_mix = atof(arg+5);
   } else if (strhead(arg,"cnvg=")) {
     gmagic_converge = atof(arg+5);
   } else {
@@ -333,12 +337,16 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
     double sum2dif = 0.0;
+    double sum2dir = 0.0;
     for (size_t j=1; j<b.nj-1; j++) {
       size_t jp1 = j+1;
       size_t jm1 = j-1;
       double invdydy = pow(invdeg/b.dj, 2.0);
       double invdxdx = pow(invdeg/(b.di*cosdeg(bp_lat(&b,j))), 2.0);
       double dxdx = gmagic_accel/invdxdx;
+      // 風向との整合チェック用
+      double invdx = invdeg/(b.di*cosdeg(bp_lat(&b,j))*2.0);
+      double invdy = -0.5*invdeg/b.dj;
       for (size_t i=0; i<bni; i++) {
         size_t ip1 = (i+1)%bni;
         size_t im1 = (i+bni-1)%bni;
@@ -348,8 +356,12 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         );
         double residual = (rhs[i+j*bni] - laplace_p)*dxdx;
         double is_low = 0.5+0.5*tanh(990.e1-pmsl[i+j*bni]);
-        cor[i+j*bni] = residual-gmagic_low*is_low*(pmsl[i+j*bni]-p[i+j*bni]);
+        double pmsldrip = gmagic_drip+(gmagic_driplow-gmagic_drip)*is_low;
+        cor[i+j*bni] = residual-pmsldrip*(pmsl[i+j*bni]-p[i+j*bni]);
         sum2res += residual*residual;
+        // 風向との整合チェック用
+        double dpdx = (p[ip1+j*bni]-p[im1+j*bni])*invdx;
+        double dpdy = (p[i+jp1*bni]-p[i+jm1*bni])*invdy;
       }
     }
     for (size_t j=1; j<b.nj-1; j++) {
@@ -361,7 +373,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     double dif = sqrt(sum2dif/npixels);
     double res = sqrt(sum2res/npixels);
     if (verbose) {
-      printf("iter=%04zu avgres=%8.3f %8.3f %8.3f avgdif=%8.3f\n", iter, res, movavrres, res/movavrres, dif);
+      printf("iter=%04zu res=%6.2f %6.2f %5.3f dif=%6.2f\n", iter, res, movavrres, res/movavrres, dif);
     }
     if (iter == 0) {
       firstres = res;
