@@ -28,6 +28,9 @@ emagram: $(OBJS4)
 testv: testv.c visual.o
 	$(CC) $(LFLAGS) -o testv testv.c visual.o $(LIBS)
 
+smap: smap.c plot.o
+	$(CC) $(LFLAGS) -o smap smap.c plot.o $(LIBS)
+
 .c.o:
 	$(CC) -c $(CFLAGS) $<
 
@@ -41,6 +44,7 @@ filter.o: gribscan.h
 plot.o: plot.h
 emaprep.o: emagram.h plot.h
 emagram.o: emagram.h
+smap.o: plot.h
 
 clean:
 	rm -f $(OBJS) grib2png *.png
