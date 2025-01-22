@@ -1,8 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "plot.h"
 
 #define eputs(s) (fputs((s),stderr))
+
+int
+prjmer(float lon, float lat, float *xp, float *yp)
+{
+  float phi2,y;
+  *xp = (lon+180.0)*(1024.0/360.0);
+  phi2 = 0.5*M_PI*lat/180.0f;
+  y = log(tan(M_PI_4+phi2));
+  y = 180.0f*y/M_PI;
+  *yp = (y+180.0)*(1024.0/360.0);
+}
 
 int
 coast2(FILE *ifp)
@@ -15,7 +27,7 @@ coast2(FILE *ifp)
   // preamble
   r = fscanf(ifp, "%15s%lu", tok, &nln);
   if (2!=r) { eputs("ERR while reading preabmle\n"); goto fail; };
-  fprintf(stdout, "%15s=%lu\n", tok, nln);
+  // fprintf(stdout, "%15s=%lu\n", tok, nln);
   // loop for lines
   cl = 0u;
 nextline:
@@ -31,9 +43,8 @@ nextline:
 nextpoint:
   r = fscanf(ifp, "%f%f", &lon, &lat);
   if (2!=r) { eputs("ERR while reading point\n"); goto fail; }
-  fprintf(stdout, "%+8.3f %+7.3f\n", lon, lat);
-  x = (lon+180.0)*(1024.0/360.0);
-  y = (lat+180.0)*(1024.0/360.0);
+  // fprintf(stdout, "%+8.3f %+7.3f\n", lon, lat);
+  prjmer(lon, lat, &x, &y);
   if (c==0u) {
     moveto(x, y);
   } else {
