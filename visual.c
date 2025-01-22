@@ -628,7 +628,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
   }
   switch (pal) {
   case PALETTE_T:
-    mingrad = 8.0;
+    mingrad = 10.0;
     pal0 = 128; pal1 = pal2 = 12; pal3 = 255;
     break;
   case PALETTE_papT:
