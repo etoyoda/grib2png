@@ -37,14 +37,16 @@ checksec7(const struct grib2secs *gsp)
     default:
       /* do nothing */;
   }
-  // display
+  // 位置情報の印字。
+  // 同一GRIB報内で複数GDSが存在する場合ポインタ値が異なることを利用。
+  // gribscan.c grib2loopsecs() のコメント参照。
   if (prev_gds != gsp->gds) {
     bounding_t bnd;
     gribscan_err_t r2 = decode_gds(gsp, &bnd);
     if (r2 != GSE_OKAY) {
       fprintf(stderr, "GDS decoding error %u\n", r2);
     } else {
-      printf("lat%+07.3f:%+07.3f lon%+08.3f:%+08.3f %c %5.4fx%5.4f %zux%zu\n",
+      printf("lat%+07.3f:%+07.3f lon%+08.3f:%+08.3f %c %8.6gx%-8.6g %4zux%-4zu\n",
         bnd.s, bnd.n, bnd.w, bnd.e, (bnd.wraplon ? 'C' : 'R'),
 	bnd.di, bnd.dj, bnd.ni, bnd.nj);
     }
@@ -77,6 +79,8 @@ argscan(int argc, const char **argv)
 	goto BARF;
       }
     } else {
+      // 複数ファイルを処理する場合に、前のファイルを忘れる
+      prev_gds = NULL;
       r = grib2scan_by_filename(argv[i]);
       if (r != GSE_OKAY) goto BARF;
     }

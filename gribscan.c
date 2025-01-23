@@ -819,6 +819,9 @@ case 1:
       gsp->idslen = recl;
       break;
 case 3:
+      // griblistで同一GRIB報内の複数gdsはポインタ値が異なることを仮定
+      // しているが、このループ上部でsecbufを確保してから古いgdsを捨てている
+      // ためそれは確実に成立する
       if (gsp->gds) { myfree(gsp->gds); }
       gsp->gds = secbuf;
       gsp->gdslen = recl;
