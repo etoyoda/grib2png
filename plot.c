@@ -7,6 +7,8 @@
 #include "plot.h"
 
 static int is_pen_up = 1;
+static unsigned vpt_x = 1024;
+static unsigned vpt_y = 1024;
 static float cx = 0.0;
 static float cy = 0.0;
 static FILE *psout = NULL;
@@ -91,6 +93,14 @@ setrgb(unsigned char r, unsigned char g, unsigned char b)
 }
 
   int
+setvptsize(unsigned nx, unsigned ny)
+{
+  vpt_x = nx;
+  vpt_y = ny;
+  return 0;
+}
+
+  int
 closepl(void)
 {
   char cmd[512];
@@ -98,7 +108,7 @@ closepl(void)
   CLOSEPATH_IF_NEEDED;
   fprintf(psout, "showpage\n");
   fclose(psout);
-  sprintf(cmd, "gs -q -sDEVICE=pngalpha -r72 -g1024x1024 -dBATCH -dNOPAUSE -sOutputFile=plot.png %s\n", cname);
+  sprintf(cmd, "gs -q -sDEVICE=pngalpha -r72 -g%ux%u -dBATCH -dNOPAUSE -sOutputFile=plot.png %s\n", vpt_x, vpt_y, cname);
   r = system(cmd);
   if ((r != 0) || (getenv("PLOT"))) {
     fputs(cmd, stderr);
