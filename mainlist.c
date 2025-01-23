@@ -5,6 +5,7 @@
 
 // empty filter string means "accept all"
 static const char *sfilter = "";
+static const void *prev_gds = NULL;
 
 // gribscan ライブラリから呼び返される関数。
   gribscan_err_t
@@ -37,6 +38,18 @@ checksec7(const struct grib2secs *gsp)
       /* do nothing */;
   }
   // display
+  if (prev_gds != gsp->gds) {
+    bounding_t bnd;
+    gribscan_err_t r2 = decode_gds(gsp, &bnd);
+    if (r2 != GSE_OKAY) {
+      fprintf(stderr, "GDS decoding error %u\n", r2);
+    } else {
+      printf("lat%+07.3f:%+07.3f lon%+08.3f:%+08.3f %c %5.4fx%5.4f %zux%zu\n",
+        bnd.s, bnd.n, bnd.w, bnd.e, (bnd.wraplon ? 'C' : 'R'),
+	bnd.di, bnd.dj, bnd.ni, bnd.nj);
+    }
+    prev_gds = gsp->gds;
+  }
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
   goto END_NORMAL;
