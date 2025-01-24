@@ -10,5 +10,5 @@ https://toyoda-eizi.net/nwp/p1/jmagrib/{yyyy}{mm}{dd}T{HH}Z/
 * v{yyyy}{mm}{dd}T{HH}00Z\_f{fth}\_{level}\_{element}.png 全球メルカトル画像
 ## データ源
 WISで提供されている気象庁GSM予報値
-https://www.wis-jma.go.jp/d/o/RJTD/GRIB/Global\_Spectral\_Model/Latitude\_Longitude/1.25\_1.25/90.0\_-90.0\_0.0\_358.75/Upper\_air\_layers/{yyyy}{mm}{dd}/{hh}0000/W\_jp-JMA-tokyo,MODEL,JMA+gsm+gpv,C\_RJTD\_{yyyy}{mm}{dd}{hh}0000\_GSM\_GPV\_Rgl\_Gll1p25deg\_L-all\_FD0000-0512\_grib2.bin
+https://www.wis-jma.go.jp/d/o/RJTD/GRIB/Global_Spectral_Model/Latitude_Longitude/1.25_1.25/90.0_-90.0_0.0_358.75/Upper_air_layers/{yyyy}{mm}{dd}/{hh}0000/W_jp-JMA-tokyo,MODEL,JMA+gsm+gpv,C_RJTD_{yyyy}{mm}{dd}{hh}0000_GSM_GPV_Rgl_Gll1p25deg_L-all_FD0000-0512_grib2.bin
 ## 動作説明
