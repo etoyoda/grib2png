@@ -1,4 +1,4 @@
-# NOTE-prod1.md - プロダクションの説明 (GSM予報値取得と図化)
+# wisgsmpng.md - プロダクションの説明 (GSM予報値取得と図化)
 ## プログラム
 本 grib2png パッケージ内の wisgsmpng.bash
 ## 成果物
