@@ -386,28 +386,30 @@ param_name(unsigned long iparm)
 {
   static char buf[32];
   switch (iparm) {
-  case 0x000000: return "T";
+  case IPARM_T: return "T";
   case IPARM_papT: return "papT";
-  case 0x000006: return "dT";
-  case 0x000101: return "RH";
-  case 0x000107: return "RR1H";
-  case 0x000108: return "RAIN";
+  case IPARM_dT: return "dT";
+  case IPARM_RH: return "RH";
+  case IPARM_RR1H: return "RR1H";
+  case IPARM_RAIN: return "RAIN";
   case IPARM_WD: return "WD";
-  case 0x000202: return "U";
-  case 0x000203: return "V";
+  case IPARM_U: return "U";
+  case IPARM_V: return "V";
   case IPARM_WINDS: return "WINDS";
-  case 0x000204: return "PSI";
-  case 0x000205: return "CHI";
-  case 0x000208: return "VVPa";
-  case 0x00020c: return "rVOR";
-  case 0x00020d: return "rDIV";
-  case 0x000300: return "Pres";
-  case 0x000301: return "Pmsl";
-  case 0x000305: return "Z";
+  case IPARM_PSI: return "PSI";
+  case IPARM_CHI: return "CHI";
+  case IPARM_VVPa: return "VVPa";
+  case IPARM_rVOR: return "rVOR";
+  case IPARM_rDIV: return "rDIV";
+  case IPARM_Pres: return "Pres";
+  case IPARM_Pmsl: return "Pmsl";
+  case IPARM_Z: return "Z";
+  case IPARM_RSDB: return "RSDB";
   case IPARM_CLA: return "CLA";
   case IPARM_CLL: return "CLL";
   case IPARM_CLM: return "CLM";
   case IPARM_CLH: return "CLH";
+  case IPARM_WDF: return "WDF";
   default:
     sprintf(buf, "p%02lu-%03lu-%03lu-%03lu",
       iparm >> 24, (iparm >> 16) & 0xFF,
@@ -741,6 +743,22 @@ decode_gds(const grib2secs_t *gsp, bounding_t *bp)
   return GSE_OKAY;
 }
 
+// GRIB格子の緯度
+  double
+bp_lat(bounding_t *bp, double j)
+{
+  return bp->n + j * (bp->s - bp->n) / (bp->nj - 1.0);
+}
+
+// GRIB格子の経度
+  double
+bp_lon(bounding_t *bp, double i)
+{
+  double r = bp->w + i * (bp->e - bp->w) / (bp->ni - 1.0);
+  if (r>180.0) r-=360.0;
+  return r;
+}
+
   const char *
 level_name(double vlev)
 {
@@ -802,6 +820,9 @@ case 1:
       gsp->idslen = recl;
       break;
 case 3:
+      // griblistで同一GRIB報内の複数gdsはポインタ値が異なることを仮定
+      // しているが、このループ上部でsecbufを確保してから古いgdsを捨てている
+      // ためそれは確実に成立する
       if (gsp->gds) { myfree(gsp->gds); }
       gsp->gds = secbuf;
       gsp->gdslen = recl;

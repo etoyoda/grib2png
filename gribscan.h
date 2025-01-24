@@ -48,10 +48,13 @@ typedef enum iparm_t {
   IPARM_Pres   = 0x000300,
   IPARM_Pmsl   = 0x000301,
   IPARM_Z      = 0x000305,
+  IPARM_RSDB   = 0x000407,
   IPARM_CLA    = 0x000601,
   IPARM_CLL    = 0x000603,
   IPARM_CLM    = 0x000604,
   IPARM_CLH    = 0x000605,
+  // 独自拡張
+  IPARM_WDF    = 0x7F0201,
 } iparm_t;
 
 // map projection parameters
@@ -105,6 +108,10 @@ extern gribscan_err_t
   void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
 extern gribscan_err_t
   decode_gds(const grib2secs_t *gsp, bounding_t *bp);
+extern double
+  bp_lat(bounding_t *bp, double j);
+extern double
+  bp_lon(bounding_t *bp, double i);
 
 extern const char *
   showtime(char *buf, size_t size, const struct tm *t);

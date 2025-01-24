@@ -1,5 +1,6 @@
 extern int openpl();
 extern int closepl();
+extern int setvptsize(unsigned vpt_x, unsigned vpt_y);
 extern int setrgb(unsigned char r, unsigned char g, unsigned char b);
 extern int setlinewidth(float x);
 extern int setfontsize(float x);
