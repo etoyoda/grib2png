@@ -13,12 +13,23 @@ simple converter from WMO GRIB Edition 2 to PNG
 
 ## 拡張
 
+
 # プログラム
 ## gribslim - GRIB2の一部抽出
 
 GRIB2 のファイルから一部を抽出するプログラム。節単位の抽出を行うことにより計算誤差などのない高速な処理ができる。
-詳細は https://github.com/etoyoda/grib2png/blob/sfcanal/gribslim.md に書いておきます。
+詳細は https://github.com/etoyoda/grib2png/blob/main/gribslim.md に書いておきます。
+
+## grib2png - GRIB2の図化
+
+TBD
 
 ## wisgsmpng.bash - GSM予報値の取得・図化の運用スクリプト
 
-https://github.com/etoyoda/grib2png/blob/sfcanal/wisgsmpng.md
+https://github.com/etoyoda/grib2png/blob/main/wisgsmpng.md
+
+## gribpick - GRIB2から地点データを抽出
+
+TBD
+
+## griblist - GRIB2の内容表示
