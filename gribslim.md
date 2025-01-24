@@ -88,8 +88,9 @@ x があると、引き続く16進数字列のあらわす整数値がスタッ�
 ### [名前]
 パラメタ名や鉛直面名をあらわす数字を覚えないで済ますための代替表現です。
 いまのところ認識されるパラメタ名は
-T, papT, dT, RH, RR1H, RAIN, WINDS, U, V, PSI, CHI, VVPa, rVOR, rDIV, Pres,
-Pmsl, Z, RSDB であり、それぞれの意味は NuSDaS ドキュメントを参照してください。
+T, papT, dT, RH, RR1H, RAIN, WD, WINDS, U, V, PSI, CHI, VVPa, rVOR, rDIV,
+Pres, Pmsl, Z, RSDB, CLA, CLL, CLM, CLH であり、
+それぞれの意味は NuSDaS ドキュメントを参照してください。
 鉛直面名は SURF,MSL,2m,10m が認識されます。
 認識できない名前は NaN がスタックトップに置かれます。
 ### :
