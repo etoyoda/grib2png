@@ -19,6 +19,7 @@ syntaxsugar(const char *sptr, const char **sptrptr)
   if (strncmp(sptr, "RH", eptr-sptr)==0) { return IPARM_RH; }
   if (strncmp(sptr, "RR1H", eptr-sptr)==0) { return IPARM_RR1H; }
   if (strncmp(sptr, "RAIN", eptr-sptr)==0) { return IPARM_RAIN; }
+  if (strncmp(sptr, "WD", eptr-sptr)==0) { return IPARM_WD; }
   if (strncmp(sptr, "WINDS", eptr-sptr)==0) { return IPARM_WINDS; }
   if (strncmp(sptr, "U", eptr-sptr)==0) { return IPARM_U; }
   if (strncmp(sptr, "V", eptr-sptr)==0) { return IPARM_V; }
@@ -30,6 +31,7 @@ syntaxsugar(const char *sptr, const char **sptrptr)
   if (strncmp(sptr, "Pres", eptr-sptr)==0) { return IPARM_Pres; }
   if (strncmp(sptr, "Pmsl", eptr-sptr)==0) { return IPARM_Pmsl; }
   if (strncmp(sptr, "Z", eptr-sptr)==0) { return IPARM_Z; }
+  if (strncmp(sptr, "RSDB", eptr-sptr)==0) { return IPARM_RSDB; }
   if (strncmp(sptr, "CLA", eptr-sptr)==0) { return IPARM_CLA; }
   if (strncmp(sptr, "CLL", eptr-sptr)==0) { return IPARM_CLL; }
   if (strncmp(sptr, "CLM", eptr-sptr)==0) { return IPARM_CLM; }

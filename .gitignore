@@ -4,3 +4,9 @@ tags
 *.bin
 *.log
 *.png
+emagram
+smap
+griblist
+grib2png
+gribpick
+gribslim
