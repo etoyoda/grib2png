@@ -30,6 +30,7 @@ syntaxsugar(const char *sptr, const char **sptrptr)
   if (strncmp(sptr, "Pres", eptr-sptr)==0) { return IPARM_Pres; }
   if (strncmp(sptr, "Pmsl", eptr-sptr)==0) { return IPARM_Pmsl; }
   if (strncmp(sptr, "Z", eptr-sptr)==0) { return IPARM_Z; }
+  if (strncmp(sptr, "RSDB", eptr-sptr)==0) { return IPARM_RSDB; }
   if (strncmp(sptr, "CLA", eptr-sptr)==0) { return IPARM_CLA; }
   if (strncmp(sptr, "CLL", eptr-sptr)==0) { return IPARM_CLL; }
   if (strncmp(sptr, "CLM", eptr-sptr)==0) { return IPARM_CLM; }

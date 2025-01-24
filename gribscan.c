@@ -404,6 +404,7 @@ param_name(unsigned long iparm)
   case 0x000300: return "Pres";
   case 0x000301: return "Pmsl";
   case 0x000305: return "Z";
+  case IPARM_RSDB: return "RSDB";
   case IPARM_CLA: return "CLA";
   case IPARM_CLL: return "CLL";
   case IPARM_CLM: return "CLM";

@@ -18,3 +18,6 @@ https://www.wis-jma.go.jp/d/o/RJTD/GRIB/Global_Spectral_Model/Latitude_Longitude
 * gribslim によって必要な要素・面・予報時間を抽出
 * grib2png によって図化および地点データデコード形式を作成
 * 成果物置き場に移動
+## データの抽出
+gribslim の -f オプションなし動作によっている。
+
