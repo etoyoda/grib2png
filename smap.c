@@ -79,7 +79,11 @@ main(int argc, const char **argv)
   for (int i=1; argv[i]; i++) {
     if (!filename) { filename = argv[i]; }
   }
-  if (!filename) filename = "/dev/stdin";
-  int r = coast1(filename);
+  int r = 0;
+  if (filename) {
+    r = coast1(filename);
+  } else {
+    eputs("coast file unspecified\n");
+  }
   return r;
 }
