@@ -75,13 +75,13 @@ coast1(const char *filename) {
 int
 main(int argc, const char **argv)
 {
-  const char *filename = NULL;
+  const char *coastfile = NULL;
   for (int i=1; argv[i]; i++) {
-    if (!filename) { filename = argv[i]; }
+    if (!coastfile) { coastfile = argv[i]; }
   }
   int r = 0;
-  if (filename) {
-    r = coast1(filename);
+  if (coastfile) {
+    r = coast1(coastfile);
   } else {
     eputs("coast file unspecified\n");
   }
