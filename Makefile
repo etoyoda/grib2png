@@ -33,7 +33,7 @@ testv: testv.c visual.o
 	$(CC) $(LFLAGS) -o testv testv.c visual.o $(LIBS)
 
 smap: smap.c plot.o
-	$(CC) $(LFLAGS) -o smap smap.c plot.o $(LIBS)
+	$(CC) $(LFLAGS) -o smap smap.c plot.o gribscan.o mymalloc.o $(LIBS)
 
 .c.o:
 	$(CC) -c $(CFLAGS) $<
