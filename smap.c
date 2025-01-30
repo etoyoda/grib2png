@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "plot.h"
 
@@ -72,18 +73,31 @@ coast1(const char *filename) {
   return r;
 }
 
+const char Synopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
+
+#define strhead(s, pat) (0==strncmp((s),(pat),strlen(pat)))
+
 int
 main(int argc, const char **argv)
 {
   const char *coastfile = NULL;
-  for (int i=1; argv[i]; i++) {
-    if (!coastfile) { coastfile = argv[i]; }
-  }
+  int ftime = 0;
   int r = 0;
+  for (int i=1; argv[i]; i++) {
+    if (strhead(argv[i], "-f")) {
+      ftime=atoi(argv[i]+2);
+    } else if (strhead(argv[i], "-c")) {
+      coastfile = argv[i]+2;
+    } else {
+      fprintf(stderr, "file<%s>\n", argv[i]);
+    }
+  }
   if (coastfile) {
     r = coast1(coastfile);
   } else {
     eputs("coast file unspecified\n");
+    fprintf(stderr, Synopsis, argv[0]);
+    return 1;
   }
   return r;
 }
