@@ -8,6 +8,7 @@
 #include "gribscan.h"
 
 #define eputs(s) (fputs((s),stderr))
+#define strhead(s, pat) (0==strncmp((s),(pat),strlen(pat)))
 
 int
 prjmer(float lon, float lat, float *xp, float *yp)
@@ -124,8 +125,6 @@ END_NORMAL:
 }
 
 const char Synopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
-
-#define strhead(s, pat) (0==strncmp((s),(pat),strlen(pat)))
 
 int
 main(int argc, const char **argv)
