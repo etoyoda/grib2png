@@ -76,6 +76,21 @@ coast1(const char *filename) {
   return r;
 }
 
+//--- begin module
+
+typedef struct gpvset_t {
+  long ftime;
+  struct {
+    unsigned long iparm;
+    double vlev, memb;
+    long ftime, dura;
+    unsigned char *ds;
+    struct bounding_t bnd;
+  } data[4];
+} gpvset_t;
+
+//--- end
+
 // gribscan ライブラリから呼び返される関数。
   gribscan_err_t
 checksec7(const struct grib2secs *gsp)
@@ -97,15 +112,6 @@ checksec7(const struct grib2secs *gsp)
   dura = get_duration(gsp);
   memb = get_perturb(gsp);
   // filter
-  switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev, memb)) {
-    case ERR_FSTACK:
-    case GSE_SKIP:
-      goto END_SKIP;
-      break;
-    case GSE_OKAY:
-    default:
-      /* do nothing */;
-  }
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
   goto END_NORMAL;
