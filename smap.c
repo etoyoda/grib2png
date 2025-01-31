@@ -80,7 +80,7 @@ coast1(const char *filename) {
 //--- begin module
 
 struct pldata_t {
-  long ftime, dura;
+  long gtime;
   size_t dslen;
   unsigned char *ds;
   struct bounding_t bnd;
@@ -97,23 +97,26 @@ struct collect_t {
 static struct collect_t coll;
 
 
+int
+pl_isnull(struct pldata_t *plp)
+{
+  return NULL == plp->ds;
+}
 
 void
 pl_nullify(struct pldata_t *plp)
 {
-  plp->ftime = 0L;
-  plp->dura = 0L;
+  plp->gtime = 0L;
   plp->dslen = 0;
   plp->ds = NULL;
   // leave plp->bnd uninitialized; never touch it unless ds is present
 }
 
   int
-pl_store(struct pldata_t *plp, long ftime, long dura, const struct grib2secs *gsp)
+pl_store(struct pldata_t *plp, long gtime, const struct grib2secs *gsp)
 {
   int r;
-  plp->ftime = ftime;
-  plp->dura = dura;
+  plp->gtime = gtime;
   plp->dslen = gsp->dslen;
   plp->ds = gsp->ds;
   r = decode_gds(gsp, &(plp->bnd));
@@ -153,7 +156,7 @@ checksec7(const struct grib2secs *gsp)
   char sreftime[24];
   unsigned long iparm;
   double vlev, memb;
-  long ftime, dura;
+  long ftime, dura, gtime;
   // retrieve PDT metadata
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
@@ -162,35 +165,56 @@ checksec7(const struct grib2secs *gsp)
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
   memb = get_perturb(gsp);
+  gtime = ftime+dura;
   // filter
   if ((ftime==coll.ftime)&&(iparm==IPARM_CLL)) {
-    pl_store(&(coll.cll), ftime, dura, gsp);
+    pl_store(&(coll.cll), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLM)) {
-    pl_store(&(coll.clm), ftime, dura, gsp);
+    pl_store(&(coll.clm), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLH)) {
-    pl_store(&(coll.clh), ftime, dura, gsp);
+    pl_store(&(coll.clh), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_U)&&(vlev==VLEVEL_Z10M)) {
-    pl_store(&(coll.u), ftime, dura, gsp);
+    pl_store(&(coll.u), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_V)&&(vlev==VLEVEL_Z10M)) {
-    pl_store(&(coll.v), ftime, dura, gsp);
+    pl_store(&(coll.v), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==925.e2)) {
-    pl_store(&(coll.z925), ftime, dura, gsp);
+    pl_store(&(coll.z925), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==925.e2)) {
-    pl_store(&(coll.t925), ftime, dura, gsp);
+    pl_store(&(coll.t925), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==925.e2)) {
-    pl_store(&(coll.rh925), ftime, dura, gsp);
+    pl_store(&(coll.rh925), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==850.e2)) {
-    pl_store(&(coll.t850), ftime, dura, gsp);
+    pl_store(&(coll.t850), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==850.e2)) {
-    pl_store(&(coll.rh850), ftime, dura, gsp);
+    pl_store(&(coll.rh850), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==700.e2)) {
-    pl_store(&(coll.rh700), ftime, dura, gsp);
+    pl_store(&(coll.rh700), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==500.e2)) {
-    pl_store(&(coll.t500), ftime, dura, gsp);
+    pl_store(&(coll.t500), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==500.e2)) {
-    pl_store(&(coll.z500), ftime, dura, gsp);
+    pl_store(&(coll.z500), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==300.e2)) {
-    pl_store(&(coll.rh300), ftime, dura, gsp);
+    pl_store(&(coll.rh300), gtime, gsp);
+  } else if (iparm==IPARM_RAIN) {
+    if (gtime <= coll.ftime) {
+      if (pl_isnull(&coll.rain1)) {
+        pl_store(&(coll.rain1), gtime, gsp);
+      } else if (gtime > coll.rain1.gtime) {
+        myfree(coll.rain1.ds);
+	pl_store(&(coll.rain1), gtime, gsp);
+      } else {
+        goto END_SKIP;
+      }
+    } else {
+      if (pl_isnull(&coll.rain2)) {
+        pl_store(&(coll.rain2), gtime, gsp);
+      } else if (gtime < coll.rain2.gtime) {
+        myfree(coll.rain2.ds);
+	pl_store(&(coll.rain2), gtime, gsp);
+      } else {
+        goto END_SKIP;
+      }
+    }
   } else {
     goto END_SKIP;
   }
