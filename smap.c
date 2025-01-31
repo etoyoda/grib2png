@@ -79,16 +79,55 @@ coast1(const char *filename) {
 
 //--- begin module
 
-typedef struct gpvset_t {
+struct pldata_t {
+  long gtime;
+  size_t dslen;
+  unsigned char *ds;
+  struct bounding_t bnd;
+};
+
+struct collect_t {
   long ftime;
-  struct {
-    unsigned long iparm;
-    double vlev, memb;
-    long ftime, dura;
-    unsigned char *ds;
-    struct bounding_t bnd;
-  } data[4];
-} gpvset_t;
+  struct pldata_t cll, clm, clh;
+  struct pldata_t rain1, rain2;
+  struct pldata_t u, v;
+  struct pldata_t z925, t925, rh925, t850, rh850, rh700, t500, z500, rh300;
+};
+
+static struct collect_t coll;
+
+
+
+void
+pl_nullify(struct pldata_t *plp)
+{
+  plp->gtime = 0L;
+  plp->dslen = 0;
+  plp->ds = NULL;
+  // leave plp->bnd uninitialized; never touch it unless ds is present
+}
+
+void
+coll_clear(struct collect_t *collp)
+{
+  collp->ftime = 0L;
+  pl_nullify(&(collp->cll));
+  pl_nullify(&(collp->clm));
+  pl_nullify(&(collp->clh));
+  pl_nullify(&(collp->rain1));
+  pl_nullify(&(collp->rain2));
+  pl_nullify(&(collp->u));
+  pl_nullify(&(collp->v));
+  pl_nullify(&(collp->z925));
+  pl_nullify(&(collp->t925));
+  pl_nullify(&(collp->rh925));
+  pl_nullify(&(collp->t850));
+  pl_nullify(&(collp->rh850));
+  pl_nullify(&(collp->rh700));
+  pl_nullify(&(collp->t500));
+  pl_nullify(&(collp->z500));
+  pl_nullify(&(collp->rh300));
+}
 
 //--- end
 
@@ -113,6 +152,8 @@ checksec7(const struct grib2secs *gsp)
   dura = get_duration(gsp);
   memb = get_perturb(gsp);
   // filter
+
+  // report
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
   goto END_NORMAL;
@@ -124,7 +165,7 @@ END_NORMAL:
   return r;
 }
 
-const char Synopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
+static const char Synopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
 
 int
 main(int argc, const char **argv)
@@ -132,6 +173,7 @@ main(int argc, const char **argv)
   const char *coastfile = NULL;
   int ftime = 0;
   int r = 0;
+  coll_clear(&coll);
   for (int i=1; argv[i]; i++) {
     if (strhead(argv[i], "-f")) {
       ftime=atoi(argv[i]+2);
