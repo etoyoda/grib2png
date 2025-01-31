@@ -135,14 +135,12 @@ coll_clear(struct collect_t *collp)
   gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
-  gribscan_err_t r;
   // dimensions
   struct tm t;
   char sreftime[24];
   unsigned long iparm;
   double vlev, memb;
   long ftime, dura;
-  r = GSE_OKAY;
   // retrieve PDT metadata
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
@@ -152,17 +150,20 @@ checksec7(const struct grib2secs *gsp)
   dura = get_duration(gsp);
   memb = get_perturb(gsp);
   // filter
+  if ((ftime==coll.ftime)&&(iparm==IPARM_CLL)) {
+    coll.cll.ds = gsp->ds;
+  } else {
+    goto END_SKIP;
+  }
 
   // report
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
-  goto END_NORMAL;
+  return GSE_OKAY;
 
 END_SKIP:
-  r = GSE_SKIP;
-END_NORMAL:
   myfree(gsp->ds);
-  return r;
+  return GSE_SKIP;
 }
 
 static const char Synopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
@@ -171,12 +172,11 @@ int
 main(int argc, const char **argv)
 {
   const char *coastfile = NULL;
-  int ftime = 0;
   int r = 0;
   coll_clear(&coll);
   for (int i=1; argv[i]; i++) {
     if (strhead(argv[i], "-f")) {
-      ftime=atoi(argv[i]+2);
+      coll.ftime = atoi(argv[i]+2);
     } else if (strhead(argv[i], "-c")) {
       coastfile = argv[i]+2;
     } else {
