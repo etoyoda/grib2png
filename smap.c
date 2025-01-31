@@ -80,7 +80,7 @@ coast1(const char *filename) {
 //--- begin module
 
 struct pldata_t {
-  long gtime;
+  long ftime, dura;
   size_t dslen;
   unsigned char *ds;
   struct bounding_t bnd;
@@ -101,10 +101,23 @@ static struct collect_t coll;
 void
 pl_nullify(struct pldata_t *plp)
 {
-  plp->gtime = 0L;
+  plp->ftime = 0L;
+  plp->dura = 0L;
   plp->dslen = 0;
   plp->ds = NULL;
   // leave plp->bnd uninitialized; never touch it unless ds is present
+}
+
+  int
+pl_store(struct pldata_t *plp, long ftime, long dura, const struct grib2secs *gsp)
+{
+  int r;
+  plp->ftime = ftime;
+  plp->dura = dura;
+  plp->dslen = gsp->dslen;
+  plp->ds = gsp->ds;
+  r = decode_gds(gsp, &(plp->bnd));
+  return r;
 }
 
 void
@@ -151,7 +164,9 @@ checksec7(const struct grib2secs *gsp)
   memb = get_perturb(gsp);
   // filter
   if ((ftime==coll.ftime)&&(iparm==IPARM_CLL)) {
-    coll.cll.ds = gsp->ds;
+    pl_store(&(coll.cll), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLM)) {
+    pl_store(&(coll.clm), ftime, dura, gsp);
   } else {
     goto END_SKIP;
   }
