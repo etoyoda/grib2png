@@ -167,6 +167,30 @@ checksec7(const struct grib2secs *gsp)
     pl_store(&(coll.cll), ftime, dura, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLM)) {
     pl_store(&(coll.clm), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLH)) {
+    pl_store(&(coll.clh), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_U)&&(vlev==VLEVEL_Z10M)) {
+    pl_store(&(coll.u), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_V)&&(vlev==VLEVEL_Z10M)) {
+    pl_store(&(coll.v), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==925.e2)) {
+    pl_store(&(coll.z925), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==925.e2)) {
+    pl_store(&(coll.t925), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==925.e2)) {
+    pl_store(&(coll.rh925), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==850.e2)) {
+    pl_store(&(coll.t850), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==850.e2)) {
+    pl_store(&(coll.rh850), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==700.e2)) {
+    pl_store(&(coll.rh700), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==500.e2)) {
+    pl_store(&(coll.t500), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==500.e2)) {
+    pl_store(&(coll.z500), ftime, dura, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==300.e2)) {
+    pl_store(&(coll.rh300), ftime, dura, gsp);
   } else {
     goto END_SKIP;
   }
