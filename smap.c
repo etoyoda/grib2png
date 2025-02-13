@@ -112,14 +112,29 @@ pl_nullify(struct pldata_t *plp)
   // leave plp->bnd uninitialized; never touch it unless ds is present
 }
 
+  char *
+printb(char *buf, size_t buflen, struct bounding_t *bnd)
+{
+  snprintf(buf, buflen, "N %zux%zu D %gx%g La %g:%g Lo %g:%g %u\n",
+    bnd->ni, bnd->nj,
+    bnd->di, bnd->dj,
+    bnd->s, bnd->n,
+    bnd->w, bnd->e,
+    bnd->wraplon
+    );
+}
+
   int
 pl_store(struct pldata_t *plp, long gtime, const struct grib2secs *gsp)
 {
   int r;
+  char sbuf[256];
   plp->gtime = gtime;
   plp->dslen = gsp->dslen;
   plp->ds = gsp->ds;
   r = decode_gds(gsp, &(plp->bnd));
+  printb(sbuf, sizeof sbuf, &(plp->bnd));
+  fputs(sbuf, stdout);
   return r;
 }
 
