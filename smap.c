@@ -11,7 +11,7 @@
 #define strhead(s, pat) (0==strncmp((s),(pat),strlen(pat)))
 
 int
-prjmer(float lon, float lat, float *xp, float *yp)
+prjmer_raw(float lon, float lat, float *xp, float *yp)
 {
   float phi2,y;
   *xp = (lon+180.0)*(1024.0/360.0);
@@ -19,6 +19,38 @@ prjmer(float lon, float lat, float *xp, float *yp)
   y = log(tan(M_PI_4+phi2));
   y = 180.0f*y/M_PI;
   *yp = (y+180.0)*(1024.0/360.0);
+  return 0;
+}
+
+static float bbx0=0.0f, bbxf=1.0f, bby0=0.0f, bbyf=1.0f;
+
+int
+setbbox(float lon1, float lon2, float lat1, float lat2)
+{
+  float x1, y1, x2, y2;
+  prjmer_raw(lon1, lat1, &x1, &y1);
+  prjmer_raw(lon2, lat2, &x2, &y2);
+  float xmax, ymax;
+  bbx0 = fminf(x1, x2);
+  xmax = fmaxf(x1, x2);
+  bby0 = fminf(y1, y2);
+  ymax = fmaxf(y1, y2);
+  bbxf = 1024.0/(xmax-bbx0);
+  bbyf = 1024.0/(ymax-bby0);
+  printf("setbbox %g %g %g %g > %g %g %g %g\n", lon1, lon2, lat1, lat2,
+  bbx0, bbxf, bby0, bbyf);
+  return 0;
+}
+
+int
+prjmer(float lon, float lat, float *xp, float *yp)
+{
+   int r;
+   float x, y;
+   r = prjmer_raw(lon, lat, &x, &y);
+   *xp = (x-bbx0)*bbxf;
+   *yp = (y-bby0)*bbyf;
+   return r;
 }
 
 int
@@ -263,6 +295,7 @@ main(int argc, const char **argv)
   char sbuf[256];
   printb(sbuf, sizeof sbuf, &(coll.u.bnd));
   fputs(sbuf, stdout);
+  setbbox(120.0f, 150.0f, 22.0f, 48.0f);
 
   if (coastfile) {
     r = coast1(coastfile);
