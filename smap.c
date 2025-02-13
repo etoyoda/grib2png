@@ -132,9 +132,6 @@ pl_store(struct pldata_t *plp, long gtime, const struct grib2secs *gsp)
   plp->dslen = gsp->dslen;
   plp->ds = gsp->ds;
   r = decode_gds(gsp, &(plp->bnd));
-//  char sbuf[256];
-//  printb(sbuf, sizeof sbuf, &(plp->bnd));
-//  fputs(sbuf, stdout);
   return r;
 }
 
@@ -262,6 +259,11 @@ main(int argc, const char **argv)
       r = grib2scan_by_filename(argv[i]);
     }
   }
+
+  char sbuf[256];
+  printb(sbuf, sizeof sbuf, &(coll.u.bnd));
+  fputs(sbuf, stdout);
+
   if (coastfile) {
     r = coast1(coastfile);
   } else {
