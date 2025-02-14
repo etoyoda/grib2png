@@ -10,15 +10,18 @@
 #define eputs(s) (fputs((s),stderr))
 #define strhead(s, pat) (0==strncmp((s),(pat),strlen(pat)))
 
+const double cVPTX = 1024.0;
+const double cVPTY = 1024.0;
+
 int
 prjmer_raw(float lon, float lat, float *xp, float *yp)
 {
   float phi2,y;
-  *xp = (lon+180.0)*(1024.0/360.0);
+  *xp = (lon+180.0)*(cVPTX/360.0);
   phi2 = 0.5*M_PI*lat/180.0f;
   y = log(tan(M_PI_4+phi2));
   y = 180.0f*y/M_PI;
-  *yp = (y+180.0)*(1024.0/360.0);
+  *yp = (y+180.0)*(cVPTY/360.0);
   return 0;
 }
 
@@ -35,8 +38,8 @@ setbbox(float lon1, float lon2, float lat1, float lat2)
   xmax = fmaxf(x1, x2);
   bby0 = fminf(y1, y2);
   ymax = fmaxf(y1, y2);
-  xf = 1024.0/(xmax-bbx0);
-  yf = 1024.0/(ymax-bby0);
+  xf = cVPTX/(xmax-bbx0);
+  yf = cVPTY/(ymax-bby0);
   bbff = fminf(xf, yf);
   if (xf > bbff) {
     float xc = 0.5 * (x1+x2);
@@ -306,7 +309,10 @@ main(int argc, const char **argv)
   char sbuf[256];
   printb(sbuf, sizeof sbuf, &(coll.u.bnd));
   fputs(sbuf, stdout);
+  printb(sbuf, sizeof sbuf, &(coll.z925.bnd));
+  fputs(sbuf, stdout);
   setbbox(118.0f, 152.0f, 20.0f, 50.0f);
+  setvptsize(cVPTX, cVPTY);
 
   if (coastfile) {
     r = coast1(coastfile);
