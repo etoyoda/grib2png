@@ -287,7 +287,7 @@ END_SKIP:
   return GSE_SKIP;
 }
 
-static const char Synopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
+static const char cSynopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
 
 int
 main(int argc, const char **argv)
@@ -323,6 +323,6 @@ main(int argc, const char **argv)
   }
   return r;
 ABEND:
-  fprintf(stderr, Synopsis, argv[0]);
+  fprintf(stderr, cSynopsis, argv[0]);
   return r;
 }
