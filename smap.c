@@ -127,8 +127,7 @@ coast1(const char *filename) {
 
 struct pldata_t {
   long gtime;
-  size_t dslen;
-  unsigned char *ds;
+  double *ary;
   struct bounding_t bnd;
 };
 
@@ -142,24 +141,22 @@ struct collect_t {
 
 static struct collect_t coll;
 
-
 int
 pl_isnull(struct pldata_t *plp)
 {
-  return NULL == plp->ds;
+  return NULL == plp->ary;
 }
 
 void
 pl_nullify(struct pldata_t *plp)
 {
   plp->gtime = 0L;
-  plp->dslen = 0;
-  plp->ds = NULL;
+  plp->ary = NULL;
   // leave plp->bnd uninitialized; never touch it unless ds is present
 }
 
   char *
-printb(char *buf, size_t buflen, struct bounding_t *bnd)
+snprintb(char *buf, size_t buflen, struct bounding_t *bnd)
 {
   snprintf(buf, buflen, "N %zux%zu D %gx%g La %g:%g Lo %g:%g %u\n",
     bnd->ni, bnd->nj,
@@ -175,9 +172,11 @@ pl_store(struct pldata_t *plp, long gtime, const struct grib2secs *gsp)
 {
   int r;
   plp->gtime = gtime;
-  plp->dslen = gsp->dslen;
-  plp->ds = gsp->ds;
   r = decode_gds(gsp, &(plp->bnd));
+  if (r != GSE_OKAY) { return r; }
+  plp->ary = mymalloc((sizeof(double))*(plp->bnd.ni)*(plp->bnd.nj));
+  if (plp->ary == NULL) { return ERR_NOMEM; }
+  r = decode_ds(gsp, plp->ary, NULL);
   return r;
 }
 
@@ -258,7 +257,7 @@ checksec7(const struct grib2secs *gsp)
       if (pl_isnull(&coll.rain1)) {
         pl_store(&(coll.rain1), gtime, gsp);
       } else if (gtime > coll.rain1.gtime) {
-        myfree(coll.rain1.ds);
+        myfree(coll.rain1.ary);
 	pl_store(&(coll.rain1), gtime, gsp);
       } else {
         goto END_SKIP;
@@ -267,7 +266,7 @@ checksec7(const struct grib2secs *gsp)
       if (pl_isnull(&coll.rain2)) {
         pl_store(&(coll.rain2), gtime, gsp);
       } else if (gtime < coll.rain2.gtime) {
-        myfree(coll.rain2.ds);
+        myfree(coll.rain2.ary);
 	pl_store(&(coll.rain2), gtime, gsp);
       } else {
         goto END_SKIP;
@@ -280,6 +279,7 @@ checksec7(const struct grib2secs *gsp)
   // report
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
+  myfree(gsp->ds);
   return GSE_OKAY;
 
 END_SKIP:
@@ -307,9 +307,9 @@ main(int argc, const char **argv)
   }
 
   char sbuf[256];
-  printb(sbuf, sizeof sbuf, &(coll.u.bnd));
+  snprintb(sbuf, sizeof sbuf, &(coll.u.bnd));
   fputs(sbuf, stdout);
-  printb(sbuf, sizeof sbuf, &(coll.z925.bnd));
+  snprintb(sbuf, sizeof sbuf, &(coll.z925.bnd));
   fputs(sbuf, stdout);
   setbbox(118.0f, 152.0f, 20.0f, 50.0f);
   setvptsize(cVPTX, cVPTY);
