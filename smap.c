@@ -224,67 +224,66 @@ checksec7(const struct grib2secs *gsp)
   memb = get_perturb(gsp);
   gtime = ftime+dura;
   // filter
+  int r = GSE_OKAY;
   if ((ftime==coll.ftime)&&(iparm==IPARM_CLL)) {
-    pl_store(&(coll.cll), gtime, gsp);
+    r = pl_store(&(coll.cll), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLM)) {
-    pl_store(&(coll.clm), gtime, gsp);
+    r = pl_store(&(coll.clm), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLH)) {
-    pl_store(&(coll.clh), gtime, gsp);
+    r = pl_store(&(coll.clh), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_U)&&(vlev==VLEVEL_Z10M)) {
-    pl_store(&(coll.u), gtime, gsp);
+    r = pl_store(&(coll.u), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_V)&&(vlev==VLEVEL_Z10M)) {
-    pl_store(&(coll.v), gtime, gsp);
+    r = pl_store(&(coll.v), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==925.e2)) {
-    pl_store(&(coll.z925), gtime, gsp);
+    r = pl_store(&(coll.z925), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==925.e2)) {
-    pl_store(&(coll.t925), gtime, gsp);
+    r = pl_store(&(coll.t925), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==925.e2)) {
-    pl_store(&(coll.rh925), gtime, gsp);
+    r = pl_store(&(coll.rh925), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==850.e2)) {
-    pl_store(&(coll.t850), gtime, gsp);
+    r = pl_store(&(coll.t850), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==850.e2)) {
-    pl_store(&(coll.rh850), gtime, gsp);
+    r = pl_store(&(coll.rh850), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==700.e2)) {
-    pl_store(&(coll.rh700), gtime, gsp);
+    r = pl_store(&(coll.rh700), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==500.e2)) {
-    pl_store(&(coll.t500), gtime, gsp);
+    r = pl_store(&(coll.t500), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==500.e2)) {
-    pl_store(&(coll.z500), gtime, gsp);
+    r = pl_store(&(coll.z500), gtime, gsp);
   } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==300.e2)) {
-    pl_store(&(coll.rh300), gtime, gsp);
+    r = pl_store(&(coll.rh300), gtime, gsp);
   } else if (iparm==IPARM_RAIN) {
     if (gtime <= coll.ftime) {
       if (pl_isnull(&coll.rain1)) {
-        pl_store(&(coll.rain1), gtime, gsp);
+        r = pl_store(&(coll.rain1), gtime, gsp);
       } else if (gtime > coll.rain1.gtime) {
         myfree(coll.rain1.ary);
-	pl_store(&(coll.rain1), gtime, gsp);
+	r = pl_store(&(coll.rain1), gtime, gsp);
       } else {
-        goto END_SKIP;
+        r = GSE_SKIP;
       }
     } else {
       if (pl_isnull(&coll.rain2)) {
-        pl_store(&(coll.rain2), gtime, gsp);
+        r = pl_store(&(coll.rain2), gtime, gsp);
       } else if (gtime < coll.rain2.gtime) {
         myfree(coll.rain2.ary);
-	pl_store(&(coll.rain2), gtime, gsp);
+	r = pl_store(&(coll.rain2), gtime, gsp);
       } else {
-        goto END_SKIP;
+        r = GSE_SKIP;
       }
     }
   } else {
-    goto END_SKIP;
+    r = GSE_SKIP;
   }
 
   // report
-  printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
-    sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
+  if (r != GSE_SKIP) {
+    printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
+      sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
+  }
   myfree(gsp->ds);
-  return GSE_OKAY;
-
-END_SKIP:
-  myfree(gsp->ds);
-  return GSE_SKIP;
+  return r;
 }
 
 static const char cSynopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
