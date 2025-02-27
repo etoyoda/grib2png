@@ -74,7 +74,7 @@ coast2(FILE *ifp)
   char tok[16];
   unsigned long nln, lnsz, c, cl, i;
   float lat, lon, x, y;
-  openpl();
+  r = 0;
   // preamble
   r = fscanf(ifp, "%15s%lu", tok, &nln);
   if (2!=r) { eputs("ERR while reading preabmle\n"); goto fail; };
@@ -106,19 +106,19 @@ nextpoint:
   cl++;
   if (cl<nln) goto nextline;
   // end of input
-  r = closepl();
   return r;
 fail:
-  closepl();
   return 1;
 }
 
 int
 coast1(const char *filename) {
+  int r;
+  r = 0;
   fprintf(stdout, "open <%s>\n", filename);
   FILE *ifp = fopen(filename, "rt");
   if (NULL==ifp) { perror(filename); return 1; }
-  int r = coast2(ifp);
+  r = coast2(ifp);
   if (0!=fclose(ifp)) { perror(filename); return 1; }
   return r;
 }
@@ -313,15 +313,16 @@ main(int argc, const char **argv)
   setbbox(118.0f, 152.0f, 20.0f, 50.0f);
   setvptsize(cVPTX, cVPTY);
 
+  openpl();
   if (coastfile) {
     r = coast1(coastfile);
   } else {
     eputs("coast file unspecified\n");
     r = 1;
-    goto ABEND;
+    fprintf(stderr, cSynopsis, argv[0]);
   }
-  return r;
-ABEND:
-  fprintf(stderr, cSynopsis, argv[0]);
+  if (closepl() != 0) {
+    r = 1;
+  }
   return r;
 }
