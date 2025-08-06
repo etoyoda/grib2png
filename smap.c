@@ -8,16 +8,63 @@
 #include "gribscan.h"
 
 #define eputs(s) (fputs((s),stderr))
+#define strhead(s, pat) (0==strncmp((s),(pat),strlen(pat)))
+
+const double cVPTX = 1024.0;
+const double cVPTY = 1024.0;
+
+int
+prjmer_raw(float lon, float lat, float *xp, float *yp)
+{
+  float phi2,y;
+  *xp = (lon+180.0)*(cVPTX/360.0);
+  phi2 = 0.5*M_PI*lat/180.0f;
+  y = log(tan(M_PI_4+phi2));
+  y = 180.0f*y/M_PI;
+  *yp = (y+180.0)*(cVPTY/360.0);
+  return 0;
+}
+
+static float bbx0=0.0f, bby0=0.0f, bbff=1.0f;
+
+int
+setbbox(float lon1, float lon2, float lat1, float lat2)
+{
+  float x1, y1, x2, y2, xf, yf;
+  prjmer_raw(lon1, lat1, &x1, &y1);
+  prjmer_raw(lon2, lat2, &x2, &y2);
+  float xmax, ymax;
+  bbx0 = fminf(x1, x2);
+  xmax = fmaxf(x1, x2);
+  bby0 = fminf(y1, y2);
+  ymax = fmaxf(y1, y2);
+  xf = cVPTX/(xmax-bbx0);
+  yf = cVPTY/(ymax-bby0);
+  bbff = fminf(xf, yf);
+  if (xf > bbff) {
+    float xc = 0.5 * (x1+x2);
+    float xmid = (xc-bbx0)*xf;
+    bbx0 = xc - xmid/bbff;
+  }
+  if (yf > bbff) {
+    float yc = 0.5*(y1+y2);
+    float ymid = (yc-bby0)*yf;
+    bby0 = yc - ymid/bbff;
+  }
+  printf("setbbox %g %g %g %g > %g %g %g %g %g\n", lon1, lon2, lat1, lat2,
+  bbx0, xf, bby0, yf, bbff);
+  return 0;
+}
 
 int
 prjmer(float lon, float lat, float *xp, float *yp)
 {
-  float phi2,y;
-  *xp = (lon+180.0)*(1024.0/360.0);
-  phi2 = 0.5*M_PI*lat/180.0f;
-  y = log(tan(M_PI_4+phi2));
-  y = 180.0f*y/M_PI;
-  *yp = (y+180.0)*(1024.0/360.0);
+   int r;
+   float x, y;
+   r = prjmer_raw(lon, lat, &x, &y);
+   *xp = (x-bbx0)*bbff;
+   *yp = (y-bby0)*bbff;
+   return r;
 }
 
 int
@@ -27,7 +74,7 @@ coast2(FILE *ifp)
   char tok[16];
   unsigned long nln, lnsz, c, cl, i;
   float lat, lon, x, y;
-  openpl();
+  r = 0;
   // preamble
   r = fscanf(ifp, "%15s%lu", tok, &nln);
   if (2!=r) { eputs("ERR while reading preabmle\n"); goto fail; };
@@ -59,35 +106,114 @@ nextpoint:
   cl++;
   if (cl<nln) goto nextline;
   // end of input
-  r = closepl();
   return r;
 fail:
-  closepl();
   return 1;
 }
 
 int
 coast1(const char *filename) {
+  int r;
+  r = 0;
   fprintf(stdout, "open <%s>\n", filename);
   FILE *ifp = fopen(filename, "rt");
   if (NULL==ifp) { perror(filename); return 1; }
-  int r = coast2(ifp);
+  r = coast2(ifp);
   if (0!=fclose(ifp)) { perror(filename); return 1; }
   return r;
 }
+
+//--- begin module
+
+struct pldata_t {
+  long gtime;
+  double *ary;
+  struct bounding_t bnd;
+};
+
+struct collect_t {
+  long ftime;
+  struct pldata_t cll, clm, clh;
+  struct pldata_t rain1, rain2;
+  struct pldata_t u, v;
+  struct pldata_t z925, t925, rh925, t850, rh850, rh700, t500, z500, rh300;
+};
+
+static struct collect_t coll;
+
+int
+pl_isnull(struct pldata_t *plp)
+{
+  return NULL == plp->ary;
+}
+
+void
+pl_nullify(struct pldata_t *plp)
+{
+  plp->gtime = 0L;
+  plp->ary = NULL;
+  // leave plp->bnd uninitialized; never touch it unless ds is present
+}
+
+  char *
+snprintb(char *buf, size_t buflen, struct bounding_t *bnd)
+{
+  snprintf(buf, buflen, "N %zux%zu D %gx%g La %g:%g Lo %g:%g %u\n",
+    bnd->ni, bnd->nj,
+    bnd->di, bnd->dj,
+    bnd->s, bnd->n,
+    bnd->w, bnd->e,
+    bnd->wraplon
+    );
+}
+
+  int
+pl_store(struct pldata_t *plp, long gtime, const struct grib2secs *gsp)
+{
+  int r;
+  plp->gtime = gtime;
+  r = decode_gds(gsp, &(plp->bnd));
+  if (r != GSE_OKAY) { return r; }
+  plp->ary = mymalloc((sizeof(double))*(plp->bnd.ni)*(plp->bnd.nj));
+  if (plp->ary == NULL) { return ERR_NOMEM; }
+  r = decode_ds(gsp, plp->ary, NULL);
+  return r;
+}
+
+void
+coll_clear(struct collect_t *collp)
+{
+  collp->ftime = 0L;
+  pl_nullify(&(collp->cll));
+  pl_nullify(&(collp->clm));
+  pl_nullify(&(collp->clh));
+  pl_nullify(&(collp->rain1));
+  pl_nullify(&(collp->rain2));
+  pl_nullify(&(collp->u));
+  pl_nullify(&(collp->v));
+  pl_nullify(&(collp->z925));
+  pl_nullify(&(collp->t925));
+  pl_nullify(&(collp->rh925));
+  pl_nullify(&(collp->t850));
+  pl_nullify(&(collp->rh850));
+  pl_nullify(&(collp->rh700));
+  pl_nullify(&(collp->t500));
+  pl_nullify(&(collp->z500));
+  pl_nullify(&(collp->rh300));
+}
+
+//--- end
 
 // gribscan ライブラリから呼び返される関数。
   gribscan_err_t
 checksec7(const struct grib2secs *gsp)
 {
-  gribscan_err_t r;
   // dimensions
   struct tm t;
   char sreftime[24];
   unsigned long iparm;
   double vlev, memb;
-  long ftime, dura;
-  r = GSE_OKAY;
+  long ftime, dura, gtime;
   // retrieve PDT metadata
   get_reftime(&t, gsp);
   showtime(sreftime, sizeof sreftime, &t);
@@ -96,40 +222,81 @@ checksec7(const struct grib2secs *gsp)
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
   memb = get_perturb(gsp);
+  gtime = ftime+dura;
   // filter
-  switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev, memb)) {
-    case ERR_FSTACK:
-    case GSE_SKIP:
-      goto END_SKIP;
-      break;
-    case GSE_OKAY:
-    default:
-      /* do nothing */;
+  int r = GSE_OKAY;
+  if ((ftime==coll.ftime)&&(iparm==IPARM_CLL)) {
+    r = pl_store(&(coll.cll), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLM)) {
+    r = pl_store(&(coll.clm), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_CLH)) {
+    r = pl_store(&(coll.clh), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_U)&&(vlev==VLEVEL_Z10M)) {
+    r = pl_store(&(coll.u), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_V)&&(vlev==VLEVEL_Z10M)) {
+    r = pl_store(&(coll.v), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==925.e2)) {
+    r = pl_store(&(coll.z925), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==925.e2)) {
+    r = pl_store(&(coll.t925), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==925.e2)) {
+    r = pl_store(&(coll.rh925), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==850.e2)) {
+    r = pl_store(&(coll.t850), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==850.e2)) {
+    r = pl_store(&(coll.rh850), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==700.e2)) {
+    r = pl_store(&(coll.rh700), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_T)&&(vlev==500.e2)) {
+    r = pl_store(&(coll.t500), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_Z)&&(vlev==500.e2)) {
+    r = pl_store(&(coll.z500), gtime, gsp);
+  } else if ((ftime==coll.ftime)&&(iparm==IPARM_RH)&&(vlev==300.e2)) {
+    r = pl_store(&(coll.rh300), gtime, gsp);
+  } else if (iparm==IPARM_RAIN) {
+    if (gtime <= coll.ftime) {
+      if (pl_isnull(&coll.rain1)) {
+        r = pl_store(&(coll.rain1), gtime, gsp);
+      } else if (gtime > coll.rain1.gtime) {
+        myfree(coll.rain1.ary);
+	r = pl_store(&(coll.rain1), gtime, gsp);
+      } else {
+        r = GSE_SKIP;
+      }
+    } else {
+      if (pl_isnull(&coll.rain2)) {
+        r = pl_store(&(coll.rain2), gtime, gsp);
+      } else if (gtime < coll.rain2.gtime) {
+        myfree(coll.rain2.ary);
+	r = pl_store(&(coll.rain2), gtime, gsp);
+      } else {
+        r = GSE_SKIP;
+      }
+    }
+  } else {
+    r = GSE_SKIP;
   }
-  printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
-    sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
-  goto END_NORMAL;
 
-END_SKIP:
-  r = GSE_SKIP;
-END_NORMAL:
+  // report
+  if (r != GSE_SKIP) {
+    printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
+      sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
+  }
   myfree(gsp->ds);
   return r;
 }
 
-const char Synopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
-
-#define strhead(s, pat) (0==strncmp((s),(pat),strlen(pat)))
+static const char cSynopsis[] = "%s [-f{mins}] -c{coastfile} input ...\n";
 
 int
 main(int argc, const char **argv)
 {
   const char *coastfile = NULL;
-  int ftime = 0;
   int r = 0;
+  coll_clear(&coll);
   for (int i=1; argv[i]; i++) {
     if (strhead(argv[i], "-f")) {
-      ftime=atoi(argv[i]+2);
+      coll.ftime = atoi(argv[i]+2);
     } else if (strhead(argv[i], "-c")) {
       coastfile = argv[i]+2;
     } else {
@@ -137,15 +304,25 @@ main(int argc, const char **argv)
       r = grib2scan_by_filename(argv[i]);
     }
   }
+
+  char sbuf[256];
+  snprintb(sbuf, sizeof sbuf, &(coll.u.bnd));
+  fputs(sbuf, stdout);
+  snprintb(sbuf, sizeof sbuf, &(coll.z925.bnd));
+  fputs(sbuf, stdout);
+  setbbox(118.0f, 152.0f, 20.0f, 50.0f);
+  setvptsize(cVPTX, cVPTY);
+
+  openpl();
   if (coastfile) {
     r = coast1(coastfile);
   } else {
     eputs("coast file unspecified\n");
     r = 1;
-    goto ABEND;
+    fprintf(stderr, cSynopsis, argv[0]);
   }
-  return r;
-ABEND:
-  fprintf(stderr, Synopsis, argv[0]);
+  if (closepl() != 0) {
+    r = 1;
+  }
   return r;
 }
