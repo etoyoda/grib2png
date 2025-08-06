@@ -9,6 +9,8 @@ TZ=UTC
 test -d /nwp/p0 -a -d /nwp/p1/jmagrib -a -d /nwp/p2
 cd /nwp/p2
 
+find /nwp/p2/ -name \*-ema -mtime +32 | xargs rm -rf
+
 # 推定最新時刻
 set $(LANG=C TZ=UTC date --date='45 minutes ago' +'%Y %m %d %H')
 : date $*
