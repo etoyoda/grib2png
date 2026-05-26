@@ -48,14 +48,23 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   int ceil_ri, floor_ri;
   if (lon < bp->w) { lon += 360.0; } 
   if (lat > bp->n || lat < bp->s) { return nan(""); }
+  // 経度 bp->e ならば添字 0, bp->w ならば bp->ni-1 となる案分で経度 lon にあたる添字 ri を決める
   ri = (lon - bp->w) * (bp->ni - 1) / (bp->e - bp->w);
+  // 経度 lon が東端 bp->e を越えるならば落とす。ただし範囲が全円周 bp->wraplon の場合は許容
   if ((lon > bp->e) && !bp->wraplon) { return nan(""); }
+  // 緯度 bp->n ならば添字 0, bp->s ならば bp->nj-1 となる案分で緯度 lat にあたる添字 rj を決める
   rj = (bp->n - lat) * (bp->nj - 1) / (bp->n - bp->s);
   fi = ri - floor(ri);
   fj = rj - floor(rj);
-  // これは起こらないとはおもうんだけど
-  if ((floor_ri = floor(ri)) > (bp->ni - 1)) { floor_ri = bp->ni - 1; }
-  if ((ceil_ri = ceil(ri)) > (bp->ni - 1)) { ceil_ri = 0; }
+  // 左側位置 floor_ri を決める
+  floor_ri = floor(ri);
+  if (floor_ri > (bp->ni - 1)) { floor_ri = bp->ni - 1; }
+  if (floor_ri < 0) { floor_ri = 0; }
+  // 右側位置 ceil_ri を決める。bpの右にはみ出している時は全円周なので左端 0 とする
+  ceil_ri = ceil(ri);
+  if (ceil_ri > (bp->ni - 1)) { ceil_ri = 0; }
+  if (ceil_ri < 0) { ceil_ri = 0; }
+  // 補間実行
   ijofs[0] = floor_ri + floor(rj) * bp->ni;
   weight[0] = 1.0 - hypot(fi, fj);
   if (weight[0] < 0.0) { weight[0] = 0.0; }
