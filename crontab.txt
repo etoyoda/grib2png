@@ -1,0 +1,6 @@
+# m h  dom mon dow   user command
+39    0,6,12,18 * * * nwp bash /nwp/bin/wisgsmpng.bash
+40    1,7,13,19 * * * nwp bash /nwp/bin/wisgsmpng.bash
+41    2,8,14,20 * * * nwp bash /nwp/bin/wisgsmpng.bash
+0     *         * * * nwp bash /nwp/bin/makelist.sh
+46    3,9,15,21 * * * nwp bash /nwp/bin/run-emagram.bash

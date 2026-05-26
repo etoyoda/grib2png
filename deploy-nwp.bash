@@ -4,3 +4,4 @@ do
   sudo -u nwp install -m 0755 $file /nwp/bin
 done
 sudo -u nwp install -m 0644 map.html /nwp/p1/
+sudo install -m 0644 crontab.txt /etc/cron.d/grib2png
