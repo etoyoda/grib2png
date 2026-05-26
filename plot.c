@@ -108,7 +108,9 @@ closepl(void)
   CLOSEPATH_IF_NEEDED;
   fprintf(psout, "showpage\n");
   fclose(psout);
-  sprintf(cmd, "gs -q -sDEVICE=pngalpha -r72 -g%ux%u -dBATCH -dNOPAUSE -sOutputFile=plot.png %s\n", vpt_x, vpt_y, cname);
+  snprintf(cmd, sizeof cmd,
+    "gs -q -sDEVICE=pngalpha -r72 -g%ux%u -dBATCH -dNOPAUSE -sOutputFile=plot.png %s\n",
+    vpt_x, vpt_y, cname);
   r = system(cmd);
   if ((r != 0) || (getenv("PLOT"))) {
     fputs(cmd, stderr);

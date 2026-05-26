@@ -411,7 +411,7 @@ param_name(unsigned long iparm)
   case IPARM_CLH: return "CLH";
   case IPARM_WDF: return "WDF";
   default:
-    sprintf(buf, "p%02lu-%03lu-%03lu-%03lu",
+    snprintf(buf, sizeof buf, "p%02lu-%03lu-%03lu-%03lu",
       iparm >> 24, (iparm >> 16) & 0xFF,
       (iparm >> 8) & 0xFF, iparm & 0xFF);
     return buf;

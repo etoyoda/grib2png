@@ -209,7 +209,7 @@ checksec7(const struct grib2secs *gsp)
 
 SAVE:
   showtime(sreftime, sizeof sreftime, &t);
-  sprintf(title, "%s,%6s,%-+5ld,%-+5ld,%-8s,%-+4.3g",
+  snprintf(title, sizeof title, "%s,%6s,%-+5ld,%-+5ld,%-8s,%-+4.3g",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
   r = save_data(gsp, title);
   goto END_NORMAL;
