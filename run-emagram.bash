@@ -159,3 +159,6 @@ fi
 rm -f z*.txt
 cd ..
 mv ${work} ${target}
+
+# remove old results
+find . -maxdepth 1 -ctime +30 -name '*Z-ema' | xargs rm -rf
