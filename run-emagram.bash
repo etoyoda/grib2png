@@ -68,11 +68,9 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC61.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 40.00 141.25 +40+141/Iwate
-41.25 141.25 +41+141/Mutsu
 42.50 141.25 +43+141/Noboribetsu
 43.75 141.25 +44+141/Mashike
 45.00 141.25 +45+141/Rishiri
-45.25 141.25 +46+141/
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram -s2 zmodel.txt zobs.txt
@@ -85,11 +83,7 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 33.75 135.00 +34+135/Gobo
 35.00 135.00 +35+135/Nishiwaki
-36.25 135.00 +36+135/Tango
-36.25 136.25 +36+136/Awara
 37.50 136.25 +38+136/Noto
-38.75 136.25 +39+136/
-40.00 136.25 +40+136/
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram -s4 zmodel.txt zobs.txt
@@ -103,10 +97,8 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 28.75 130.0 +29+130/Amami
 30.00 130.0 +30+130/Yakushima
 31.25 130.0 +31+130/Makurazaki
-32.50 130.0 +33+130/Amakusa
 33.75 130.0 +34+130/Karatsu
 35.00 130.0 +35+130/Tsushima
-36.25 130.0 +36+130/Pohang
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram -s2 zmodel.txt zobs.txt
@@ -136,10 +128,6 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC73.RJTD.${dd}${hh} >> zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 26.25 131.25 +26+131/Minamidaitojima
-27.50 130.00 +28+130/Kikai
-28.75 128.75 +29+129/
-30.00 127.50 +30+128/
-31.25 126.25 +31+126/
 PICK
 test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram zmodel.txt zobs.txt
@@ -151,10 +139,6 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC73.RJTD.${dd}${hh} > zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUSC03.RJTD.${dd}${hh} | grep ,47991 >> zobs.txt || :
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-10.00 142.50 +10+143/
-15.00 145.00 +15+145/Saipan
-20.00 145.00 +20+145/
-22.50 145.00 +23+145/
 25.00 153.75 +25+154/Minamitorishima
 27.50 142.50 +28+143/Ogasawara
 PICK
@@ -168,11 +152,8 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC65.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 32.5  140 +33+140/Hachijojima
-33.75 140 +34+140/Miyakejima
 35 140    +35+140/Tateyama
 36.25 140 +36+140/Chikusei
-37.5 140  +38+140/Aizu
-38.75 140 +39+140/Shonai
 40 140    +40+140/Oogata
 PICK
 test ! -f plot.png || rm -f plot.png
