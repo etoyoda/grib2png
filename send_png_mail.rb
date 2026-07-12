@@ -40,7 +40,7 @@ mail << "From: #{from}"
 mail << "To: #{to}"
 mail << "Subject: #{subject}"
 mail << "MIME-Version: 1.0"
-mail << "Content-Type: multipart/mixed; boundary=#{boundary}"
+mail << "Content-Type: multipart/mixed; boundary=\"#{boundary}\""
 mail << ""
 
 mail << "--#{boundary}"
@@ -52,7 +52,9 @@ mail << "Content-Type: text/plain; charset=UTF-8"
 mail << "Content-Transfer-Encoding: 7bit"
 mail << ""
 mail << "Please find attched files:"
-mail << "#{png_files.inspect}"
+png_files.each do |f|
+  mail << "* #{File.basename(f)}"
+end
 mail << ""
 
 mail << "--#{altbound}"
@@ -62,9 +64,9 @@ mail << ""
 mail << "<html><head><title>PNG sender</title></head><body>"
 mail << "<p>Please find attched files:</p>"
 png_files.size.times do |i|
-  mail << "<p><img src=\"cid:image#{i}\"></p>"
+  mail << "<p><img src=\"cid:image#{i}\" alt=\"#{File.basename(png_files[i])}\" /></p>"
 end
-mail << "<body></html>"
+mail << "</body></html>"
 mail << ""
 
 mail << "--#{altbound}--"
@@ -76,8 +78,9 @@ png_files.each do |file|
   mail << "--#{boundary}"
   mail << "Content-Type: image/png; name=\"#{filename}\""
   mail << "Content-Transfer-Encoding: base64"
-  mail << "Content-Disposition: attachment; filename=\"#{filename}\""
-  mail << "Content-ID: image#{cidno}"
+  mail << "Content-Disposition: inline; filename=\"#{filename}\""
+  mail << "Content-ID: <image#{cidno}>"
+  mail << "X-Attachment-Id: image#{cidno}"
   mail << ""
   mail << encoded
   mail << ""
