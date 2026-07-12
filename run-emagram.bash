@@ -152,6 +152,10 @@ test ! -f plot.png || rm -f plot.png
 /nwp/bin/emagram -s3 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}kanto2.png
 
+if [ -f /nwp/bin/send_png_mail.rb ]; then
+  ruby /nwp/bin/send_png_mail.rb ${yy}${mm}${dd}${hh}kanto.png
+fi
+
 rm -f z*.txt
 cd ..
 mv ${work} ${target}
