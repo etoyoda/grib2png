@@ -396,7 +396,7 @@ profile_color(unsigned i)
     setrgb(255u, 153u, 0u);
     break;
   case 3u:
-    setrgb(240u, 235u, 0u);
+    setrgb(120u, 117u, 0u);
     break;
   case 4u:
     setrgb(0u, 65u, 255u);

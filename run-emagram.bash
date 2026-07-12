@@ -67,13 +67,10 @@ test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC61.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-40.00 141.25 +40+141/Iwate
-42.50 141.25 +43+141/Noboribetsu
 43.75 141.25 +44+141/Mashike
-45.00 141.25 +45+141/Rishiri
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s2 zmodel.txt zobs.txt
+/nwp/bin/emagram -s1 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}hokkaido.png
 
 # wajima
@@ -82,11 +79,10 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC64.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 33.75 135.00 +34+135/Gobo
-35.00 135.00 +35+135/Nishiwaki
 37.50 136.25 +38+136/Noto
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s4 zmodel.txt zobs.txt
+/nwp/bin/emagram -s2 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}noto.png
 
 # kagoshima
@@ -94,14 +90,10 @@ test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC70.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-28.75 130.0 +29+130/Amami
-30.00 130.0 +30+130/Yakushima
 31.25 130.0 +31+130/Makurazaki
-33.75 130.0 +34+130/Karatsu
-35.00 130.0 +35+130/Tsushima
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s2 zmodel.txt zobs.txt
+/nwp/bin/emagram -s1 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}kyushu.png
 
 # naze
@@ -110,32 +102,26 @@ ruby /nwp/bin/bufr2pick "${obsbf}:AHL=^IUKC71.RJTD.${dd}${hh}" > zobs.txt
 ruby /nwp/bin/bufr2pick "${obsbf}:AHL=^IUKC72.RJTD.${dd}${hh}" >> zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-23.75 123.75 +24+124/Hateruma
 25.00 125.00 +25+125/Miyakojima
-25.00 126.25 +25+126/
-26.25 127.50 +26+128/Okinawa
-27.50 128.75 +28+129/Okinoerabu
 28.75 130.00 +29+130/Amami
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram zmodel.txt zobs.txt
+/nwp/bin/emagram -s2 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}ryukyu.png
 
 # minamidaito
 test ! -f zobs.txt || rm -f zobs.txt
-ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC71.RJTD.${dd}${hh} > zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC73.RJTD.${dd}${hh} >> zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 26.25 131.25 +26+131/Minamidaitojima
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram zmodel.txt zobs.txt
+/nwp/bin/emagram -s1 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}daito.png
 
 # chichijima
 test ! -f zobs.txt || rm -f zobs.txt
-ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC73.RJTD.${dd}${hh} > zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUSC03.RJTD.${dd}${hh} | grep ,47991 >> zobs.txt || :
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
@@ -143,7 +129,7 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 27.50 142.50 +28+143/Ogasawara
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s5 zmodel.txt zobs.txt
+/nwp/bin/emagram -s2 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}ogasawara.png
 
 # kanto
@@ -151,22 +137,19 @@ test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC65.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-32.5  140 +33+140/Hachijojima
-35 140    +35+140/Tateyama
 36.25 140 +36+140/Chikusei
-40 140    +40+140/Oogata
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s3 zmodel.txt zobs.txt
+/nwp/bin/emagram -s1 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}kanto.png
 
 test ! -f zmodel.txt || rm -f zmodel.txt
-ls -1 /nwp/p1/jmagrib/2*/gsm*.bin | tail -7 > zstn.txt
+ls -1 /nwp/p1/jmagrib/2*/gsm*.bin | tail -4 > zstn.txt
 /nwp/bin/gribpick -f'g0=' -p $(cat zstn.txt) > zmodel.txt <<PICK
   36.25 140 +36+140/Chikusei
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s6 zmodel.txt zobs.txt
+/nwp/bin/emagram -s3 zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}kanto2.png
 
 rm -f z*.txt
