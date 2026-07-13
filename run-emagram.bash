@@ -70,7 +70,9 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 43.75 141.25 +44+141/Mashike
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s1 zmodel.txt zobs.txt
+sflag=-s0
+[[ -s zobs.txt ]] && sflag=-s1
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}hokkaido.png
 
 # wajima
@@ -78,11 +80,13 @@ test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC64.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
-33.75 135.00 +34+135/Gobo
 37.50 136.25 +38+136/Noto
+33.75 135.00 +34+135/Gobo
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s2 zmodel.txt zobs.txt
+sflag=-s0
+[[ -s zobs.txt ]] && sflag=-s2
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}noto.png
 
 # kagoshima
@@ -93,7 +97,9 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 31.25 130.0 +31+130/Makurazaki
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s1 zmodel.txt zobs.txt
+sflag=-s0
+[[ -s zobs.txt ]] && sflag=-s1
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}kyushu.png
 
 # naze
@@ -106,7 +112,9 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 28.75 130.00 +29+130/Amami
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s2 zmodel.txt zobs.txt
+sflag=-s1
+[[ -s zobs.txt ]] && sflag=-s2
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}ryukyu.png
 
 # minamidaito
@@ -117,7 +125,9 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 26.25 131.25 +26+131/Minamidaitojima
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s1 zmodel.txt zobs.txt
+sflag=-s0
+[[ -s zobs.txt ]] && sflag=-s1
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}daito.png
 
 # chichijima
@@ -129,7 +139,9 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 27.50 142.50 +28+143/Ogasawara
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s2 zmodel.txt zobs.txt
+sflag=-s0
+[[ -s zobs.txt ]] && sflag=-s2
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}ogasawara.png
 
 # kanto
@@ -140,7 +152,9 @@ test ! -f zmodel.txt || rm -f zmodel.txt
 36.25 140 +36+140/Chikusei
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s1 zmodel.txt zobs.txt
+sflag=-s0
+[[ -s zobs.txt ]] && sflag=-s1
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}kanto.png
 
 test ! -f zmodel.txt || rm -f zmodel.txt
@@ -149,7 +163,8 @@ ls -1 /nwp/p1/jmagrib/2*/gsm*.bin | tail -4 > zstn.txt
   36.25 140 +36+140/Chikusei
 PICK
 test ! -f plot.png || rm -f plot.png
-/nwp/bin/emagram -s3 zmodel.txt zobs.txt
+sflag=-s3
+/nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}kanto2.png
 
 if [ -f /nwp/bin/send_png_mail.rb ]; then
