@@ -168,7 +168,11 @@ sflag=-s3
 mv -f plot.png ${yy}${mm}${dd}${hh}kanto2.png
 
 if [ -f /nwp/bin/send_png_mail.rb ]; then
-  ruby /nwp/bin/send_png_mail.rb ${yy}${mm}${dd}${hh}kanto.png
+  case $hh in
+  00|12)
+    ruby /nwp/bin/send_png_mail.rb ${yy}${mm}${dd}${hh}kanto.png
+  ;;
+  esac
 fi
 
 rm -f z*.txt
