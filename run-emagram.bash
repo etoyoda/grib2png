@@ -176,4 +176,4 @@ cd ..
 mv ${work} ${target}
 
 # remove old results
-find . -maxdepth 1 -ctime +30 -name '*Z-ema' | xargs rm -rf
+find . -maxdepth 1 -ctime +14 -name '*Z-ema' | xargs rm -rf
