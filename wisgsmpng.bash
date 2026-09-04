@@ -42,7 +42,7 @@ URL="https://www.wis-jma.go.jp/d/o/RJTD/GRIB/Global_Spectral_Model\
 /Latitude_Longitude/1.25_1.25/90.0_-90.0_0.0_358.75/Upper_air_layers\
 /${ymd}/${hh}0000/W_jp-JMA-tokyo,MODEL,JMA+gsm+gpv,C_RJTD_${ymd}${hh}0000\
 _GSM_GPV_Rgl_Gll1p25deg_L-all_FD0000-0512_grib2.bin"
-wget -q -Obiggrib.bin ${URL}
+wget --inet4_only -q -Obiggrib.bin ${URL}
 tend=$(date +%s)
 let 'elapsed = tend - tbegin'
 logger -p news.info -t syndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
