@@ -143,6 +143,9 @@ mv -f plot.png ${yy}${mm}${dd}${hh}minamitorishima.png
 # kanto
 test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC65.RJTD.${dd}${hh} > zobs.txt
+if test ! -s zobs.txt ; then
+ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUSC65.RJTD.${dd}${hh} > zobs.txt
+fi
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 36.25 140 +36+140/Chikusei
