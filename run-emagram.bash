@@ -81,11 +81,10 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC64.RJTD.${dd}${hh} > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 37.50 136.25 +38+136/Noto
-33.75 135.00 +34+135/Gobo
 PICK
 test ! -f plot.png || rm -f plot.png
 sflag=-s0
-[[ -s zobs.txt ]] && sflag=-s2
+[[ -s zobs.txt ]] && sflag=-s1
 /nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}noto.png
 
@@ -104,16 +103,14 @@ mv -f plot.png ${yy}${mm}${dd}${hh}kyushu.png
 
 # naze
 test ! -f zobs.txt || rm -f zobs.txt
-ruby /nwp/bin/bufr2pick "${obsbf}:AHL=^IUKC71.RJTD.${dd}${hh}" > zobs.txt
-ruby /nwp/bin/bufr2pick "${obsbf}:AHL=^IUKC72.RJTD.${dd}${hh}" >> zobs.txt
+ruby /nwp/bin/bufr2pick "${obsbf}:AHL=^IUKC72.RJTD.${dd}${hh}" > zobs.txt
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 25.00 125.00 +25+125/Miyakojima
-28.75 130.00 +29+130/Amami
 PICK
 test ! -f plot.png || rm -f plot.png
-sflag=-s1
-[[ -s zobs.txt ]] && sflag=-s2
+sflag=-s0
+[[ -s zobs.txt ]] && sflag=-s1
 /nwp/bin/emagram $sflag zmodel.txt zobs.txt
 mv -f plot.png ${yy}${mm}${dd}${hh}ryukyu.png
 
@@ -128,7 +125,7 @@ test ! -f plot.png || rm -f plot.png
 sflag=-s0
 [[ -s zobs.txt ]] && sflag=-s1
 /nwp/bin/emagram $sflag zmodel.txt zobs.txt
-mv -f plot.png ${yy}${mm}${dd}${hh}daito.png
+mv -f plot.png ${yy}${mm}${dd}${hh}minamidaito.png
 
 # chichijima
 test ! -f zobs.txt || rm -f zobs.txt
@@ -136,13 +133,12 @@ ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUSC03.RJTD.${dd}${hh} | grep ,47991 >> zo
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
 25.00 153.75 +25+154/Minamitorishima
-27.50 142.50 +28+143/Ogasawara
 PICK
 test ! -f plot.png || rm -f plot.png
 sflag=-s0
-[[ -s zobs.txt ]] && sflag=-s2
+[[ -s zobs.txt ]] && sflag=-s1
 /nwp/bin/emagram $sflag zmodel.txt zobs.txt
-mv -f plot.png ${yy}${mm}${dd}${hh}ogasawara.png
+mv -f plot.png ${yy}${mm}${dd}${hh}minamitorishima.png
 
 # kanto
 test ! -f zobs.txt || rm -f zobs.txt
