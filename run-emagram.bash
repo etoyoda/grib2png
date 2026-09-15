@@ -144,7 +144,7 @@ mv -f plot.png ${yy}${mm}${dd}${hh}minamitorishima.png
 test ! -f zobs.txt || rm -f zobs.txt
 ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUKC65.RJTD.${dd}${hh} > zobs.txt
 if test ! -s zobs.txt ; then
-ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUSC65.RJTD.${dd}${hh} > zobs.txt
+ruby /nwp/bin/bufr2pick ${obsbf}:AHL=^IUSC65.RJTD.${dd}${hh} >> zobs.txt
 fi
 test ! -f zmodel.txt || rm -f zmodel.txt
 /nwp/bin/gribpick -f'g360=' -p $gsmfile > zmodel.txt <<PICK
@@ -173,6 +173,24 @@ if [ -f /nwp/bin/send_png_mail.rb ]; then
   ;;
   esac
 fi
+
+cat > emagram.html <<HTML
+<!doctype html>
+<html>
+<head><title>Emagram</title></head>
+<body>
+<h1>emagrams</h1>
+<p><img src="${yy}${mm}${dd}${hh}hokkaido.png"/></p>
+<p><img src="${yy}${mm}${dd}${hh}kanto.png"/></p>
+<p><img src="${yy}${mm}${dd}${hh}kanto2.png"/></p>
+<p><img src="${yy}${mm}${dd}${hh}kyushu.png"/></p>
+<p><img src="${yy}${mm}${dd}${hh}minamidaito.png"/></p>
+<p><img src="${yy}${mm}${dd}${hh}minamitorishima.png"/></p>
+<p><img src="${yy}${mm}${dd}${hh}noto.png"/></p>
+<p><img src="${yy}${mm}${dd}${hh}ryukyu.png"/></p>
+</body>
+</html>
+HTML
 
 rm -f z*.txt
 cd ..
