@@ -6,6 +6,7 @@ set -Ceuo pipefail
 PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin
 LANG=C
 TZ=UTC
+verbose=false
 
 test -d /nwp/p1/jmagrib || mkdir /nwp/p1/jmagrib
 cd /nwp/p1/jmagrib
@@ -27,6 +28,7 @@ if timestamp=$(stat --format=%Z work 2>/dev/null) ; then
   if [[ $timestamp -lt $limit ]] ; then
     date --date="@${timestamp}" +'Lock file at %c - removed'
     rm -rf work
+    verbose=true
   else
     date --date="@${timestamp}" +'Lock file at %c - aborted'
     false
@@ -61,3 +63,7 @@ ln -f ${ymd}T${hh}Z/gsm${ymd}T${hh}.bin /nwp/a1/$ym/gsm${ymd}T${hh}.bin
 
 keep_days=1
 find . -maxdepth 1 -ctime +${keep_days} | xargs -r rm -rf
+
+if $verbose
+then echo ... and all done okay
+fi
