@@ -64,6 +64,7 @@ typedef struct bounding_t {
   double di, dj;
   size_t ni, nj;
   int wraplon;
+  int has_bitmap;
 } bounding_t;
 
 /* --- mainlogic.c --- */

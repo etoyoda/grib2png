@@ -671,9 +671,10 @@ dbuf[npx]);
   gribscan_err_t
 decode_gds(const grib2secs_t *gsp, bounding_t *bp)
 {
-  size_t gpixels;
   unsigned gsysno, gdt, unit;
+  size_t gpixels;
   size_t npixels = get_npixels(gsp);
+  bp->has_bitmap = 0;
   // === 未サポートの状況の検知 ===
   // GDS 欠損
   if (gsp->gdslen == 0) {
@@ -686,9 +687,10 @@ decode_gds(const grib2secs_t *gsp, bounding_t *bp)
     return ERR_UNSUPPORTED;
   }
   // GDS 格子数が DRS 格子数と不一致の場合（= ビットマップ使用時）
+  // toriaezu tan ni warning
   if ((gpixels = ui4(gsp->gds + 6)) != npixels) {
     fprintf(stderr, "Pixels unmatch DRS %zu != GDS %zu\n", npixels, gpixels);
-    return ERR_UNSUPPORTED;
+    bp->has_bitmap = 1;
   }
   // GDT が 5.0 (正距円筒図法) ではない場合
   if ((gdt = ui2(gsp->gds + 12)) != 0) {
@@ -710,7 +712,7 @@ decode_gds(const grib2secs_t *gsp, bounding_t *bp)
   if (npixels != bp->ni * bp->nj) {
     fprintf(stderr, "Unsupported npixels %zu != Ni %zu * Nj %zu\n", 
       npixels, bp->ni, bp->nj);
-    return ERR_UNSUPPORTED;
+    bp->has_bitmap = 1;
   }
   // 主要要素デコード
   bp->n = si4(gsp->gds + 46) / 1.0e6;
