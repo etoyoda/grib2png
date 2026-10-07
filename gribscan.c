@@ -392,6 +392,7 @@ param_name(unsigned long iparm)
   case IPARM_RH: return "RH";
   case IPARM_RR1H: return "RR1H";
   case IPARM_RAIN: return "RAIN";
+  case IPARM_RRate: return "RRate";
   case IPARM_WD: return "WD";
   case IPARM_U: return "U";
   case IPARM_V: return "V";
