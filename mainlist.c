@@ -3,6 +3,25 @@
 #include "gribscan.h"
 #include "mymalloc.h"
 
+  gribscan_err_t
+check_bms(const struct grib2secs *gsp, bounding_t *bnd)
+{
+  size_t ni = bnd->ni;
+  size_t nj = bnd->nj;
+  for (size_t j=0; j<nj; j++) {
+    size_t rowmiss = 0;
+    for (size_t i=0; i<ni; i++) {
+      if (unpackbits(gsp->bms+6, 1, i+j*ni) == 0) {
+        rowmiss++;
+      }
+    }
+    if (rowmiss) {
+      printf("bitmap row=%zu miss=%zu\n", j, rowmiss);
+    }
+  }
+  return 0;
+}
+
 // empty filter string means "accept all"
 static const char *sfilter = "";
 static const void *prev_gds = NULL;
@@ -49,6 +68,9 @@ checksec7(const struct grib2secs *gsp)
       printf("lat%+07.3f:%+07.3f lon%+08.3f:%+08.3f %c %8.6gx%-8.6g %4zux%-4zu\n",
         bnd.s, bnd.n, bnd.w, bnd.e, (bnd.wraplon ? 'C' : 'R'),
 	bnd.di, bnd.dj, bnd.ni, bnd.nj);
+      if (bnd.has_bitmap) {
+	check_bms(gsp, &bnd);
+      }
     }
     prev_gds = gsp->gds;
   }
