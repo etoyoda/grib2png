@@ -3,6 +3,7 @@ OBJS2=gribscan.o mainslim.o mymalloc.o filter.o
 OBJS3=gribscan.o mainpick.o mymalloc.o filter.o
 OBJS4=emagram.o emaprep.o plot.o
 OBJS5=gribscan.o mainlist.o mymalloc.o filter.o
+OBJS6=gribscan.o mainukwmc.o mymalloc.o filter.o
 LIBS= -lm -lpng
 # OPTS= -g -pg を想定
 LFLAGS= $(OPTS) -fopenmp
@@ -12,7 +13,7 @@ CC=cc
 .SUFFIXES:
 .SUFFIXES: .c .o
 
-all: grib2png gribslim gribpick emagram smap griblist
+all: grib2png gribslim gribpick emagram smap griblist gribukwmc
 
 grib2png: $(OBJS)
 	$(CC) $(LFLAGS) -o grib2png $(OBJS) $(LIBS)
@@ -28,6 +29,9 @@ emagram: $(OBJS4)
 
 griblist: $(OBJS5)
 	$(CC) $(LFLAGS) -o griblist $(OBJS5) $(LIBS)
+
+gribukwmc: $(OBJS6)
+	$(CC) $(LFLAGS) -o gribukwmc $(OBJS6) $(LIBS)
 
 testv: testv.c visual.o
 	$(CC) $(LFLAGS) -o testv testv.c visual.o $(LIBS)
