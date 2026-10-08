@@ -3,6 +3,69 @@
 #include "gribscan.h"
 #include "mymalloc.h"
 
+typedef struct sorter_t {
+  iparm_t iparm;
+  long ftime;
+  long dura;
+  double vlev;
+  double memb;
+  // fields to be added to retain data contents
+  struct sorter_t *next;
+} sorter_t;
+
+  struct sorter_t *
+new_sorter(const grib2secs_t *gsp)
+{
+  struct sorter_t *sp;
+  sp = mymalloc(sizeof(sorter_t));
+  if (sp == NULL) return NULL;
+  sp->iparm = get_parameter(gsp);
+  sp->ftime = get_ftime(gsp);
+  sp->vlev = get_vlevel(gsp);
+  sp->dura = get_duration(gsp);
+  sp->memb = get_perturb(gsp);
+  sp->next = NULL;
+  return sp;
+}
+
+  int
+sorter_gsp_compat(const sorter_t *sp, const grib2secs_t *gsp)
+{
+  if (sp->iparm != get_parameter(gsp)) return 0;
+  if (sp->ftime != get_ftime(gsp)) return 0;
+  if (sp->vlev != get_vlevel(gsp)) return 0;
+  if (sp->dura != get_duration(gsp)) return 0;
+  if (sp->memb != get_perturb(gsp)) return 0;
+  return 1;
+}
+
+static sorter_t *Sorter = NULL;
+
+  gribscan_err_t
+sort_data(const struct grib2secs *gsp)
+{
+  if (Sorter == NULL) {
+    puts("new");
+    Sorter = new_sorter(gsp); 
+    return GSE_OKAY;
+  }
+  sorter_t *cur = Sorter;
+  while (1) {
+    if (sorter_gsp_compat(cur, gsp)) {
+      // register
+      puts("hit");
+      break;
+    }
+    if (cur->next == NULL) {
+      puts("new");
+      cur->next = new_sorter(gsp);
+      break;
+    }
+    cur = cur->next;
+  }
+  return GSE_OKAY;
+}
+
   gribscan_err_t
 check_bms(const struct grib2secs *gsp, bounding_t *bnd)
 {
@@ -19,7 +82,7 @@ check_bms(const struct grib2secs *gsp, bounding_t *bnd)
       printf("bitmap row=%zu miss=%zu\n", j, rowmiss);
     }
   }
-  return 0;
+  return GSE_OKAY;
 }
 
 // empty filter string means "accept all"
@@ -76,6 +139,7 @@ checksec7(const struct grib2secs *gsp)
   }
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
+  sort_data(gsp);
   goto END_NORMAL;
 
 END_SKIP:
