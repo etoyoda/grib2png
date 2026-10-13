@@ -13,6 +13,8 @@ typedef enum tileid_t {
   TI_Error
 } tileid_t;
 
+#define ALL_TILES ((1u << (int)TI_Error)-1u)
+
 typedef struct sorter_t {
   iparm_t iparm;
   long ftime;
@@ -20,6 +22,7 @@ typedef struct sorter_t {
   double vlev;
   double memb;
   // fields to be added to retain data contents
+  unsigned have_tiles;
   struct sorter_t *next;
 } sorter_t;
 
@@ -34,6 +37,7 @@ new_sorter(const grib2secs_t *gsp)
   sp->vlev = get_vlevel(gsp);
   sp->dura = get_duration(gsp);
   sp->memb = get_perturb(gsp);
+  sp->have_tiles = 0u;
   sp->next = NULL;
   return sp;
 }
@@ -52,15 +56,21 @@ gds_tileid(const bounding_t *bp)
 }
 
   enum gribscan_err_t
-sorter_add(sorter_t *sp, const grib2secs_t *gsp)
+sorter_add(sorter_t *sp, const grib2secs_t *gsp,
+  const bounding_t *bp)
 {
   enum gribscan_err_t r;
-  struct bounding_t b;
   enum tileid_t ti;
-  r = decode_gds(gsp, &b);
-  if (r != GSE_OKAY) return r;
-  ti = gds_tileid(&b);
+  r = GSE_OKAY;
+  ti = gds_tileid(bp);
   if (ti == TI_Error) return ERR_UNSUPPORTED;
+  if (sp->have_tiles & (1u << (int)ti)) {
+    puts("@dup");
+  }
+  sp->have_tiles |= (1u << (int)ti);
+  if (sp->have_tiles == ALL_TILES) {
+    puts("@full");
+  }
   return r;
 }
 
@@ -78,25 +88,25 @@ sorter_gsp_compat(const sorter_t *sp, const grib2secs_t *gsp)
 static sorter_t *Sorter = NULL;
 
   gribscan_err_t
-sort_data(const struct grib2secs *gsp)
+sort_data(const struct grib2secs *gsp, const bounding_t *bp)
 {
   gribscan_err_t r;
   if (Sorter == NULL) {
-    puts("new");
+    puts("@new");
     Sorter = new_sorter(gsp); 
-    r = sorter_add(Sorter, gsp);
+    r = sorter_add(Sorter, gsp, bp);
     return r;
   }
   sorter_t *cur = Sorter;
   while (1) {
     if (sorter_gsp_compat(cur, gsp)) {
-      r = sorter_add(cur, gsp);
+      r = sorter_add(cur, gsp, bp);
       break;
     }
     if (cur->next == NULL) {
-      puts("new");
+      puts("@new");
       cur->next = new_sorter(gsp);
-      r = sorter_add(cur->next, gsp);
+      r = sorter_add(cur->next, gsp, bp);
       break;
     }
     cur = cur->next;
@@ -174,7 +184,7 @@ checksec7(const struct grib2secs *gsp)
 
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
-  sort_data(gsp);
+  sort_data(gsp, &bnd);
   goto END_NORMAL;
 
 END_SKIP:
