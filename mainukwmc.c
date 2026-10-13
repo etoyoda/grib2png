@@ -69,7 +69,9 @@ sorter_add(sorter_t *sp, const grib2secs_t *gsp,
   }
   sp->have_tiles |= (1u << (int)ti);
   if (sp->have_tiles == ALL_TILES) {
-    puts("@full");
+    printf("@full %7s f=%ld d=%ld v=%s m=%g\n",
+      param_name(sp->iparm), sp->ftime, sp->dura, level_name(sp->vlev),
+      sp->memb);
   }
   return r;
 }
@@ -112,6 +114,23 @@ sort_data(const struct grib2secs *gsp, const bounding_t *bp)
     cur = cur->next;
   }
   return r;
+}
+
+  void
+sorter_remains_check()
+{
+  sorter_t *cur = Sorter;
+  if (!cur) { return; }
+  while (1) {
+    if (cur->have_tiles != ALL_TILES) {
+      printf("@partial %04x %7s f=%ld d=%ld v=%s m=%g\n",
+        cur->have_tiles,
+        param_name(cur->iparm), cur->ftime, cur->dura, level_name(cur->vlev),
+        cur->memb);
+    }
+    if (!cur->next) { break; }
+    cur = cur->next;
+  }
 }
 
   gribscan_err_t
@@ -215,6 +234,7 @@ argscan(int argc, const char **argv)
     }
   }
 BARF:
+  sorter_remains_check();
   return r; 
 }
 
