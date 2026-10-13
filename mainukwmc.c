@@ -3,6 +3,16 @@
 #include "gribscan.h"
 #include "mymalloc.h"
 
+typedef enum tileid_t {
+  TI_NW = 0,
+  TI_NC,
+  TI_NE,
+  TI_SW,
+  TI_SC,
+  TI_SE,
+  TI_Error
+} tileid_t;
+
 typedef struct sorter_t {
   iparm_t iparm;
   long ftime;
@@ -28,6 +38,32 @@ new_sorter(const grib2secs_t *gsp)
   return sp;
 }
 
+  enum tileid_t
+gds_tileid(const bounding_t *bp)
+{
+  if ((bp->n==90.0)&&(bp->s==0.0)&&(bp->w==70.0)&&(bp->e==190.0)) { return TI_NE; }
+  if ((bp->n==0.0)&&(bp->s==-90.0)&&(bp->w==70.0)&&(bp->e==190.0)) { return TI_SE; }
+  if ((bp->n==90.0)&&(bp->s==0.0)&&(bp->w==190.0)&&(bp->e==310.0)) { return TI_NW; }
+  if ((bp->n==0.0)&&(bp->s==-90.0)&&(bp->w==190.0)&&(bp->e==310.0)) { return TI_SW; }
+  if ((bp->n==90.0)&&(bp->s==0.0)&&(bp->w==310.0)&&(bp->e==430.0)) { return TI_NC; }
+  if ((bp->n==0.0)&&(bp->s==-90.0)&&(bp->w==310.0)&&(bp->e==430.0)) { return TI_SC; }
+  fprintf(stderr, "Unknown tile n%g s%g w%g e%g\n", bp->n, bp->s, bp->w, bp->e);
+  return TI_Error;
+}
+
+  enum gribscan_err_t
+sorter_add(sorter_t *sp, const grib2secs_t *gsp)
+{
+  enum gribscan_err_t r;
+  struct bounding_t b;
+  enum tileid_t ti;
+  r = decode_gds(gsp, &b);
+  if (r != GSE_OKAY) return r;
+  ti = gds_tileid(&b);
+  if (ti == TI_Error) return ERR_UNSUPPORTED;
+  return r;
+}
+
   int
 sorter_gsp_compat(const sorter_t *sp, const grib2secs_t *gsp)
 {
@@ -44,26 +80,28 @@ static sorter_t *Sorter = NULL;
   gribscan_err_t
 sort_data(const struct grib2secs *gsp)
 {
+  gribscan_err_t r;
   if (Sorter == NULL) {
     puts("new");
     Sorter = new_sorter(gsp); 
-    return GSE_OKAY;
+    r = sorter_add(Sorter, gsp);
+    return r;
   }
   sorter_t *cur = Sorter;
   while (1) {
     if (sorter_gsp_compat(cur, gsp)) {
-      // register
-      puts("hit");
+      r = sorter_add(cur, gsp);
       break;
     }
     if (cur->next == NULL) {
       puts("new");
       cur->next = new_sorter(gsp);
+      r = sorter_add(cur->next, gsp);
       break;
     }
     cur = cur->next;
   }
-  return GSE_OKAY;
+  return r;
 }
 
   gribscan_err_t
