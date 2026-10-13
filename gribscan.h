@@ -2,6 +2,8 @@
 
 /* === gribscan.h === */
 
+extern int gribscan_quiet_on_bitmaps;
+
 typedef enum gribscan_err_t {
   GSE_OKAY = 0,
   GSE_SKIP,

@@ -12,6 +12,10 @@
 # define DBG53 0
 #endif
 
+//=== dousa flags ===
+
+int gribscan_quiet_on_bitmaps = 0;
+
 //=== レプレゼンテーション層 ===
 
 // 4オクテット符号付き整数の解読
@@ -690,7 +694,9 @@ decode_gds(const grib2secs_t *gsp, bounding_t *bp)
   // GDS 格子数が DRS 格子数と不一致の場合（= ビットマップ使用時）
   // toriaezu tan ni warning
   if ((gpixels = ui4(gsp->gds + 6)) != npixels) {
-    fprintf(stderr, "Pixels unmatch DRS %zu != GDS %zu\n", npixels, gpixels);
+    if (!gribscan_quiet_on_bitmaps) {
+      fprintf(stderr, "Pixels unmatch DRS %zu != GDS %zu\n", npixels, gpixels);
+    }
     bp->has_bitmap = 1;
   }
   // GDT が 5.0 (正距円筒図法) ではない場合
@@ -711,8 +717,10 @@ decode_gds(const grib2secs_t *gsp, bounding_t *bp)
   bp->ni = si4(gsp->gds + 30);
   bp->nj = si4(gsp->gds + 34);
   if (npixels != bp->ni * bp->nj) {
-    fprintf(stderr, "Unsupported npixels %zu != Ni %zu * Nj %zu\n", 
-      npixels, bp->ni, bp->nj);
+    if (!gribscan_quiet_on_bitmaps) {
+      fprintf(stderr, "Unsupported npixels %zu != Ni %zu * Nj %zu\n", 
+        npixels, bp->ni, bp->nj);
+    }
     bp->has_bitmap = 1;
   }
   // 主要要素デコード

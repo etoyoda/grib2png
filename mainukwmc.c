@@ -242,6 +242,7 @@ BARF:
 main(int argc, const char **argv)
 {
   gribscan_err_t r;
+  gribscan_quiet_on_bitmaps = 1;
   r = argscan(argc, argv);
   if (r == ERR_NOINPUT) {
     fprintf(stderr, "usage: %s input ...\n", argv[0]);
