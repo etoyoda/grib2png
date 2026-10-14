@@ -780,6 +780,8 @@ level_name(double vlev)
     return "msl";
   } else if (vlev == VLEVEL_Z2M) {
     return "z2";
+  } else if (vlev == VLEVEL_Z1_5M) {
+    return "z1.5";
   } else if (vlev == VLEVEL_Z10M) {
     return "z10";
   } else {
