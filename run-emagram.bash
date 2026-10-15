@@ -167,9 +167,16 @@ sflag=-s3
 mv -f plot.png ${yy}${mm}${dd}${hh}kanto2.png
 
 if [ -f /nwp/bin/send_png_mail.rb ]; then
+  files=''
+  for nam in kanto noto
+  do
+    if test -f ${yy}${mm}${dd}${hh}${nam}.png ; then
+      files="$files ${yy}${mm}${dd}${hh}${nam}.png"
+    fi
+  done
   case $hh in
   00|12)
-    ruby /nwp/bin/send_png_mail.rb ${yy}${mm}${dd}${hh}kanto.png
+    ruby /nwp/bin/send_png_mail.rb $files
   ;;
   esac
 fi
