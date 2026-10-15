@@ -18,3 +18,9 @@ typedef enum palette_t {
   extern int
 gridsave(double *gbuf, size_t owidth, size_t oheight, palette_t pal,
   const char *filename, char **textv, double *omake);
+
+  static inline size_t
+modssz(ssize_t i, size_t mod)
+{
+  return ((i % (ssize_t)mod) + (ssize_t)mod) % (ssize_t)mod;
+}

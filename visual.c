@@ -575,7 +575,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
       sum = 0.0;
       for (size_t jc = j - 3; jc <= j + 3; jc++) {
         for (int ics = i - 3; ics <= i + 3; ics++) {
-          sum += gbuf[(ics % owidth)+jc*owidth];
+          sum += gbuf[modssz(ics,owidth)+jc*owidth];
         }
       }
       xbuf[i+j*owidth] = sum / 49.0;
@@ -588,7 +588,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
       sum = 0.0;
       for (size_t jc = j - 2; jc <= j + 2; jc++) {
         for (int ics = i - 2; ics <= i + 2; ics++) {
-          sum += xbuf[(ics % owidth)+jc*owidth];
+          sum += xbuf[modssz(ics,owidth)+jc*owidth];
         }
       }
       sbuf[i+j*owidth] = sum / 25.0;
@@ -708,7 +708,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
       sum = 0.0;
       for (size_t jc = j - 2; jc <= j + 2; jc++) {
         for (int ics = i - 2; ics <= i + 2; ics++) {
-          sum += gbuf[(ics % owidth)+jc*owidth];
+          sum += gbuf[modssz(ics,owidth)+jc*owidth];
         }
       }
       sbuf[i+j*owidth] = sum / 25.0;
@@ -757,7 +757,7 @@ drawshear(png_bytep *ovector, const double *gbuf,
       sum = 0.0;
       for (size_t jc = j - 2; jc <= j + 2; jc++) {
         for (int ics = i - 2; ics <= i + 2; ics++) {
-          sum += lbuf[(ics % owidth)+jc*owidth];
+          sum += lbuf[modssz(ics,owidth)+jc*owidth];
         }
       }
       sbuf[i+j*owidth] = sum / 25.0;
