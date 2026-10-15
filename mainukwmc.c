@@ -1,7 +1,39 @@
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
+#include <math.h>
 #include "gribscan.h"
 #include "mymalloc.h"
+
+typedef enum bitmapid_t {
+  BMI_FULL = 'F',
+  BMI_NORTH = 'N',
+  BMI_SOUTH = 'S',
+  BMI_Error
+} bitmapid_t;
+
+#define UK_NI 171
+#define UK_NJ 192
+#define UK_BMSIZE ((UK_NI*UK_NJ+7)/8)
+
+static unsigned char *bmNorth = NULL;
+static unsigned char *bmSouth = NULL;
+
+  bitmapid_t
+ukwmc_bitmap_id(const grib2secs_t *gsp)
+{
+  // 初期化
+  if (bmNorth == NULL) {
+    bmNorth = mymalloc(UK_BMSIZE);
+    memset(bmNorth, 0xFF, UK_BMSIZE);
+
+    bmSouth = mymalloc(UK_BMSIZE);
+    memset(bmSouth, 0xFF, UK_BMSIZE);
+  }
+  // BMSが与えられていなければ BMI_FULL
+  // さもなくば BMI_Error
+  return BMI_Error;
+}
 
 typedef enum tileid_t {
   TI_NW = 0,
@@ -45,6 +77,10 @@ new_sorter(const grib2secs_t *gsp)
   enum tileid_t
 gds_tileid(const bounding_t *bp)
 {
+  if (bp->ni != 171) return TI_Error;
+  if (bp->nj != 192) return TI_Error;
+  if (fabs(bp->di - 705882.e-6) > 1.0e-9) return TI_Error;
+  if (fabs(bp->dj - 471204.e-6) > 1.0e-9) return TI_Error;
   if ((bp->n==90.0)&&(bp->s==0.0)&&(bp->w==70.0)&&(bp->e==190.0)) { return TI_NE; }
   if ((bp->n==0.0)&&(bp->s==-90.0)&&(bp->w==70.0)&&(bp->e==190.0)) { return TI_SE; }
   if ((bp->n==90.0)&&(bp->s==0.0)&&(bp->w==190.0)&&(bp->e==310.0)) { return TI_NW; }
@@ -59,21 +95,26 @@ gds_tileid(const bounding_t *bp)
 sorter_add(sorter_t *sp, const grib2secs_t *gsp,
   const bounding_t *bp)
 {
-  enum gribscan_err_t r;
+  // タイル位置を判定。既に取得されていれば @dup と表示して処理中止
   enum tileid_t ti;
-  r = GSE_OKAY;
   ti = gds_tileid(bp);
   if (ti == TI_Error) return ERR_UNSUPPORTED;
   if (sp->have_tiles & (1u << (int)ti)) {
     puts("@dup");
+    return GSE_OKAY;
   }
   sp->have_tiles |= (1u << (int)ti);
+  // ビットマップの分類
+  enum bitmapid_t bi;
+  bi = ukwmc_bitmap_id(gsp);
+  printf("@bm %c %d %s\n", (int)bi, (int)ti, param_name(sp->iparm));
+  // 全タイルの取得ができていれば @full といって報告
   if (sp->have_tiles == ALL_TILES) {
     printf("@full %7s f=%ld d=%ld v=%s m=%g\n",
       param_name(sp->iparm), sp->ftime, sp->dura, level_name(sp->vlev),
       sp->memb);
   }
-  return r;
+  return GSE_OKAY;
 }
 
   int
