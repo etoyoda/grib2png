@@ -907,7 +907,7 @@ dup_grib2secs(const grib2secs_t *gsp)
   }
   if (gsp->bms) {
     if (!(r->bms = mydup(gsp->bms, gsp->bmslen))) return NULL;
-    r->pdslen = gsp->bmslen;
+    r->bmslen = gsp->bmslen;
   }
   if (gsp->ds) {
     if (!(r->ds = mydup(gsp->ds, gsp->dslen))) return NULL;

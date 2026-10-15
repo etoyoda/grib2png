@@ -189,7 +189,8 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   } else {
     char *endp = ftvl + strlen(ftvl);
     enum { SMARGIN = 10 };
-    snprintf(endp, sizeof ftvl - SMARGIN, "/p%u", (unsigned)(vlev / 100.0));
+    size_t remain = sizeof(ftvl) - strlen(ftvl);
+    snprintf(endp, remain, "/p%u", (unsigned)(vlev / 100.0));
   }
   decode_gds(gsp_v, &b);
   enum { ISTEP = 8, JSTEP = 8, JMARGIN = 16 };
