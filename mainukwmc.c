@@ -9,30 +9,56 @@ typedef enum bitmapid_t {
   BMI_FULL = 'F',
   BMI_NORTH = 'N',
   BMI_SOUTH = 'S',
-  BMI_Error
+  BMI_Error = '#'
 } bitmapid_t;
 
 #define UK_NI 171
 #define UK_NJ 192
 #define UK_BMSIZE ((UK_NI*UK_NJ+7)/8)
 
-static unsigned char *bmNorth = NULL;
-static unsigned char *bmSouth = NULL;
-
   bitmapid_t
-ukwmc_bitmap_id(const grib2secs_t *gsp)
+ukwmc_bitmap_id(const grib2secs_t *gsp, const bounding_t *bp)
 {
-  // 初期化
-  if (bmNorth == NULL) {
-    bmNorth = mymalloc(UK_BMSIZE);
-    memset(bmNorth, 0xFF, UK_BMSIZE);
-
-    bmSouth = mymalloc(UK_BMSIZE);
-    memset(bmSouth, 0xFF, UK_BMSIZE);
+  size_t ni = bp->ni;
+  size_t nj = bp->nj;
+  bitmapid_t r = BMI_FULL;
+  if (gsp->bms==NULL) {
+    return r;
   }
-  // BMSが与えられていなければ BMI_FULL
-  // さもなくば BMI_Error
-  return BMI_Error;
+  for (size_t j=0u; j<nj; j++) {
+    size_t rowmiss = 0u;
+    for (size_t i=0u; i<ni; i++) {
+      if (unpackbits(gsp->bms+6, 1, i+j*ni) == 0) {
+        rowmiss++;
+      }
+    }
+    if (j==0u) {
+      if (rowmiss==0u) {
+        r = BMI_FULL;
+      } else if (rowmiss==ni) {
+        r = BMI_NORTH;
+      } else {
+        r = BMI_Error;
+      }
+    } else if (j < nj-1) {
+      if (rowmiss != 0) { r = BMI_Error; }
+    } else if (j == nj-1) {
+      if (rowmiss==0u) {
+        if (!((r==BMI_FULL)||(r==BMI_NORTH))) {
+          r = BMI_Error;
+        }
+      } else if (rowmiss==ni) {
+        if (r == BMI_FULL) {
+          r = BMI_SOUTH;
+        } else {
+          r = BMI_Error;
+        }
+      } else {
+        r = BMI_Error;
+      }
+    }
+  }
+  return r;
 }
 
 typedef enum tileid_t {
@@ -106,7 +132,7 @@ sorter_add(sorter_t *sp, const grib2secs_t *gsp,
   sp->have_tiles |= (1u << (int)ti);
   // ビットマップの分類
   enum bitmapid_t bi;
-  bi = ukwmc_bitmap_id(gsp);
+  bi = ukwmc_bitmap_id(gsp, bp);
   printf("@bm %c %d %s\n", (int)bi, (int)ti, param_name(sp->iparm));
   // 全タイルの取得ができていれば @full といって報告
   if (sp->have_tiles == ALL_TILES) {
