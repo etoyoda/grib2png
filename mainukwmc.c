@@ -200,25 +200,6 @@ sorter_remains_check()
   }
 }
 
-  gribscan_err_t
-check_bms(const struct grib2secs *gsp, bounding_t *bnd)
-{
-  size_t ni = bnd->ni;
-  size_t nj = bnd->nj;
-  for (size_t j=0; j<nj; j++) {
-    size_t rowmiss = 0;
-    for (size_t i=0; i<ni; i++) {
-      if (unpackbits(gsp->bms+6, 1, i+j*ni) == 0) {
-        rowmiss++;
-      }
-    }
-    if (rowmiss) {
-      printf("bitmap row=%zu miss=%zu\n", j, rowmiss);
-    }
-  }
-  return GSE_OKAY;
-}
-
 // empty filter string means "accept all"
 static const char *sfilter = "";
 
@@ -263,9 +244,6 @@ checksec7(const struct grib2secs *gsp)
     printf("lat%+07.3f:%+07.3f lon%+08.3f:%+08.3f %c %8.6gx%-8.6g %4zux%-4zu\n",
       bnd.s, bnd.n, bnd.w, bnd.e, (bnd.wraplon ? 'C' : 'R'),
       bnd.di, bnd.dj, bnd.ni, bnd.nj);
-    if (bnd.has_bitmap) {
-      check_bms(gsp, &bnd);
-    }
   }
 
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
