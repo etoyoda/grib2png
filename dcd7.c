@@ -184,7 +184,8 @@ printf("ds#%04lu grp %5zu ref %5u w %5u len %5u\n", ptr-gsp->ds+1+(nbits/8u),
 j, group_ref[j], g_width[j], group_length[j]);
 #endif
     for (size_t k = 0; k < grplen; k++) {
-      signed x, y, z;
+      int x, y;
+      unsigned z;
       size_t byteofs = nbits / 8u;
       size_t bitofs = nbits % 8u;
       z = getbits(ptr + byteofs, bitofs, g_width[j]);

@@ -110,9 +110,6 @@ gribscan_err_t
   set_parameter(grib2secs_t *gsp, iparm_t iparm);
 
 extern gribscan_err_t
-  decode_ds(const grib2secs_t *gsp, double *dbuf,
-  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
-extern gribscan_err_t
   decode_gds(const grib2secs_t *gsp, bounding_t *bp);
 extern double
   bp_lat(bounding_t *bp, double j);
@@ -139,3 +136,15 @@ extern gribscan_err_t
   long dura,
   double vlev,
   double memb);
+
+/* --- dcd7.c --- */
+
+extern gribscan_err_t
+  decode_ds(const grib2secs_t *gsp, double *dbuf,
+  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
+
+/* --- dcd7f.c --- */
+
+extern gribscan_err_t
+  decode_ds_float(const grib2secs_t *gsp, float *fbuf,
+  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
