@@ -87,6 +87,7 @@ extern int si2(const unsigned char *buf);
 extern unsigned ui2(const unsigned char *buf);
 extern double float40(const unsigned char *buf);
 extern double float32(const unsigned char *buf);
+extern unsigned getbits(const unsigned char *buf, size_t bitofs, size_t nbits);
 extern unsigned
   unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
 

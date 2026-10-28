@@ -30,6 +30,9 @@ mydup(const void *ptr, size_t size)
   return r;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"
+
   void *
 myrealloc(void *ptr, size_t size)
 {
@@ -39,6 +42,8 @@ myrealloc(void *ptr, size_t size)
   }
   return r;
 }
+
+#pragma GCC diagnostic pop
 
   void
 myfree(void *ptr)
