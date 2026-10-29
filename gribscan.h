@@ -79,7 +79,7 @@ extern gribscan_err_t
 extern gribscan_err_t
   checksec7(const grib2secs_t *gsp);
 
-/* --- gribscan.c --- */
+/* --- numdec.c --- */
 
 extern long si4(const unsigned char *buf);
 extern unsigned long ui4(const unsigned char *buf);
@@ -90,6 +90,14 @@ extern double float32(const unsigned char *buf);
 extern unsigned getbits(const unsigned char *buf, size_t bitofs, size_t nbits);
 extern unsigned
   unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
+
+/* --- numenc.c --- */
+
+extern void set_si4(unsigned char *ptr, long i);
+extern void set_ui4(unsigned char *ptr, unsigned long u);
+extern void set_float32(unsigned char *ptr, float x);
+
+/* --- gribscan.c --- */
 
 extern void
   get_reftime(struct tm *tp, const grib2secs_t *gsp);

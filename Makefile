@@ -1,9 +1,10 @@
-OBJS=mainlogic.o gribscan.o dcd7.o trapbin.o trapsfc.o visual.o mymalloc.o
-OBJS2=mainslim.o gribscan.o mymalloc.o filter.o
-OBJS3=mainpick.o gribscan.o dcd7.o mymalloc.o filter.o
+GOBJS=gribscan.o numdec.o mymalloc.o
+OBJS=mainlogic.o $(GOBJS) dcd7.o trapbin.o trapsfc.o visual.o
+OBJS2=mainslim.o $(GOBJS) filter.o
+OBJS3=mainpick.o $(GOBJS) dcd7.o filter.o
 OBJS4=emagram.o emaprep.o plot.o
-OBJS5=mainlist.o gribscan.o mymalloc.o filter.o
-OBJS6=mainukwmc.o gribscan.o mymalloc.o filter.o dcd7f.o
+OBJS5=mainlist.o $(GOBJS) filter.o
+OBJS6=mainukwmc.o $(GOBJS) filter.o dcd7f.o numenc.o
 LIBS= -lm -lpng
 # OPTS= -g -pg を想定
 LFLAGS= $(OPTS) -fopenmp
@@ -45,6 +46,7 @@ smap: smap.c plot.o
 
 mymalloc.o: mymalloc.h
 gribscan.o: gribscan.h mymalloc.h
+numenc.o: gribscan.h
 dcd7.o: gribscan.h mymalloc.h
 mainlogic.o: grib2png.h gribscan.h visual.h mymalloc.h
 trapbin.o: grib2png.h gribscan.h visual.h mymalloc.h

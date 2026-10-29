@@ -6,6 +6,10 @@
 #include "gribscan.h"
 #include "mymalloc.h"
 
+// output file, name can be changed by -o option
+static const char *oFnam = "merged.grib";
+static FILE *oFp = NULL;
+
 typedef enum bitmapid_t {
   BMI_FULL = 'F',
   BMI_NORTH = 'N',
@@ -121,6 +125,30 @@ gds_tileid(const bounding_t *bp)
 }
 
   enum gribscan_err_t
+store_plane(sorter_t *sp, const grib2secs_t *gsp)
+{
+  if (oFp==NULL) {
+    oFp=fopen(oFnam, "wb");
+    if (oFp==NULL) {
+      perror(oFnam);
+      return ERR_IO;
+    }
+    // write IS/IDS/GDS at the beginning of file
+    unsigned char sec0[16] = {'G','R','I','B', 0,0,0,2, 0,0,0,0, 0,0,0,0};
+    if (1u!=fwrite(sec0,16,1,oFp)) { return ERR_IO; }
+    if (1u!=fwrite(gsp->ids,gsp->idslen,1,oFp)) { return ERR_IO; }
+    unsigned char *mygds=mymalloc(gsp->gdslen);
+    memcpy(mygds,gsp->gds,gsp->gdslen);
+    // currently decode_gds() aborts w/GDS other than GDT3.0
+
+    if (1u!=fwrite(mygds,gsp->gdslen,1,oFp)) { return ERR_IO; }
+    myfree(mygds);
+  }
+  if (1u!=fwrite(gsp->pds,gsp->pdslen,1,oFp)) { return ERR_IO; }
+  return GSE_OKAY;
+}
+
+  enum gribscan_err_t
 sorter_add(sorter_t *sp, const grib2secs_t *gsp,
   const bounding_t *bp)
 {
@@ -166,10 +194,12 @@ tibi_okay:
   printf("max %10.3f min %10.3f avg %10.3f\n",
     fmax, fmin, fsum/npixels);
   // 全タイルの取得ができていれば @full といって報告
+  r=GSE_OKAY;
   if (sp->have_tiles == ALL_TILES) {
     printf("@full %7s f=%ld d=%ld v=%s m=%g\n",
       param_name(sp->iparm), sp->ftime, sp->dura, level_name(sp->vlev),
       sp->memb);
+    r=store_plane(sp, gsp);
     // dispose data values; the sorter element is kept so that 
     // duplicated tiles arriving later can be recognised by have_tiles;
     for (int i=0; i<TI_Error; i++) {
@@ -177,7 +207,7 @@ tibi_okay:
       sp->fbuf[i]=NULL;
     }
   }
-  return GSE_OKAY;
+  return r;
 }
 
   int
@@ -304,11 +334,14 @@ argscan(int argc, const char **argv)
       switch (argv[i][1]) {
       case 'f':
         sfilter = argv[i]+2;
-	break;
+        break;
+      case 'o':
+        oFnam = argv[i]+2;
+        break;
       default:
         fprintf(stderr, "%s: unknown option\n", argv[i]);
-	r = GSE_JUSTWARN;
-	goto BARF;
+        r = GSE_JUSTWARN;
+        goto BARF;
       }
     } else {
       r = grib2scan_by_filename(argv[i]);
