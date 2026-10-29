@@ -82,6 +82,7 @@ typedef struct sorter_t {
   double memb;
   // fields to be added to retain data contents
   unsigned have_tiles;
+  float *fbuf[6];
   struct sorter_t *next;
 } sorter_t;
 
@@ -97,6 +98,7 @@ new_sorter(const grib2secs_t *gsp)
   sp->dura = get_duration(gsp);
   sp->memb = get_perturb(gsp);
   sp->have_tiles = 0u;
+  for (int i=0; i<6; i++) { sp->fbuf[i] = NULL; }
   sp->next = NULL;
   return sp;
 }
@@ -130,7 +132,6 @@ sorter_add(sorter_t *sp, const grib2secs_t *gsp,
     puts("@dup");
     return GSE_OKAY;
   }
-  sp->have_tiles |= (1u << (int)ti);
   // ビットマップの分類
   enum bitmapid_t bi;
   bi = ukwmc_bitmap_id(gsp, bp);
@@ -153,13 +154,15 @@ tibi_okay:
     myfree(fbuf);
     return r;
   }
-  float fmin=FLT_MAX, fmax=-FLT_MAX
-  double fsum=0.0f;
+  float fmin=FLT_MAX, fmax=-FLT_MAX;
+  double fsum=0.0;
   for (size_t i=0u; i<npixels; i++) {
     if (fbuf[i]>fmax) fmax=fbuf[i];
     if (fbuf[i]<fmin) fmin=fbuf[i];
     fsum+=fbuf[i];
   }
+  sp->have_tiles |= (1u << (int)ti);
+  sp->fbuf[(int)ti]=fbuf;
   printf("max %10.3f min %10.3f avg %10.3f\n",
     fmax, fmin, fsum/npixels);
   // 全タイルの取得ができていれば @full といって報告
@@ -167,6 +170,12 @@ tibi_okay:
     printf("@full %7s f=%ld d=%ld v=%s m=%g\n",
       param_name(sp->iparm), sp->ftime, sp->dura, level_name(sp->vlev),
       sp->memb);
+    // dispose data values; the sorter element is kept so that 
+    // duplicated tiles arriving later can be recognised by have_tiles;
+    for (int i=0; i<6; i++) {
+      myfree(sp->fbuf[i]);
+      sp->fbuf[i]=NULL;
+    }
   }
   return GSE_OKAY;
 }
