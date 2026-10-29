@@ -82,7 +82,7 @@ typedef struct sorter_t {
   double memb;
   // fields to be added to retain data contents
   unsigned have_tiles;
-  float *fbuf[6];
+  float *fbuf[TI_Error];
   struct sorter_t *next;
 } sorter_t;
 
@@ -98,7 +98,7 @@ new_sorter(const grib2secs_t *gsp)
   sp->dura = get_duration(gsp);
   sp->memb = get_perturb(gsp);
   sp->have_tiles = 0u;
-  for (int i=0; i<6; i++) { sp->fbuf[i] = NULL; }
+  for (int i=0; i<TI_Error; i++) { sp->fbuf[i] = NULL; }
   sp->next = NULL;
   return sp;
 }
@@ -172,7 +172,7 @@ tibi_okay:
       sp->memb);
     // dispose data values; the sorter element is kept so that 
     // duplicated tiles arriving later can be recognised by have_tiles;
-    for (int i=0; i<6; i++) {
+    for (int i=0; i<TI_Error; i++) {
       myfree(sp->fbuf[i]);
       sp->fbuf[i]=NULL;
     }
