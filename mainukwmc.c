@@ -140,11 +140,18 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
     unsigned char *mygds=mymalloc(gsp->gdslen);
     memcpy(mygds,gsp->gds,gsp->gdslen);
     // currently decode_gds() aborts w/GDS other than GDT3.0
-
+    // following offsets are for GDT3.0
+    set_si4(mygds+30, (UK_NI-1)*3); //Ni
+    set_si4(mygds+34, (UK_NJ-1)*2+1); //Nj
+    set_si4(mygds+46, 90000000L); //La1
+    set_si4(mygds+50, -170000000L); //Lo1
+    set_si4(mygds+55, -90000000L); //La2
+    set_si4(mygds+59, 190000000L); //Lo2
     if (1u!=fwrite(mygds,gsp->gdslen,1,oFp)) { return ERR_IO; }
     myfree(mygds);
   }
   if (1u!=fwrite(gsp->pds,gsp->pdslen,1,oFp)) { return ERR_IO; }
+  // forge and write DS here
   return GSE_OKAY;
 }
 
