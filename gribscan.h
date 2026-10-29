@@ -95,6 +95,7 @@ extern unsigned
 
 extern void set_si4(unsigned char *ptr, long i);
 extern void set_ui4(unsigned char *ptr, unsigned long u);
+extern void set_ui2(unsigned char *ptr, unsigned u);
 extern void set_float32(unsigned char *ptr, float x);
 
 /* --- gribscan.c --- */

@@ -17,9 +17,11 @@ typedef enum bitmapid_t {
   BMI_Error = '#'
 } bitmapid_t;
 
-#define UK_NI 171
-#define UK_NJ 192
-#define UK_BMSIZE ((UK_NI*UK_NJ+7)/8)
+#define UK_NI 171u
+#define UK_NJ 192u
+#define FULL_NI (UK_NI*2u-1u)
+#define FULL_NJ ((UK_NJ-1u)*3u)
+#define FULL_NIJ (FULL_NI*FULL_NJ)
 
   bitmapid_t
 ukwmc_bitmap_id(const grib2secs_t *gsp, const bounding_t *bp)
@@ -135,24 +137,46 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
     }
     // write IS/IDS/GDS at the beginning of file
     unsigned char sec0[16] = {'G','R','I','B', 0,0,0,2, 0,0,0,0, 0,0,0,0};
-    if (1u!=fwrite(sec0,16,1,oFp)) { return ERR_IO; }
-    if (1u!=fwrite(gsp->ids,gsp->idslen,1,oFp)) { return ERR_IO; }
+    if (1u!=fwrite(sec0,16u,1u,oFp)) { return ERR_IO; }
+    if (1u!=fwrite(gsp->ids,gsp->idslen,1u,oFp)) { return ERR_IO; }
     unsigned char *mygds=mymalloc(gsp->gdslen);
     memcpy(mygds,gsp->gds,gsp->gdslen);
     // currently decode_gds() aborts w/GDS other than GDT3.0
     // following offsets are for GDT3.0
-    set_si4(mygds+30, (UK_NI-1)*3); //Ni
-    set_si4(mygds+34, (UK_NJ-1)*2+1); //Nj
+    set_si4(mygds+30, FULL_NI); //Ni
+    set_si4(mygds+34, FULL_NJ); //Nj
     set_si4(mygds+46, 90000000L); //La1
     set_si4(mygds+50, -170000000L); //Lo1
     set_si4(mygds+55, -90000000L); //La2
     set_si4(mygds+59, 190000000L); //Lo2
-    if (1u!=fwrite(mygds,gsp->gdslen,1,oFp)) { return ERR_IO; }
+    if (1u!=fwrite(mygds,gsp->gdslen,1u,oFp)) { return ERR_IO; }
     myfree(mygds);
   }
-  if (1u!=fwrite(gsp->pds,gsp->pdslen,1,oFp)) { return ERR_IO; }
+  if (1u!=fwrite(gsp->pds,gsp->pdslen,1u,oFp)) { return ERR_IO; }
+  unsigned char sec5[12];
+  set_ui4(sec5+0,12uL);
+  sec5[4]=5;
+  set_ui4(sec5+5,FULL_NIJ);
+  set_ui2(sec5+9,4u); // DRT5.4
+  sec5[11]=1u; // IEEE float32
+  if (1u!=fwrite(sec5,12u,1u,oFp)) { return ERR_IO; }
+
   // forge and write DS here
   return GSE_OKAY;
+}
+
+  void
+close_outgrib(void)
+{
+  if (oFp==NULL) return;
+  fwrite("7777", 4u, 1u, oFp);
+  long pos=ftell(oFp);
+  unsigned char is8[8];
+  set_ui4(is8, (unsigned long)pos >> 32);
+  set_ui4(is8+4, 0xFFFFFFFFuL & (unsigned long)pos);
+  fseek(oFp, 8u, SEEK_SET);
+  fwrite(is8, 8u, 1u, oFp);
+  fclose(oFp);
 }
 
   enum gribscan_err_t
@@ -372,6 +396,7 @@ main(int argc, const char **argv)
   } else if (r != GSE_OKAY) {
     fprintf(stderr, "%s: exit(%u)\n", argv[0], r);
   }
+  close_outgrib();
   mymemstat();
   return r;
 }

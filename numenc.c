@@ -17,6 +17,15 @@ set_ui4(unsigned char *ptr, unsigned long u)
   ptr[3] = u & 0xFFu;
 }
 
+// store 16bit unsigned integer onto pointer ptr 
+  void
+set_ui2(unsigned char *ptr, unsigned u)
+{
+  if (u > 0xFFFFu) u = 0xFFFFu;
+  ptr[0] = (u >> 8) & 0xFFu;
+  ptr[1] = u & 0xFFu;
+}
+
 // store 32bit signed integer onto pointer ptr 
   void
 set_si4(unsigned char *ptr, long i)
