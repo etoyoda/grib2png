@@ -15,7 +15,7 @@ mymalloc(size_t size)
   asize += size;
   acount++;
   if (mymalloc_verbose) {
-    fprintf(stderr, "#mymalloc %zu %p\n", size, ptr);
+    fprintf(stderr, "#mymalloc %d %zu %p\n", acount, size, ptr);
   }
   return ptr;
 }
@@ -38,7 +38,7 @@ myrealloc(void *ptr, size_t size)
 {
   void *r = realloc(ptr, size);
   if (mymalloc_verbose) {
-    fprintf(stderr, "#myrealloc %zu %p %p\n", size, ptr, r);
+    fprintf(stderr, "#myrealloc %d %zu %p %p\n", acount, size, ptr, r);
   }
   return r;
 }
@@ -49,7 +49,7 @@ myrealloc(void *ptr, size_t size)
 myfree(void *ptr)
 {
   if (mymalloc_verbose) {
-    fprintf(stderr, "#myfree %p\n", ptr);
+    fprintf(stderr, "#myfree %d %p\n", acount, ptr);
   }
   acount--;
   free(ptr);

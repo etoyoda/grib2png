@@ -324,6 +324,7 @@ BARF:
 main(int argc, const char **argv)
 {
   gribscan_err_t r;
+  // mymalloc_verbose = 1;
   gribscan_quiet_on_bitmaps = 1;
   r = argscan(argc, argv);
   if (r == ERR_NOINPUT) {
