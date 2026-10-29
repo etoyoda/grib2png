@@ -33,7 +33,7 @@ set_si4(unsigned char *ptr, long i)
   void
 set_float32(unsigned char *ptr, float x)
 {
-  uint32_t u;
-  memcpy(&u, &x, 4);
-  set_ui4(ptr, u);
+  union { float f; uint32_t u; } buf;
+  buf.f = x;
+  set_ui4(ptr, buf.u);
 }
