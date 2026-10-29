@@ -136,13 +136,15 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
       return ERR_IO;
     }
     // write IS/IDS/GDS at the beginning of file
-    unsigned char sec0[16] = {'G','R','I','B', 0,0,0,2, 0,0,0,0, 0,0,0,0};
-    if (1u!=fwrite(sec0,16u,1u,oFp)) { return ERR_IO; }
+    unsigned char is[16] = {'G','R','I','B', 0,0,0,2, 0,0,0,0, 0,0,0,0};
+    if (1u!=fwrite(is,16u,1u,oFp)) { return ERR_IO; }
     if (1u!=fwrite(gsp->ids,gsp->idslen,1u,oFp)) { return ERR_IO; }
     unsigned char *mygds=mymalloc(gsp->gdslen);
+    if (mygds==NULL) { return ERR_NOMEM; }
     memcpy(mygds,gsp->gds,gsp->gdslen);
     // currently decode_gds() aborts w/GDS other than GDT3.0
     // following offsets are for GDT3.0
+    set_si4(mygds+6, FULL_NIJ); //Ni*Nj
     set_si4(mygds+30, FULL_NI); //Ni
     set_si4(mygds+34, FULL_NJ); //Nj
     set_si4(mygds+46, 90000000L); //La1
@@ -153,15 +155,58 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
     myfree(mygds);
   }
   if (1u!=fwrite(gsp->pds,gsp->pdslen,1u,oFp)) { return ERR_IO; }
-  unsigned char sec5[12];
-  set_ui4(sec5+0,12uL);
-  sec5[4]=5;
-  set_ui4(sec5+5,FULL_NIJ);
-  set_ui2(sec5+9,4u); // DRT5.4
-  sec5[11]=1u; // IEEE float32
-  if (1u!=fwrite(sec5,12u,1u,oFp)) { return ERR_IO; }
-
-  // forge and write DS here
+  //=== DRS - DRT5.4
+  unsigned char drs[12];
+  set_ui4(drs+0,12uL);
+  drs[4]=5u;
+  set_ui4(drs+5,FULL_NIJ);
+  set_ui2(drs+9,4u); // DRT5.4
+  drs[11]=1u; // IEEE float32
+  if (1u!=fwrite(drs,12u,1u,oFp)) { return ERR_IO; }
+  //=== BMS - not using bitmap
+  unsigned char bms[6];
+  set_ui4(bms+0,6uL);
+  bms[4]=6u;
+  bms[5]=255u; // bitmap does not apply
+  if (1u!=fwrite(bms,6u,1u,oFp)) { return ERR_IO; }
+  //=== DS - DRT5.4
+  size_t dslen=5u+sizeof(float)*FULL_NIJ;
+  unsigned char *ds=mymalloc(dslen);
+  if (ds==NULL) { return ERR_NOMEM; }
+  set_ui4(ds+0,dslen);
+  ds[4]=7u;
+  unsigned char *bbuf=ds+5;
+  //j=0
+  memset(bbuf,4*FULL_NI,0xFF);
+  //Northern hemisphere
+  for(int ti=TI_NW; ti<=TI_NE; ti++){
+    for(int j=0; j<(UK_NJ-1); j++){
+      for(int i=0; i<(UK_NI-1); i++) {
+        int bofs=(j+1)*FULL_NI+i;
+        if (ti==TI_NC) bofs+=(UK_NI-1);
+        if (ti==TI_NE) bofs+=(UK_NI-1)*2;
+        bofs *= 4;
+        int tofs=j*UK_NI+i;
+        set_float32(bbuf+bofs,sp->fbuf[ti][tofs]);
+      }
+    }
+  }
+  //Southern hemisphere
+  for(int ti=TI_SW; ti<=TI_SE; ti++){
+    for(int j=0; j<(UK_NJ-1); j++){
+      for(int i=0; i<(UK_NI-1); i++) {
+        int bofs=(j+UK_NJ-1)*FULL_NI+i;
+        if (ti==TI_SC) bofs+=(UK_NI-1);
+        if (ti==TI_SE) bofs+=(UK_NI-1)*2;
+        bofs *= 4;
+        int tofs=j*UK_NI+i;
+        set_float32(bbuf+bofs,sp->fbuf[ti][tofs]);
+      }
+    }
+  }
+  //j=last
+  memset(bbuf+4*FULL_NI*(FULL_NJ-1),4*FULL_NI,0xFF);
+  if (1u!=fwrite(ds,dslen,1u,oFp)) { return ERR_IO; }
   return GSE_OKAY;
 }
 
