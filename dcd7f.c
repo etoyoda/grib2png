@@ -45,7 +45,9 @@ DRT5_0: ;
     fprintf(stderr, "DRS size %zu < 21 for DRT5.0\n", gsp->drslen);
     return ERR_BADGRIB;
   }
-  adjust_scales(get_parameter(gsp), &scale_e, &scale_d);
+  if (adjust_scales) {
+    adjust_scales(get_parameter(gsp), &scale_e, &scale_d);
+  }
   scale10 = powf(10.0f, -scale_d);
   for (unsigned i = 0; i < npixels; i++) {
     fbuf[i] = (refv + ldexpf(unpackbits(gsp->ds + 5, depth, i), scale_e))

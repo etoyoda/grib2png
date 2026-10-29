@@ -2,6 +2,7 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <float.h>
 #include "gribscan.h"
 #include "mymalloc.h"
 
@@ -134,6 +135,32 @@ sorter_add(sorter_t *sp, const grib2secs_t *gsp,
   enum bitmapid_t bi;
   bi = ukwmc_bitmap_id(gsp, bp);
   printf("@bm %c %d %s\n", (int)bi, (int)ti, param_name(sp->iparm));
+  if ((ti==TI_NW)&&(bi==BMI_NORTH)) goto tibi_okay;
+  if ((ti==TI_NC)&&(bi==BMI_NORTH)) goto tibi_okay;
+  if ((ti==TI_NE)&&(bi==BMI_NORTH)) goto tibi_okay;
+  if ((ti==TI_SW)&&(bi==BMI_SOUTH)) goto tibi_okay;
+  if ((ti==TI_SC)&&(bi==BMI_SOUTH)) goto tibi_okay;
+  if ((ti==TI_SE)&&(bi==BMI_SOUTH)) goto tibi_okay;
+  puts("unexpected bitmap and tile combination");
+  return ERR_BADGRIB;
+tibi_okay:
+  ;
+  size_t npixels=get_npixels(gsp);
+  float *fbuf=mymalloc(npixels*sizeof(float));
+  gribscan_err_t r;
+  r=decode_ds_float(gsp, fbuf, NULL);
+  if (r!=GSE_OKAY) {
+    myfree(fbuf);
+    return r;
+  }
+  float fmin=FLT_MAX, fmax=-FLT_MAX, fsum=0.0f;
+  for (size_t i=0u; i<npixels; i++) {
+    if (fbuf[i]>fmax) fmax=fbuf[i];
+    if (fbuf[i]<fmin) fmin=fbuf[i];
+    fsum+=fbuf[i];
+  }
+  printf("max %10.3f min %10.3f avg %10.3f\n",
+    fmax, fmin, fsum/npixels);
   // 全タイルの取得ができていれば @full といって報告
   if (sp->have_tiles == ALL_TILES) {
     printf("@full %7s f=%ld d=%ld v=%s m=%g\n",

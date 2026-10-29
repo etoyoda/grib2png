@@ -9,11 +9,12 @@ LIBS= -lm -lpng
 LFLAGS= $(OPTS) -fopenmp
 CFLAGS= $(OPTS) -fopenmp -O2 --pedantic -std=gnu99 -Wall 
 CC=cc
+EXES=grib2png gribslim gribpick emagram smap griblist gribukwmc
 
 .SUFFIXES:
 .SUFFIXES: .c .o
 
-all: grib2png gribslim gribpick emagram smap griblist gribukwmc
+all: $(EXES)
 
 grib2png: $(OBJS)
 	$(CC) $(LFLAGS) -o grib2png $(OBJS) $(LIBS)
@@ -56,7 +57,7 @@ emagram.o: emagram.h
 smap.o: plot.h
 
 clean:
-	rm -f $(OBJS) grib2png *.png
+	rm -f *.o *.png $(EXES)
 
 tags: mainlogic.c gribscan.c gribscan.h visual.c visual.h filter.c
 	ctags *.c *.h
