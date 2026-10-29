@@ -153,7 +153,8 @@ tibi_okay:
     myfree(fbuf);
     return r;
   }
-  double fmin=FLT_MAX, fmax=-FLT_MAX, fsum=0.0f;
+  float fmin=FLT_MAX, fmax=-FLT_MAX
+  double fsum=0.0f;
   for (size_t i=0u; i<npixels; i++) {
     if (fbuf[i]>fmax) fmax=fbuf[i];
     if (fbuf[i]<fmin) fmin=fbuf[i];
