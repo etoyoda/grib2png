@@ -109,7 +109,7 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   // 特定パラメタの場合十進尺度 scale_d を補正する
   // 注： mainlogic.c とは値が異なる
   void
-adjust_scales(iparm_t param, int *scale_e, int *scale_d)
+internal_unit_adjust(iparm_t param, int *scale_d)
 {
   switch (param) {
   // 海面気圧: 1 hPa 単位に変換
@@ -161,7 +161,7 @@ save_data(const struct grib2secs *gsp, const char *title)
     fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
-  r = decode_ds(gsp, dbuf, adjust_scales);
+  r = decode_ds(gsp, dbuf, internal_unit_adjust);
   if (r != GSE_OKAY) return r;
   if (dumpfile) {
     size_t r;
