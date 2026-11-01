@@ -7,7 +7,7 @@
 
   gribscan_err_t
 decode_ds_float(const grib2secs_t *gsp, float *fbuf,
-  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d)
+  void (*internal_unit_adjust)(iparm_t param, int *scale_d)
   )
 {
   size_t npixels;
@@ -45,8 +45,8 @@ DRT5_0: ;
     fprintf(stderr, "DRS size %zu < 21 for DRT5.0\n", gsp->drslen);
     return ERR_BADGRIB;
   }
-  if (adjust_scales) {
-    adjust_scales(get_parameter(gsp), &scale_e, &scale_d);
+  if (internal_unit_adjust) {
+    internal_unit_adjust(get_parameter(gsp), &scale_d);
   }
   scale10 = powf(10.0f, -scale_d);
   for (unsigned i = 0; i < npixels; i++) {

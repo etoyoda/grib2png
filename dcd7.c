@@ -11,7 +11,7 @@
 
   gribscan_err_t
 decode_ds(const grib2secs_t *gsp, double *dbuf,
-  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d)
+  void (*internal_unit_adjust)(iparm_t param, int *scale_d)
   )
 {
   size_t npixels;
@@ -49,8 +49,8 @@ DRT5_0: ;
     fprintf(stderr, "DRS size %zu < 21 for DRT5.0\n", gsp->drslen);
     return ERR_BADGRIB;
   }
-  if (adjust_scales) {
-    adjust_scales(get_parameter(gsp), &scale_e, &scale_d);
+  if (internal_unit_adjust) {
+    internal_unit_adjust(get_parameter(gsp), &scale_d);
   }
   for (unsigned i = 0; i < npixels; i++) {
     dbuf[i] = (refv + ldexp(unpackbits(gsp->ds + 5, depth, i), scale_e))
@@ -58,7 +58,7 @@ DRT5_0: ;
   }
   return GSE_OKAY;
 
-  /* DRT5.0 - 複合差分圧縮 */
+  /* DRT5.3 - 複合差分圧縮 */
 DRT5_3:
   if (gsp->drslen < 49) {
     fprintf(stderr, "DRS size %zu < 49 for DRT5.3\n", gsp->drslen);

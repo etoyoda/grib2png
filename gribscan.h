@@ -150,10 +150,10 @@ extern gribscan_err_t
 
 extern gribscan_err_t
   decode_ds(const grib2secs_t *gsp, double *dbuf,
-  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
+  void (*internal_unit_adjust)(iparm_t param, int *scale_d));
 
 /* --- dcd7f.c --- */
 
 extern gribscan_err_t
   decode_ds_float(const grib2secs_t *gsp, float *fbuf,
-  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
+  void (*internal_unit_adjust)(iparm_t param, int *scale_d));

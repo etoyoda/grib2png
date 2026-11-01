@@ -86,7 +86,7 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   // 気温または露点: 0.1 K 単位に変換
   // 積算降水量: 0.1 mm 単位に変換
   void
-adjust_scales(iparm_t param, int *scale_e, int *scale_d)
+internal_unit_adjust(iparm_t param, int *scale_d)
 {
   switch (param) {
   // 海面気圧: 0.1 hPa 単位に変換
@@ -199,7 +199,7 @@ convsec7(const struct grib2secs *gsp)
     fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
-  r = decode_ds(gsp, dbuf, adjust_scales);
+  r = decode_ds(gsp, dbuf, internal_unit_adjust);
   double vlev_gsp = get_vlevel(gsp);
   if (r == GSE_OKAY) {
     if (iparm_gsp == IPARM_RH && vlev_gsp != 700.e2) goto NOSAVE;
