@@ -28,6 +28,7 @@ decode_ds(const grib2secs_t *gsp, double *dbuf,
   npixels = ui4(gsp->drs + 5);
   // DRS#10 - データ表現テンプレート番号
   drstempl = ui2(gsp->drs + 9);
+  if (drstempl == 4) goto DRT5_4;
 
   // DRT5.0 と DRT5.3 の共通部
   refv = float32(gsp->drs + 11);
@@ -48,7 +49,9 @@ DRT5_0: ;
     fprintf(stderr, "DRS size %zu < 21 for DRT5.0\n", gsp->drslen);
     return ERR_BADGRIB;
   }
-  adjust_scales(get_parameter(gsp), &scale_e, &scale_d);
+  if (adjust_scales) {
+    adjust_scales(get_parameter(gsp), &scale_e, &scale_d);
+  }
   for (unsigned i = 0; i < npixels; i++) {
     dbuf[i] = (refv + ldexp(unpackbits(gsp->ds + 5, depth, i), scale_e))
       * pow(10.0, -scale_d);
@@ -207,6 +210,17 @@ dbuf[npx]);
   myfree(group_ref);
   myfree(g_width);
   myfree(group_length);
+  return GSE_OKAY;
+
+DRT5_4: ;
+  unsigned float_type = gsp->drs[11u];
+  if (float_type != 1u) {
+    fprintf(stderr, "DRT5.4 - unsupported type %u\n", float_type);
+    return ERR_BADGRIB;
+  }
+  for (unsigned i=0u; i<npixels; i++) {
+    dbuf[i]=float32(gsp->ds+5u+i*4u);
+  }
   return GSE_OKAY;
 }
 
