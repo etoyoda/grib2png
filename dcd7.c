@@ -218,8 +218,14 @@ DRT5_4: ;
     fprintf(stderr, "DRT5.4 - unsupported type %u\n", float_type);
     return ERR_BADGRIB;
   }
+  double factor = 1.0;
+  if (internal_unit_adjust) {
+    scale_d = 0;
+    internal_unit_adjust(get_parameter(gsp), &scale_d);
+    factor *= pow(10.0, -scale_d);
+  }
   for (unsigned i=0u; i<npixels; i++) {
-    dbuf[i]=float32(gsp->ds+5u+i*4u);
+    dbuf[i]=float32(gsp->ds+5u+i*4u)*factor;
   }
   return GSE_OKAY;
 }
