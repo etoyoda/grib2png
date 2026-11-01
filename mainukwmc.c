@@ -19,7 +19,7 @@ typedef enum bitmapid_t {
 
 #define UK_NI 171u
 #define UK_NJ 192u
-#define FULL_NI (UK_NI*3u-2u)
+#define FULL_NI (UK_NI*3u-3u)
 #define FULL_NJ (UK_NJ*2u-1u)
 #define FULL_NIJ (FULL_NI*FULL_NJ)
 
@@ -150,7 +150,7 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
     set_si4(mygds+46, 90000000L); //La1
     set_si4(mygds+50, 190000000L); //Lo1
     set_si4(mygds+55, -90000000L); //La2
-    set_si4(mygds+59, 190000000L); //Lo2
+    set_si4(mygds+59, 190000000L-si4(gsp->gds+63)); //Lo2
     if (1u!=fwrite(mygds,gsp->gdslen,1u,oFp)) { return ERR_IO; }
     myfree(mygds);
   }
@@ -176,8 +176,8 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
   set_ui4(ds+0,dslen);
   ds[4]=7u;
   unsigned char *bbuf=ds+5;
-  //j=0
-  memset(bbuf,4*FULL_NI,0xFF);
+  memset(bbuf,0xFFu,4*FULL_NIJ);
+  //j=0 skipped
   //Northern hemisphere
   for(int ti=TI_NW; ti<=TI_NE; ti++){
     for(int j=0; j<(UK_NJ-1); j++){
@@ -185,28 +185,28 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
         int bofs=(j+1)*FULL_NI+i;
         if (ti==TI_NC) bofs+=(UK_NI-1);
         if (ti==TI_NE) bofs+=(UK_NI-1)*2;
-        bofs *= 4;
         int tofs=j*UK_NI+i;
-        set_float32(bbuf+bofs,sp->fbuf[ti][tofs]);
+        set_float32(bbuf+4*bofs,sp->fbuf[ti][tofs]);
       }
     }
   }
   //Southern hemisphere
   for(int ti=TI_SW; ti<=TI_SE; ti++){
-    for(int j=0; j<(UK_NJ-1); j++){
+    // skip j=0 that is duplicate to Northern Hemisphere
+    for(int j=1; j<UK_NJ; j++){
       for(int i=0; i<(UK_NI-1); i++) {
         int bofs=(j+UK_NJ-1)*FULL_NI+i;
         if (ti==TI_SC) bofs+=(UK_NI-1);
         if (ti==TI_SE) bofs+=(UK_NI-1)*2;
-        bofs *= 4;
         int tofs=j*UK_NI+i;
-        set_float32(bbuf+bofs,sp->fbuf[ti][tofs]);
+        set_float32(bbuf+4*bofs,sp->fbuf[ti][tofs]);
       }
     }
   }
-  //j=last
-  memset(bbuf+4*FULL_NI*(FULL_NJ-1),4*FULL_NI,0xFF);
+  //j=last skipped
+  // so lets write it
   if (1u!=fwrite(ds,dslen,1u,oFp)) { return ERR_IO; }
+  myfree(ds);
   return GSE_OKAY;
 }
 
