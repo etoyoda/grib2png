@@ -19,8 +19,8 @@ typedef enum bitmapid_t {
 
 #define UK_NI 171u
 #define UK_NJ 192u
-#define FULL_NI (UK_NI*2u-1u)
-#define FULL_NJ ((UK_NJ-1u)*3u)
+#define FULL_NI (UK_NI*3u-2u)
+#define FULL_NJ (UK_NJ*2u-1u)
 #define FULL_NIJ (FULL_NI*FULL_NJ)
 
   bitmapid_t
@@ -148,7 +148,7 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
     set_si4(mygds+30, FULL_NI); //Ni
     set_si4(mygds+34, FULL_NJ); //Nj
     set_si4(mygds+46, 90000000L); //La1
-    set_si4(mygds+50, -170000000L); //Lo1
+    set_si4(mygds+50, 190000000L); //Lo1
     set_si4(mygds+55, -90000000L); //La2
     set_si4(mygds+59, 190000000L); //Lo2
     if (1u!=fwrite(mygds,gsp->gdslen,1u,oFp)) { return ERR_IO; }

@@ -31,7 +31,7 @@ set_ui2(unsigned char *ptr, unsigned u)
 set_si4(unsigned char *ptr, long i)
 {
   unsigned long u;
-  if (i > 0x7FFFFFFFul) {
+  if (i > 0x7FFFFFFF) {
     u = 0xFFFFFFFFul;
   } else if (i >= 0) {
     u = i;

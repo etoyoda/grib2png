@@ -381,7 +381,7 @@ decode_gds(const grib2secs_t *gsp, bounding_t *bp)
   bp->s = si4(gsp->gds + 55) / 1.0e6;
   bp->e = si4(gsp->gds + 59) / 1.0e6;
   // 東端 bp->e が西経表示で大小関係が不正常な場合補正
-  if (bp->e < bp->w) { bp->e += 360.0; }
+  if (bp->e <= bp->w) { bp->e += 360.0; }
   // 格子長 di との整合性チェック
   bp->di = si4(gsp->gds + 63) / 1.0e6;
   if (fabs(fabs((bp->e - bp->w) / (bp->ni - 1)) - fabs(bp->di)) > 1.0e-6) {
