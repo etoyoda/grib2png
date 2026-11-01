@@ -46,7 +46,7 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   double ri, rj, fi, fj, weight[4];
   size_t ijofs[4];
   int ceil_ri, floor_ri;
-  if (lon < bp->w) { lon += 360.0; } 
+  while (lon < bp->w) { lon += 360.0; }
   if (lat > bp->n || lat < bp->s) { return nan(""); }
   // 経度 bp->e ならば添字 0, bp->w ならば bp->ni-1 となる案分で経度 lon にあたる添字 ri を決める
   ri = (lon - bp->w) * (bp->ni - 1) / (bp->e - bp->w);
