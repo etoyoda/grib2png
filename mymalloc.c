@@ -15,7 +15,7 @@ mymalloc(size_t size)
   asize += size;
   acount++;
   if (mymalloc_verbose) {
-    fprintf(stderr, "#mymalloc %zu %p\n", size, ptr);
+    fprintf(stderr, "#mymalloc %d %zu %p\n", acount, size, ptr);
   }
   return ptr;
 }
@@ -30,21 +30,26 @@ mydup(const void *ptr, size_t size)
   return r;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"
+
   void *
 myrealloc(void *ptr, size_t size)
 {
   void *r = realloc(ptr, size);
   if (mymalloc_verbose) {
-    fprintf(stderr, "#myrealloc %zu %p %p\n", size, ptr, r);
+    fprintf(stderr, "#myrealloc %d %zu %p %p\n", acount, size, ptr, r);
   }
   return r;
 }
+
+#pragma GCC diagnostic pop
 
   void
 myfree(void *ptr)
 {
   if (mymalloc_verbose) {
-    fprintf(stderr, "#myfree %p\n", ptr);
+    fprintf(stderr, "#myfree %d %p\n", acount, ptr);
   }
   acount--;
   free(ptr);

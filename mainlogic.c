@@ -46,7 +46,7 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   double ri, rj, fi, fj, weight[4];
   size_t ijofs[4];
   int ceil_ri, floor_ri;
-  if (lon < bp->w) { lon += 360.0; } 
+  while (lon < bp->w) { lon += 360.0; }
   if (lat > bp->n || lat < bp->s) { return nan(""); }
   // 経度 bp->e ならば添字 0, bp->w ならば bp->ni-1 となる案分で経度 lon にあたる添字 ri を決める
   ri = (lon - bp->w) * (bp->ni - 1) / (bp->e - bp->w);
@@ -86,7 +86,7 @@ interpol(const double *dbuf, const bounding_t *bp, double lat, double lon)
   // 気温または露点: 0.1 K 単位に変換
   // 積算降水量: 0.1 mm 単位に変換
   void
-adjust_scales(iparm_t param, int *scale_e, int *scale_d)
+internal_unit_adjust(iparm_t param, int *scale_d)
 {
   switch (param) {
   // 海面気圧: 0.1 hPa 単位に変換
@@ -199,7 +199,7 @@ convsec7(const struct grib2secs *gsp)
     fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
-  r = decode_ds(gsp, dbuf, adjust_scales);
+  r = decode_ds(gsp, dbuf, internal_unit_adjust);
   double vlev_gsp = get_vlevel(gsp);
   if (r == GSE_OKAY) {
     if (iparm_gsp == IPARM_RH && vlev_gsp != 700.e2) goto NOSAVE;

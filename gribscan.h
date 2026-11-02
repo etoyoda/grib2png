@@ -2,6 +2,8 @@
 
 /* === gribscan.h === */
 
+extern int gribscan_quiet_on_bitmaps;
+
 typedef enum gribscan_err_t {
   GSE_OKAY = 0,
   GSE_SKIP,
@@ -26,6 +28,7 @@ typedef struct grib2secs {
   void *omake;
 } grib2secs_t;
 
+#define VLEVEL_Z1_5M 101308.0
 #define VLEVEL_Z2M 101302.5
 #define VLEVEL_Z10M 101214.5
 
@@ -65,6 +68,7 @@ typedef struct bounding_t {
   double di, dj;
   size_t ni, nj;
   int wraplon;
+  int has_bitmap;
 } bounding_t;
 
 /* --- mainlogic.c --- */
@@ -75,7 +79,7 @@ extern gribscan_err_t
 extern gribscan_err_t
   checksec7(const grib2secs_t *gsp);
 
-/* --- gribscan.c --- */
+/* --- numdec.c --- */
 
 extern long si4(const unsigned char *buf);
 extern unsigned long ui4(const unsigned char *buf);
@@ -83,8 +87,18 @@ extern int si2(const unsigned char *buf);
 extern unsigned ui2(const unsigned char *buf);
 extern double float40(const unsigned char *buf);
 extern double float32(const unsigned char *buf);
+extern unsigned getbits(const unsigned char *buf, size_t bitofs, size_t nbits);
 extern unsigned
   unpackbits(const unsigned char *buf, size_t nbits, size_t pos);
+
+/* --- numenc.c --- */
+
+extern void set_si4(unsigned char *ptr, long i);
+extern void set_ui4(unsigned char *ptr, unsigned long u);
+extern void set_ui2(unsigned char *ptr, unsigned u);
+extern void set_float32(unsigned char *ptr, float x);
+
+/* --- gribscan.c --- */
 
 extern void
   get_reftime(struct tm *tp, const grib2secs_t *gsp);
@@ -104,9 +118,6 @@ extern size_t
 gribscan_err_t
   set_parameter(grib2secs_t *gsp, iparm_t iparm);
 
-extern gribscan_err_t
-  decode_ds(const grib2secs_t *gsp, double *dbuf,
-  void (*adjust_scales)(iparm_t param, int *scale_e, int *scale_d));
 extern gribscan_err_t
   decode_gds(const grib2secs_t *gsp, bounding_t *bp);
 extern double
@@ -134,3 +145,15 @@ extern gribscan_err_t
   long dura,
   double vlev,
   double memb);
+
+/* --- dcd7.c --- */
+
+extern gribscan_err_t
+  decode_ds(const grib2secs_t *gsp, double *dbuf,
+  void (*internal_unit_adjust)(iparm_t param, int *scale_d));
+
+/* --- dcd7f.c --- */
+
+extern gribscan_err_t
+  decode_ds_float(const grib2secs_t *gsp, float *fbuf,
+  void (*internal_unit_adjust)(iparm_t param, int *scale_d));

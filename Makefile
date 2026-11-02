@@ -1,18 +1,21 @@
-OBJS=gribscan.o mainlogic.o trapbin.o trapsfc.o visual.o mymalloc.o
-OBJS2=gribscan.o mainslim.o mymalloc.o filter.o
-OBJS3=gribscan.o mainpick.o mymalloc.o filter.o
+GOBJS=gribscan.o numdec.o mymalloc.o
+OBJS=mainlogic.o $(GOBJS) dcd7.o trapbin.o trapsfc.o visual.o
+OBJS2=mainslim.o $(GOBJS) filter.o
+OBJS3=mainpick.o $(GOBJS) dcd7.o filter.o
 OBJS4=emagram.o emaprep.o plot.o
-OBJS5=gribscan.o mainlist.o mymalloc.o filter.o
+OBJS5=mainlist.o $(GOBJS) filter.o
+OBJS6=mainukwmc.o $(GOBJS) filter.o dcd7f.o numenc.o
 LIBS= -lm -lpng
 # OPTS= -g -pg を想定
 LFLAGS= $(OPTS) -fopenmp
 CFLAGS= $(OPTS) -fopenmp -O2 --pedantic -std=gnu99 -Wall 
 CC=cc
+EXES=grib2png gribslim gribpick emagram smap griblist gribukwmc
 
 .SUFFIXES:
 .SUFFIXES: .c .o
 
-all: grib2png gribslim gribpick emagram smap griblist
+all: $(EXES)
 
 grib2png: $(OBJS)
 	$(CC) $(LFLAGS) -o grib2png $(OBJS) $(LIBS)
@@ -29,6 +32,9 @@ emagram: $(OBJS4)
 griblist: $(OBJS5)
 	$(CC) $(LFLAGS) -o griblist $(OBJS5) $(LIBS)
 
+gribukwmc: $(OBJS6)
+	$(CC) $(LFLAGS) -o gribukwmc $(OBJS6) $(LIBS)
+
 testv: testv.c visual.o
 	$(CC) $(LFLAGS) -o testv testv.c visual.o $(LIBS)
 
@@ -40,6 +46,8 @@ smap: smap.c plot.o
 
 mymalloc.o: mymalloc.h
 gribscan.o: gribscan.h mymalloc.h
+numenc.o: gribscan.h
+dcd7.o: gribscan.h mymalloc.h
 mainlogic.o: grib2png.h gribscan.h visual.h mymalloc.h
 trapbin.o: grib2png.h gribscan.h visual.h mymalloc.h
 trapsfc.o: grib2png.h gribscan.h visual.h mymalloc.h
@@ -51,7 +59,7 @@ emagram.o: emagram.h
 smap.o: plot.h
 
 clean:
-	rm -f $(OBJS) grib2png *.png
+	rm -f *.o *.png $(EXES)
 
 tags: mainlogic.c gribscan.c gribscan.h visual.c visual.h filter.c
 	ctags *.c *.h
