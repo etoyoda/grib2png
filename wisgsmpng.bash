@@ -41,16 +41,22 @@ cd work
 # syn がうまく動かないのでファイル決め打ちで攻める
 
 tbegin=$(date +%s)
+state=200
 URL="https://www.wis-jma.go.jp/d/o/RJTD/GRIB/Global_Spectral_Model\
 /Latitude_Longitude/1.25_1.25/90.0_-90.0_0.0_358.75/Upper_air_layers\
 /${ymd}/${hh}0000/W_jp-JMA-tokyo,MODEL,JMA+gsm+gpv,C_RJTD_${ymd}${hh}0000\
 _GSM_GPV_Rgl_Gll1p25deg_L-all_FD0000-0512_grib2.bin"
-wget -q -Obiggrib.bin ${URL}
+wget -q -Obiggrib.bin ${URL} || state=500
 tend=$(date +%s)
 let 'elapsed = tend - tbegin'
-logger -p news.info -t syndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "200"=>1}'
+logger -p news.info -t syndl --id=$$ 'elapsed '${elapsed}' wget {"tag"=>"gsm13", "'${state}'"=>1}'
+if [[ X"${state}" != X"200" ]]; then
+  echo failed downloading GRIB
+  exit 16
+fi
 
-/nwp/bin/gribslim -ogsm${ymd}T${hh}.bin biggrib.bin > /dev/null
+filter="p[VVPa]=v70000=v30000=|&,p[rDIV]=v85000=v25000=|&,p[rVOR]=v50000=&,p[U]=p[V]=p[T]=p[RH]=p[Z]=||||,|||,g361<&,p[Z]=v25000=v50000=v85000=v92500=|||&,p[U]=p[V]=p[T]=||v50000=v85000=v92500=||&,p[RH]=v70000=v85000=v92500=||&,p[RAIN]=p[Pmsl]=|,|||,g720%0=g360=|&,|"
+/nwp/bin/gribslim -f"${filter}" -ogsm${ymd}T${hh}.bin biggrib.bin > /dev/null
 /nwp/bin/grib2png -v -tgsm${ymd}T${hh}.txt \
                     gsm${ymd}T${hh}.bin > grib2png-log.txt || { \
   :                  > gsm${ymd}T${hh}.txt
