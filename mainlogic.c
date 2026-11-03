@@ -240,8 +240,9 @@ checksec7(const struct grib2secs *gsp)
   vlev = get_vlevel(gsp);
   dura = get_duration(gsp);
   // 長すぎる予報時間は最初に捨ててしまう
-  if (((ftime + dura) % 1440 == 0) && (vlev == 500.e2 || vlev == 925.e2) &&
-  (iparm != IPARM_rVOR)) {
+  if (((ftime + dura) % 1440 == 0) &&
+    (vlev == 500.e2 || vlev == 850.e2 || vlev == 925.e2) &&
+    (iparm != IPARM_rVOR)) {
     goto DONT_SKIP;
   }
   if (ftime + dura > 360) goto END_SKIP;
@@ -251,7 +252,7 @@ checksec7(const struct grib2secs *gsp)
   // 要素と面の複合フィルタ
   switch (iparm) {
   case IPARM_T:
-    if (!(vlev == 50000.0 || vlev == 85000.0 || vlev == 92500.0
+    if (!(vlev == 250.e2 || vlev == 500.e2 || vlev == 850.e2 || vlev == 925.e2
     || vlev == VLEVEL_Z2M
     )) {
       goto END_SKIP;
@@ -265,7 +266,7 @@ checksec7(const struct grib2secs *gsp)
   case IPARM_U:
   case IPARM_V:
     if (!(vlev == VLEVEL_Z10M || vlev == 925.e2 || vlev == 850.e2
-    || vlev == 500.e2 || vlev == 300.e2 || vlev == 200.e2
+    || vlev == 500.e2 || vlev == 300.e2 || vlev == 250.e2 || vlev == 200.e2
     || vlev == 100.e2)) goto END_SKIP;
     break;
   case IPARM_VVPa:
@@ -284,7 +285,7 @@ checksec7(const struct grib2secs *gsp)
     if (!(vlev == 500.e2)) goto END_SKIP;
     break;
   case IPARM_Z:
-    if (!(vlev == 200.e2 || vlev == 300.e2
+    if (!(vlev == 200.e2 || vlev == 250.e2 || vlev == 300.e2
     || vlev == 500.e2 || vlev == 850.e2 || vlev == 925.e2)) goto END_SKIP;
     break;
   case IPARM_CLA:
