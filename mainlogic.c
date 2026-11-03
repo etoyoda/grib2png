@@ -266,7 +266,7 @@ checksec7(const struct grib2secs *gsp)
   case IPARM_U:
   case IPARM_V:
     if (!(vlev == VLEVEL_Z10M || vlev == 925.e2 || vlev == 850.e2
-    || vlev == 500.e2 || vlev == 250.e2 || vlev == 100.e2)) goto END_SKIP;
+    || vlev == 500.e2 || vlev == 250.e2 || vlev == 100.e2 || vlev == 50.e2)) goto END_SKIP;
     break;
   case IPARM_VVPa:
     if (vlev != 70000.0) goto END_SKIP;
