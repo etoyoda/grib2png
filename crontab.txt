@@ -4,3 +4,4 @@
 41    2,8,14,20 * * * nwp bash /nwp/bin/wisgsmpng.bash
 0     *         * * * nwp bash /nwp/bin/makelist.sh
 30    4,10,16,22 * * * nwp bash /nwp/bin/run-emagram.bash
+43    2,6,14,18 * * * nwp bash /nwp/bin/wis2ukwmc.bash
