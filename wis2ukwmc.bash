@@ -57,7 +57,7 @@ test ! -d ${ymd}T${hh}Z || rm -rf ${ymd}T${hh}Z
 mv work ${ymd}T${hh}Z
 
 keep_days=2
-find . -maxdepth 1 -ctime +${keep_days} | xargs rm -rf
+find . -maxdepth 1 -type d -name '20*Z' -ctime +${keep_days} -print0 | xargs -0 rm -rf
 
 if $verbose ; then
   echo ... and all done okay

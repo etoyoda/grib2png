@@ -1,5 +1,5 @@
 for file in wisgsmpng.bash grib2png gribslim makelist.sh gribpick emagram \
- run-emagram.bash send_png_mail.rb gribukwmc
+ run-emagram.bash send_png_mail.rb gribukwmc wis2ukwmc.bash
 do
   sudo -u nwp install -m 0755 $file /nwp/bin
 done

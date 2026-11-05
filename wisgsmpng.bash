@@ -71,7 +71,7 @@ test -d /nwp/a1/$ym || mkdir /nwp/a1/$ym
 ln -f ${ymd}T${hh}Z/gsm${ymd}T${hh}.bin /nwp/a1/$ym/gsm${ymd}T${hh}.bin
 
 keep_days=1
-find . -maxdepth 1 -ctime +${keep_days} | xargs -r rm -rf
+find . -maxdepth 1 -type d -name '20*Z' -ctime +${keep_days} -print0 | xargs -0 rm -rf
 
 if $verbose
 then echo ... and all done okay
