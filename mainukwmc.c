@@ -187,6 +187,7 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
         if (ti==TI_NE) bofs+=(UK_NI-1)*2;
         int tofs=j*UK_NI+i;
         set_float32(bbuf+4*bofs,sp->fbuf[ti][tofs]);
+        bbuf[4*bofs+3]=0; //low bit clear
       }
     }
   }
@@ -200,6 +201,7 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
         if (ti==TI_SE) bofs+=(UK_NI-1)*2;
         int tofs=j*UK_NI+i;
         set_float32(bbuf+4*bofs,sp->fbuf[ti][tofs]);
+        bbuf[4*bofs+3]=0; //low bit clear
       }
     }
   }
