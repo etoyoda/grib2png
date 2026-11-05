@@ -245,7 +245,7 @@ checksec7(const struct grib2secs *gsp)
     (iparm != IPARM_rVOR)) {
     goto DONT_SKIP;
   }
-  if (ftime + dura > 360) goto END_SKIP;
+  if (ftime + dura > 900) goto END_SKIP;
   DONT_SKIP:
   // 解析値も今の所使わないので捨てる
   if (ftime + dura == 0) goto END_SKIP;
