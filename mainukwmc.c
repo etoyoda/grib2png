@@ -205,7 +205,8 @@ store_plane(sorter_t *sp, const grib2secs_t *gsp)
       }
     }
   }
-  //j=last skipped
+  //j=last filled again
+  memset(bbuf+4*(FULL_NJ-1)*FULL_NI, 0xFF, 4*FULL_NI);
   // so lets write it
   if (1u!=fwrite(ds,dslen,1u,oFp)) { return ERR_IO; }
   myfree(ds);
