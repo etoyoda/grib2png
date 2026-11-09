@@ -21,6 +21,16 @@ mymalloc(size_t size)
 }
 
   void *
+mycalloc(size_t size)
+{
+  void *ptr;
+  ptr=mymalloc(size);
+  if (ptr==NULL) return NULL;
+  memset(ptr,0u,size);
+  return ptr;
+}
+
+  void *
 mydup(const void *ptr, size_t size)
 {
   void *r;

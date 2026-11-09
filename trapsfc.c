@@ -122,9 +122,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   // 緩和法の結果として返される、変数としての流線気圧 [10Pa]
   double *p = mymalloc(sizeof(double)*npixels);
   // laplace p の式の右辺、緩和法のターゲット [10Pa/m2]
-  double *rhs = mymalloc(sizeof(double)*npixels);
+  double *rhs = mycalloc(sizeof(double)*npixels);
   // pの次回サイクルの補正量 [10Pa]
-  double *cor = mymalloc(sizeof(double)*npixels);
+  double *cor = mycalloc(sizeof(double)*npixels);
   if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
   memcpy(p, pmsl, sizeof(double)*npixels);
   // 緯度一度の長さ deglat = (6371.e3*M_PI)/180.0 の逆数 [1/m]
@@ -280,8 +280,16 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
   }
 
+  // UKWMC workaround - skip northmost/southmost lines
+  size_t jmin=1;
+  size_t jsup=b.nj-1;
+  if (isnan(p[0])||isnan(u[0])||isnan(v[0])) {
+    jmin++;
+    jsup--;
+  }
+
   // forcing term
-  for (size_t j=1; j<(b.nj-1); j++) {
+  for (size_t j=jmin; j<jsup; j++) {
     size_t jp1 = j+1;
     size_t jm1 = j-1;
     double invdy = -invdeg/b.dj;
@@ -328,7 +336,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   }
 
   myfree(cfug);
-  for (size_t i=0; i<npixels; i++) turn[i] = 0.0;
+  for (size_t i=0; i<npixels; i++) { turn[i] = 0.0; }
 
   const size_t NITER = 200;
   double firstres = 0.0;
@@ -338,7 +346,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     double sum2res = 0.0;
     double sum2dif = 0.0;
     double sum2wdf = 0.0;
-    for (size_t j=1; j<b.nj-1; j++) {
+    for (size_t j=jmin; j<jsup; j++) {
       size_t jp1 = j+1;
       size_t jm1 = j-1;
       double invdydy = pow(invdeg/b.dj, 2.0);
@@ -371,7 +379,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         turn[i+j*bni] = wdf;
       }
     }
-    for (size_t j=1; j<b.nj-1; j++) {
+    for (size_t j=jmin; j<jsup; j++) {
       for (size_t i=0; i<bni; i++) {
         p[i+j*bni] -= cor[i+j*bni];
         sum2dif += pow(p[i+j*bni]-pmsl[i+j*bni], 2.0);
