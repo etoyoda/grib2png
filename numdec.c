@@ -137,12 +137,20 @@ float32(const unsigned char *buf)
 {
   int sign = (buf[0] & 0x80) ? -1 : 1;
   unsigned e = ((buf[0] & 0x7Fu) << 1) | ((buf[1] >> 7) & 0x1u);
-  unsigned long mant = (buf[1] << 16) | (buf[2] << 8) | buf[3];
-  if (e == 0 && mant == 0.0) {
-    return sign * 0.0;
-  } else if (e == 0) {
-    return sign * ldexp((double)mant, e - 127 - 23);
+  unsigned long mant = ((unsigned long)(buf[1] & 0x7Fu) << 16)
+  | ((unsigned long)buf[2] << 8)
+  | buf[3];
+  if (e == 0u) {
+    // Zero 
+    if (mant == 0u) { return sign * 0.0; }
+    // Subnormal
+    return sign * ldexp((double)mant, e - 126 - 23);
+  } else if (e == 255u) {
+    if (mant == 0u) {
+      return sign > 0 ? INFINITY : -INFINITY;
+    }
+    return nan("");
   } else {
-    return sign * ldexp((double)(mant | 0x800000uL), e - 127 - 23);
+    return sign * ldexp((double)(mant | 0x800000uL), (int)e - 127 - 23);
   }
 }
