@@ -15,9 +15,12 @@ typedef struct sfctrap_t {
   grib2secs_t *gsp_v;
 } sfctrap_t;
 
-enum { N_SFCTRAPS = 1 };
+enum { N_SFCTRAPS = 4 };
 sfctrap_t sfctrap[N_SFCTRAPS] = {
-  { 360, NULL, NULL, NULL }
+  { 360, NULL, NULL, NULL }, // 6h
+  { 540, NULL, NULL, NULL }, // 9h
+  { 720, NULL, NULL, NULL }, // 12h
+  { 900, NULL, NULL, NULL }  // 15h
 };
 
   double
