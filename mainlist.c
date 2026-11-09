@@ -68,9 +68,9 @@ checksec7(const struct grib2secs *gsp)
     } else {
       printf("lat%+07.3f:%+07.3f lon%+08.3f:%+08.3f %c %8.6gx%-8.6g %4zux%-4zu\n",
         bnd.s, bnd.n, bnd.w, bnd.e, (bnd.wraplon ? 'C' : 'R'),
-	bnd.di, bnd.dj, bnd.ni, bnd.nj);
+        bnd.di, bnd.dj, bnd.ni, bnd.nj);
       if (bnd.has_bitmap) {
-	check_bms(gsp, &bnd);
+        check_bms(gsp, &bnd);
       }
     }
     prev_gds = gsp->gds;
