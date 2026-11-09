@@ -50,6 +50,7 @@ checksec7(const struct grib2secs *gsp)
   switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev, memb)) {
     case ERR_FSTACK:
     case GSE_SKIP:
+      r = GSE_SKIP;
       goto END_SKIP;
       break;
     case GSE_OKAY:
@@ -76,11 +77,7 @@ checksec7(const struct grib2secs *gsp)
   }
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
-  goto END_NORMAL;
-
 END_SKIP:
-  r = GSE_SKIP;
-END_NORMAL:
   myfree(gsp->ds);
   return r;
 }
