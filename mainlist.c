@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <time.h>
+#include <math.h>
 #include "gribscan.h"
 #include "mymalloc.h"
 
@@ -19,7 +21,40 @@ check_bms(const struct grib2secs *gsp, bounding_t *bnd)
       printf("bitmap row=%zu miss=%zu\n", j, rowmiss);
     }
   }
-  return 0;
+  return GSE_OKAY;
+}
+
+  gribscan_err_t
+check_datacontent(const struct grib2secs *gsp)
+{
+  size_t npixels = get_npixels(gsp);
+  float *fbuf = mymalloc(npixels*sizeof(float));
+  size_t cnan=0, cbig=0;
+  decode_ds_float(gsp, fbuf, NULL);
+  for (size_t i=0; i<npixels; i++) {
+    if (isnanf(fbuf[i])) cnan++;
+    if (fabsf(fbuf[i])>1.0e9f) cbig++;
+  }
+  if (cnan||cbig) {
+    printf("cnan=%zu cbig=%zu fbuf[0]=%08X\n", cnan, cbig,
+    *(uint32_t*)fbuf);
+    bounding_t bnd;
+    if (GSE_OKAY == decode_gds(gsp, &bnd)) {
+      for (size_t j=0; j<bnd.nj; j++) {
+        size_t cjbig=0;
+        size_t cjnan=0;
+        for (size_t i=0; i<bnd.ni; i++) {
+          if (fabsf(fbuf[i+j*bnd.ni])>1.0e9f) cjbig++;
+          if (isnanf(fbuf[i+j*bnd.ni])) cjnan++;
+        }
+        if (cjbig || cjnan) {
+          printf(" row %zu: nan %zu big %zu\n", j, cjnan, cjbig);
+        }
+      }
+    }
+  }
+  myfree(fbuf);
+  return GSE_OKAY;
 }
 
 // empty filter string means "accept all"
@@ -77,6 +112,7 @@ checksec7(const struct grib2secs *gsp)
   }
   printf("b%s %6s f%-+5ld d%-+5ld v%-8s m%-+4.3g\n",
     sreftime, param_name(iparm), ftime, dura, level_name(vlev), memb);
+  check_datacontent(gsp);
 END_SKIP:
   myfree(gsp->ds);
   return r;
