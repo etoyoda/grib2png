@@ -175,6 +175,12 @@ FILE *text_fp = NULL;
 textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v)
 {
+  double *uu = dbuf_u;
+  double *vv = dbuf_v;
+  if (get_parameter(gsp_u) == IPARM_V) {
+    uu = dbuf_v;
+    vv = dbuf_u;
+  }
   bounding_t b;
   struct tm time;
   char ftvl[256];
@@ -199,8 +205,9 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
     for (unsigned i = 0; i < b.ni; i += ISTEP) {
       double lon = b.w + (b.e - b.w) * i / (b.ni - 1);
       unsigned ij = i + j * b.ni;
-      double wsp = hypot(dbuf_u[ij], dbuf_v[ij]) * 0.1;
-      double wd = wdir(dbuf_u[ij], dbuf_v[ij]);
+      double wsp = hypot(uu[ij], vv[ij]) * 0.1;
+      double wd = atan2(-uu[ij], -vv[ij]) * 180.0 / M_PI;
+      if (wd < 0.0) { wd += 360.0; }
       if (lon > 180.0) { lon -= 360.0; }
       fprintf(text_fp,
         "%s/gpv%+d%+d {\"@\":\"gpv%+d%+d\","
@@ -260,11 +267,11 @@ typedef struct trap_t {
       const outframe_t *ofp, char **textv);
 } trap_t;
 
-enum { N_TRAPS = 31 };
-static trap_t traps[N_TRAPS] = {
+static trap_t traps[] = {
   { NULL, IPARM_T, 925.e2, 360L, IPARM_RH, 925.e2, 360L, project_ept },
   { NULL, IPARM_T, 850.e2, 360L, IPARM_RH, 850.e2, 360L, project_ept },
   { NULL, IPARM_U, VLEVEL_Z10M, 360L, IPARM_V, VLEVEL_Z10M, 360L, project_winds },
+  { NULL, IPARM_V, VLEVEL_Z10M, 360L, IPARM_U, VLEVEL_Z10M, 360L, project_winds },
   { NULL, IPARM_U, 925.e2, 360L, IPARM_V, 925.e2, 360L, project_winds },
   { NULL, IPARM_U, 850.e2, 360L, IPARM_V, 850.e2, 360L, project_winds },
   { NULL, IPARM_U, 500.e2, 360L, IPARM_V, 500.e2, 360L, project_winds },
@@ -273,6 +280,18 @@ static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_U, 200.e2, 360L, IPARM_V, 200.e2, 360L, project_winds },
   { NULL, IPARM_U, 100.e2, 360L, IPARM_V, 100.e2, 360L, project_winds },
   { NULL, IPARM_U,  50.e2, 360L, IPARM_V,  50.e2, 360L, project_winds },
+  { NULL, IPARM_T, 850.e2, 540L, IPARM_RH, 850.e2, 540L, project_ept },
+  { NULL, IPARM_T, 850.e2, 720L, IPARM_RH, 850.e2, 720L, project_ept },
+  { NULL, IPARM_T, 850.e2, 900L, IPARM_RH, 850.e2, 900L, project_ept },
+  { NULL, IPARM_U, VLEVEL_Z10M, 540L, IPARM_V, VLEVEL_Z10M, 540L, project_winds },
+  { NULL, IPARM_U, VLEVEL_Z10M, 720L, IPARM_V, VLEVEL_Z10M, 720L, project_winds },
+  { NULL, IPARM_U, VLEVEL_Z10M, 900L, IPARM_V, VLEVEL_Z10M, 900L, project_winds },
+  { NULL, IPARM_V, VLEVEL_Z10M, 540L, IPARM_U, VLEVEL_Z10M, 540L, project_winds },
+  { NULL, IPARM_V, VLEVEL_Z10M, 720L, IPARM_U, VLEVEL_Z10M, 720L, project_winds },
+  { NULL, IPARM_V, VLEVEL_Z10M, 900L, IPARM_U, VLEVEL_Z10M, 900L, project_winds },
+  { NULL, IPARM_U, 850.e2, 540L, IPARM_V, 850.e2, 540L, project_winds },
+  { NULL, IPARM_U, 850.e2, 720L, IPARM_V, 850.e2, 720L, project_winds },
+  { NULL, IPARM_U, 850.e2, 900L, IPARM_V, 850.e2, 900L, project_winds },
   { NULL, IPARM_U, 925.e2, 1440L, IPARM_V, 925.e2, 1440L, project_winds },
   { NULL, IPARM_U, 925.e2, 2880L, IPARM_V, 925.e2, 2880L, project_winds },
   { NULL, IPARM_U, 925.e2, 4320L, IPARM_V, 925.e2, 4320L, project_winds },
@@ -294,6 +313,8 @@ static trap_t traps[N_TRAPS] = {
   { NULL, IPARM_T, 850.e2, 5760L, IPARM_RH, 850.e2, 5760L, project_ept },
   { NULL, IPARM_T, 850.e2, 7200L, IPARM_RH, 850.e2, 7200L, project_ept }
 };
+
+#define N_TRAPS ((int)(sizeof traps / sizeof traps[0]))
 
   gribscan_err_t
 check_traps(const struct grib2secs *gsp, double *dbuf,
