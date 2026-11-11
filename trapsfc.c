@@ -65,8 +65,8 @@ double gmagic_tropicalvortex = 1.0;
 double gmagic_drip = 0.0;
 // 低気圧部の気圧強制比率
 double gmagic_driplow = 0.5;
-// 緩和法の加速率。不安定になりがちなので小さめにする
-double gmagic_accel = 0.25;
+// 緩和法の減衰Jacobi係数ω。drpl=0.5のとき ω<=0.75で安定
+double gmagic_accel = 0.7;
 double gmagic_mix = 0.85;
 double gmagic_converge = 0.9;
 
@@ -345,6 +345,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   double firstres = 0.0;
   double movavrres = HUGE_VAL; 
   double diftoomuch = 20.0;
+  double accel = gmagic_accel;
   for (size_t iter=0; iter<NITER; iter++) {
     double sum2res = 0.0;
     double sum2dif = 0.0;
@@ -354,7 +355,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       size_t jm1 = j-1;
       double invdydy = pow(invdeg/b.dj, 2.0);
       double invdxdx = pow(invdeg/(b.di*cosdeg(bp_lat(&b,j))), 2.0);
-      double dxdx = gmagic_accel/invdxdx;
+      double dxdx = accel/(2.0*(invdxdx+invdydy));
       // 風向との整合チェック用
       double f = 4.0*M_PI/86400.0*sindeg(bp_lat(&b,j));
       double nfric = fabs(f) * gmagic_friction_ratio;
@@ -392,7 +393,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     double res = sqrt(sum2res/npixels);
     double wdf = sum2wdf/npixels;
     if (verbose) {
-      printf("iter=%04zu res=%6.2f %6.2f %5.3f dif=%6.2f wdf=%6.2f\n", iter, res, movavrres, res/movavrres, dif, wdf*deglat*0.1);
+      printf("iter=%04zu res=%6.2f %6.2f %5.3f dif=%6.2f wdf=%6.2f\n",
+      iter, res, movavrres, res/movavrres, dif, wdf*deglat*0.1);
     }
     if (iter == 0) {
       firstres = res;
@@ -401,8 +403,16 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
       fprintf(stderr, "explosion %g: abort\n", sum2res);
       return ERR_BADGRIB;
     } else if (res > 2.0*firstres) {
-      gmagic_accel *= 0.25;
-      fprintf(stderr, "explosion; accel := %g\n", gmagic_accel);
+      // 発散が検出されたらpを与えられたpmslに戻して再開
+      accel *= 0.5;
+      fprintf(stderr, "explosion; restart w/accel := %g\n", accel);
+      memcpy(p, pmsl, sizeof(double)*npixels);
+      if (accel < 0.01) {
+        fprintf(stderr, "too many restart; Pres := Pmsl as failsafe\n");
+        break;
+      }
+      iter = (size_t)-1;
+      continue;
     } else if (dif > diftoomuch) {
       fprintf(stderr, "too much diff %g\n", dif);
       break;
