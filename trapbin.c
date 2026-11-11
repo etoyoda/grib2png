@@ -175,6 +175,7 @@ FILE *text_fp = NULL;
 textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
   grib2secs_t *gsp_v, double *dbuf_v)
 {
+  // u, v 逆転に備えた措置
   double *uu = dbuf_u;
   double *vv = dbuf_v;
   if (get_parameter(gsp_u) == IPARM_V) {
@@ -206,6 +207,7 @@ textout_winds(const grib2secs_t *gsp_u, double *dbuf_u,
       double lon = b.w + (b.e - b.w) * i / (b.ni - 1);
       unsigned ij = i + j * b.ni;
       double wsp = hypot(uu[ij], vv[ij]) * 0.1;
+      // wdir を使わない
       double wd = atan2(-uu[ij], -vv[ij]) * 180.0 / M_PI;
       if (wd < 0.0) { wd += 360.0; }
       if (lon > 180.0) { lon -= 360.0; }
