@@ -94,7 +94,7 @@ setpixel_z(png_bytep pixel, double val)
   if (val < 1000.0) { // 925hPa用
     blue = (istep - 720/60) * 24 + 0x40;
   } else if (val < 2160.0) { // 850hPa用
-    blue = (istep - 1440/60) * 16 + 0x40;
+    blue = (istep - 1320/60) * 24 + 0x40;
   } else if (val < 4200.0) { // 700hPa用
     blue = (istep - 3000/60) * 16 + 0x40;
   } else if (val < 6360.0) { // 500hPa用
@@ -194,14 +194,14 @@ setpixel_t(png_bytep pixel, double val)
   case -42:
   case -45:
   case -48:
-  case -51:
-  case -54:
-  case -57:
-  case -60:
     pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; break;
   case 27:
   case 25:
   case 24:
+  case -51:
+  case -54:
+  case -57:
+  case -60:
     pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; break;
   case 21:
   case 20:
@@ -216,6 +216,10 @@ setpixel_t(png_bytep pixel, double val)
   case 6:
   case 5:
   case 3:
+  case -63:
+  case -66:
+  case -69:
+  case -72:
     pixel[0] = 185; pixel[1] = 235; pixel[2] = 255; break;
   case 0:
     pixel[0] = 0; pixel[1] = 150; pixel[2] = 255; break;
