@@ -56,7 +56,7 @@ printa(double *ary, size_t n, char *name)
   name, min, max, avr, sqrt(sqsm/n), absm/n);
 }
 
-double gmagic_vortex_minmatch = 0.5;
+double gmagic_vortex_minmatch = 0.7;
 // 摩擦: fとの比率
 double gmagic_friction_ratio = 0.4;
 // 渦強制の熱帯加算比率
@@ -69,6 +69,7 @@ double gmagic_driplow = 0.5;
 double gmagic_accel = 0.7;
 double gmagic_mix = 0.85;
 double gmagic_converge = 0.9;
+double gmagic_chiscale = 1.0e10;
 
 #define strhead(a,b) (0==strncmp((a),(b),strlen((b))))
 
@@ -91,6 +92,8 @@ magic_parameters(const char *arg)
     gmagic_mix = atof(arg+5);
   } else if (strhead(arg,"cnvg=")) {
     gmagic_converge = atof(arg+5);
+  } else if (strhead(arg,"chis=")) {
+    gmagic_chiscale = atof(arg+5);
   } else {
     return -1;
   }
@@ -131,7 +134,9 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   if ((rhs==NULL)||(p==NULL)||(cor==NULL)) { return ERR_NOMEM; }
   memcpy(p, pmsl, sizeof(double)*npixels);
   // 緯度一度の長さ deglat = (6371.e3*M_PI)/180.0 の逆数 [1/m]
+  // deglat * length_in_degree = length_in_metre
   const double deglat = (6371.e3*M_PI)/180.0;
+  // deglat * length_in_metre = length_in_degree
   const double invdeg = 180.0/(M_PI*6371.e3);
   // 密度 [100 kg/m3] - SIの1/100値にしているのはu,pmslの単位の皺寄せ
   double rho = 0.01 * 101325.0 * 28.96e-3 / (8.31432 * 273.15);
@@ -167,6 +172,8 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   for (size_t i=0; i<bni; i++) {
     for (size_t j=4; j<b.nj-1-4; j++) {
       double lat = bp_lat(&b,j);
+      // skip polar and equatorial regions
+      if ((fabs(lat) > 70.0) || (fabs(lat) < 10.0)) continue;
       double is_tropical = 0.5+0.5*tanh((22.5-fabs(lat))*0.5);
       size_t jp1 = j+1;
       if ((lat*u[i+j*bni]<=0.0)&&(lat*u[i+jp1*bni]>0.0)) {
@@ -235,7 +242,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
         rmax = 100.e3; vmax = s1; goto CYCLONE;
       }
       if (m3 < -gmagic_vortex_minmatch) {
-        rmax = 100.e3; vmax = -70.0; goto ANTI_CYCLONE;
+        rmax = 100.e3; vmax = s3; goto ANTI_CYCLONE;
       }
       // skip this vortex candidate
       continue;
@@ -277,7 +284,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   }
   if (verbose>=2) {
     reproject(gbuf, &b, cfug, ofp);
-    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e10; }
+    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= gmagic_chiscale; }
     set_parameter(strap->gsp_v, IPARM_PSI);
     mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
@@ -303,14 +310,18 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
     for (size_t i=0; i<bni; i++) {
       size_t ip1 = (i+1)%bni;
       size_t im1 = (i+bni-1)%bni;
+      // === rho f zeta ===
+      // zeta = \partial v/\partial x - \partial u/\partial y 
+      // Note invdy is *negative* : (jp1-jm1)*invdy is positive y diff
       double rhofzeta = rho * f * (
-        (u[i+jp1*bni] - u[i+jm1*bni]) * 0.5 * invdy
-      - (v[ip1+j*bni] - v[im1+j*bni]) * 0.5 * invdx
+        (v[ip1+j*bni] - v[im1+j*bni]) * 0.5 * invdx
+      - (u[i+jp1*bni] - u[i+jm1*bni]) * 0.5 * invdy
       );
       double nfric = fabs(f) * gmagic_friction_ratio;
-      double friction = rho * nfric * (
-        (u[ip1+j*bni] - u[im1+j*bni]) * 0.5 * invdy
-      + (v[i+jp1*bni] - v[i+jm1*bni]) * 0.5 * invdx
+      // === rho k div V ===
+      double friction = -rho * nfric * (
+        (u[ip1+j*bni] - u[im1+j*bni]) * 0.5 * invdx
+      + (v[i+jp1*bni] - v[i+jm1*bni]) * 0.5 * invdy
       );
       double laplace_p = (
         (p[i+jp1*bni] + p[i+jm1*bni] - 2.0*p[i+j*bni]) * invdy * invdy
@@ -332,7 +343,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   }
   if (verbose>=2) {
     reproject(gbuf, &b, rhs, ofp);
-    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= 1.0e10; }
+    for(size_t i=0; i<onx*ony; i++) { gbuf[i] *= gmagic_chiscale; }
     set_parameter(strap->gsp_v, IPARM_CHI);
     mkfilename(filename, sizeof filename, strap->gsp_v, NULL);
     gridsave(gbuf, onx, ony, PALETTE_rVOR, filename, textv, NULL);
