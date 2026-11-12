@@ -56,6 +56,7 @@ gribscan_filter(const char *sfilter,
   double vlev,
   double memb)
 {
+  static int warned = 0;
   const char *sptr = sfilter;
   char c;
   double dbuf;
@@ -180,5 +181,9 @@ gribscan_filter(const char *sfilter,
     return GSE_SKIP;
   }
 STKOVFL:
+  if (!warned) {
+    fputs("gribscan_filter: stack overflow\n", stderr);
+    warned = 1;
+  }
   return ERR_FSTACK;
 }

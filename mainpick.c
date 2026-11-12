@@ -31,7 +31,7 @@ ptlist_read(FILE *fp)
   ptlist = calloc(maxpts, sizeof(ptlist[0]));
   if (ptlist == NULL) return ERR_NOMEM;
   nl = 0;
-  while (fgets(line, sizeof line, fp) != NULL) {
+  while ((nl < maxpts - 1) && (NULL != fgets(line, sizeof line, fp))) {
     int r;
     struct ptlist_t *cursor;
     cursor = ptlist + nl;
@@ -41,10 +41,9 @@ ptlist_read(FILE *fp)
     } else {
       nl++;
     }
-    if (nl >= (maxpts - 1)) {
-      fprintf(stderr, "W Number of points cannot exceed %u\n", maxpts - 2);
-      break;
-    }
+  }
+  if ((nl >= maxpts-1)&&(NULL!=fgets(line, sizeof line, fp))) {
+    fprintf(stderr, "W Number of points cannot exceed %u\n", maxpts-1);
   }
   return GSE_OKAY;
 }
@@ -157,25 +156,32 @@ save_data(const struct grib2secs *gsp, const char *title)
     return ERR_BADGRIB;
   }
   //--- begin memory section
-  if ((dbuf = malloc(sizeof(double) * npixels)) == NULL) {
+  if ((dbuf = mymalloc(sizeof(double) * npixels)) == NULL) {
     fprintf(stderr, "malloc failed %zu\n", npixels);
     return ERR_NOMEM;
   }
   r = decode_ds(gsp, dbuf, internal_unit_adjust);
-  if (r != GSE_OKAY) return r;
+  if (r != GSE_OKAY) {
+    goto END_FUNCTION;
+  }
+  if (GSE_OKAY != (r = decode_gds(gsp, &b))) {
+    goto END_FUNCTION;
+  }
   if (dumpfile) {
     size_t r;
     r = fwrite(dbuf, sizeof(dbuf[0]), npixels, dumpfile);
     if (r != npixels) { perror("gribpick.fwrite"); }
   }
-  decode_gds(gsp, &b);
   for (i = 0; i < maxpts; i++) {
     double x;
     if (ptlist[i].tag[0] == '\0') break;
     x = interpol(dbuf, &b, ptlist[i].lat, ptlist[i].lon);
     printf("%s,%8s,%8.5g\n", title, ptlist[i].tag, x);
   }
-  return GSE_OKAY;
+  r = GSE_OKAY;
+END_FUNCTION:
+  myfree(dbuf);
+  return r;
 }
 
 /* 第1節〜第7節のセット gsp について、
@@ -202,9 +208,11 @@ checksec7(const struct grib2secs *gsp)
   // 要素と面の複合フィルタ
   switch (gribscan_filter(sfilter, iparm, ftime, dura, vlev, memb)) {
     case ERR_FSTACK: 
-    case GSE_SKIP: goto END_SKIP; break;
+    case GSE_SKIP:
+      goto END_SKIP; break;
     default:
-    case GSE_OKAY: goto SAVE; break;
+    case GSE_OKAY:
+      goto SAVE; break;
   }
 
 SAVE:
@@ -239,6 +247,9 @@ argscan(int argc, const char **argv)
         sfilter = argv[i] + 2;
       } else if (argv[i][1] == 'd') {
         dumpfile = fopen(argv[i] + 2, "wb");
+        if (dumpfile == NULL) {
+          perror(argv[i]+2);
+        }
       } else {
         fprintf(stderr, "%s: unknown option\n", argv[i]);
         r = GSE_JUSTWARN;
