@@ -184,7 +184,6 @@ setpixel_t(png_bytep pixel, double val)
   unsigned frac = (unsigned)(((val - 2731.5) - istep * 30.0) * 0x100u / 30.0);
   switch (istep * 3) {
   case 36:
-  case 35:
   case 33:
   case -33:
   case -36:
@@ -196,7 +195,6 @@ setpixel_t(png_bytep pixel, double val)
   case -48:
     pixel[0] = 255; pixel[1] = 40; pixel[2] = 0; break;
   case 27:
-  case 25:
   case 24:
   case -51:
   case -54:
@@ -204,17 +202,14 @@ setpixel_t(png_bytep pixel, double val)
   case -60:
     pixel[0] = 255; pixel[1] = 153; pixel[2] = 0; break;
   case 21:
-  case 20:
   case 18:
     pixel[0] = 250; pixel[1] = 245; pixel[2] = 0; break;
   case 15:
     pixel[0] = 255; pixel[1] = 255; pixel[2] = 150; break;
   case 12:
-  case 10:
   case 9:
     pixel[0] = 255; pixel[1] = 255; pixel[2] = 240; break;
   case 6:
-  case 5:
   case 3:
   case -63:
   case -66:
@@ -224,11 +219,9 @@ setpixel_t(png_bytep pixel, double val)
   case 0:
     pixel[0] = 0; pixel[1] = 150; pixel[2] = 255; break;
   case -3:
-  case -5:
   case -6:
     pixel[0] = 0; pixel[1] = 65; pixel[2] = 255; break;
   case -9:
-  case -10:
   case -12:
   default:
     frac /= 2;
