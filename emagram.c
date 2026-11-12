@@ -71,6 +71,7 @@ obs_find(const char *title)
 vlev(const char *svlev)
 {
   if (svlev[0]=='p') { return (float)atof(svlev+1);
+  } else if (streq(svlev, "sfc")) { return nanf("");
   } else if (streq(svlev, "msl")) { return VLEV_MSL;
   } else if (streq(svlev, "z2")) { return VLEV_Z2M;
   } else if (streq(svlev, "z10")) { return VLEV_Z10M;
@@ -96,6 +97,7 @@ level_find(level_t *levels, size_t sz, float p)
 obs_store(obs_t *obsp, const char *sparm, const char *svlev, const char *sval)
 {
   float p = vlev(svlev);
+  if (isnan(p)) return 0;  // ignore unrecognized level ex. "sfc"
   float val = atof(sval);
   if (streq("T", sparm)) {
     if (p == VLEV_Z2M) { return 0; } // skip for now
@@ -195,10 +197,15 @@ dz_hydro(float t1, float t2, float p1, float p2)
 fix_t_profile(obs_t *obsp)
 {
   size_t jlast = obsp->ttd_count-1;
+  // following loop goes out-of-bounds if jlast < 3 thus jlast-2 ~ SIZE_MAX
+  if (jlast < 3) return 0;
+  size_t jend = jlast-2;
+  // following level-2 loop goes OOB if z_count-3 ~ SIZE_MAX
+  if (obsp->z_count < 4) return 0;
   // 実ゾンデデータを処理した場合の対策：
   // 鉛直30層（経験的閾値）以上あればこの関数は何もしない
   if (jlast > 30u) return 0;
-  for (size_t j=1; j<jlast-2; j++) {
+  for (size_t j=1; j<jend; j++) {
     size_t k0, k1, k2, k3;
     // k0 := j-1 と同じ気圧を持つ点
     for (k0=0; k0<(obsp->z_count-3); k0++) {
@@ -249,6 +256,9 @@ K3_FOUND:
 RETRY:
     obsp->ttd[jlast].p = w0*obsp->ttd[j].p + w1*obsp->ttd[j+1].p;
     obsp->ttd[jlast].y = w0*obsp->ttd[j].y + w1*obsp->ttd[j+1].y;
+    // temperature of the significant point is determined so that
+    // the average temperature of the layer match the height of the layer
+    // that may (actually sometimes) cause a bit of spike.
     obsp->ttd[jlast].x = (w0*obsp->ttd[j].x + w1*obsp->ttd[j+1].x)
       * ((dz*2.0f-dz_est)/dz_est);
     // 下側の気温減率をチェック
