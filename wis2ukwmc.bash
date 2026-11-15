@@ -51,7 +51,7 @@ cd work
 mv merged.grib ukwmc${ymd}T${hh}.bin
 
 # V要素を抜き出し
-/nwp/bin/gribslim -f'p[V]=' -oukwmc-v.bin ukwmc${ymd}T${hh}.bin
+/nwp/bin/gribslim -f'p[V]=' -oukwmc-v.bin ukwmc${ymd}T${hh}.bin > grib2lim.log
 
 # 画像化。U→V で処理する必要があるが wnm-ukwmc.rb が順序を
 # 保証できていないため V 要素を再度読ませる
