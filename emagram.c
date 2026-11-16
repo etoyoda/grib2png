@@ -97,7 +97,7 @@ level_find(level_t *levels, size_t sz, float p)
 obs_store(obs_t *obsp, const char *sparm, const char *svlev, const char *sval)
 {
   float p = vlev(svlev);
-  if (isnan(p)) return 0;  // ignore unrecognized level ex. "sfc"
+  if (isnan(p)) return 0;  // "sfc" など未知の面は読み飛ばす
   float val = atof(sval);
   if (streq("T", sparm)) {
     if (p == VLEV_Z2M) { return 0; } // skip for now
@@ -197,12 +197,12 @@ dz_hydro(float t1, float t2, float p1, float p2)
 fix_t_profile(obs_t *obsp)
 {
   size_t jlast = obsp->ttd_count-1;
-  // following loop goes out-of-bounds if jlast < 3 thus jlast-2 ~ SIZE_MAX
+  // jlast < 3 だと jlast-2 が SIZE_MAX 付近になり配列外を読むので打ち切る
   if (jlast < 3) return 0;
   size_t jend = jlast-2;
-  // following level-2 loop goes OOB if z_count-3 ~ SIZE_MAX
+  // z_count < 4 だと内側の探索ループの上限 z_count-3 が SIZE_MAX 付近になるので打ち切る
   if (obsp->z_count < 4) return 0;
-  // 実ゾンデデータを処理した場合の対策：
+    // 実ゾンデデータを処理した場合の対策：
   // 鉛直30層（経験的閾値）以上あればこの関数は何もしない
   if (jlast > 30u) return 0;
   for (size_t j=1; j<jend; j++) {
