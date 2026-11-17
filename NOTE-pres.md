@@ -132,7 +132,7 @@ $$
 半径 1.5·r_max 以内に、tanh で縁をぼかした一様な強制を加える。
 
 $$
-\text{cfug} \mathrel{+}= \pm\,\rho\,\frac{v_{max}^2}{r_{max}^2}\quad(\text{低気圧で }+,\ \text{高気圧で }-)
+\text{cfug} \mathrel{+}= \pm\,\rho\,\frac{v_{max}^2}{r_{max}^2}
 $$
 
 ---
@@ -227,6 +227,7 @@ $$
 | 摩擦項の差分方向 | ∂u/∂x + ∂v/∂y を正しく計算 |
 | 渦度・摩擦項の符号反転 | 理論式と一致。前線が谷として表現され、残差が約 4 割減 |
 | vxmm = 0.7 と緯度の制限 | 偽の渦を約 270 個から約 85 個に削減 |
+| sign of centrifugal forcing | corrected (was negative in antricyclone) |
 
 ---
 

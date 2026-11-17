@@ -269,11 +269,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
           double d = hypot(((double)ris-ci)*cosdeg(lat), (double)rj-cj)
            * deglat;
           double isinside = 0.5+0.5*tanh((rmax*1.5-d)/(0.5*deglat));
-          if (vmax<0.0) {
-            cfug[ri+rj*bni] -= 0.1*rho*vmax*vmax/(rmax*rmax)*isinside;
-          } else {
-            cfug[ri+rj*bni] += 0.1*rho*vmax*vmax/(rmax*rmax)*isinside;
-          }
+          cfug[ri+rj*bni] += 0.1*rho*vmax*vmax/(rmax*rmax)*isinside;
         }
       }
     }
