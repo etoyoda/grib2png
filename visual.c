@@ -629,11 +629,17 @@ drawfront(png_bytep *ovector, const double *gbuf,
   }
   switch (pal) {
   case PALETTE_T:
+    // mingrad=10.0 corresponds to
+    // 15.6 K/1000km and 23.4 K/1000km for solid line
     mingrad = 10.0;
     pal0 = 128; pal1 = pal2 = 12; pal3 = 255;
     break;
   case PALETTE_papT:
   default:
+    // tuned against JMA surface analysis over Japan.
+    // mingrad=21.333 corresponds to 33.3 K/1000km
+    // (assuming 35N and WebMercator z=2) and
+    // and solid lines drawn above 50 K/1000km
     mingrad = 21.333;
     pal0 = pal1 = 12; pal2 = 128; pal3 = 255;
     break;
