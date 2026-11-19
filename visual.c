@@ -565,6 +565,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
   memcpy(sbuf, gbuf, owidth * oheight * sizeof(double));
   // avoid halo zero mixing throuogh smoothing
   memcpy(xbuf, gbuf, owidth * oheight * sizeof(double));
+
   // 7x7 + 5x5 格子移動平均をかける。
   // 入力格子間を線形補間しているから二階微分がカクカクになる問題を緩和
 #pragma omp parallel for
@@ -573,7 +574,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
       double sum;
       sum = 0.0;
       for (size_t jc = j - 3; jc <= j + 3; jc++) {
-        for (int ics = i - 3; ics <= i + 3; ics++) {
+        for (int ics = (int)i - 3; ics <= (int)i + 3; ics++) {
           sum += gbuf[modssz(ics,owidth)+jc*owidth];
         }
       }
@@ -586,19 +587,20 @@ drawfront(png_bytep *ovector, const double *gbuf,
       double sum;
       sum = 0.0;
       for (size_t jc = j - 2; jc <= j + 2; jc++) {
-        for (int ics = i - 2; ics <= i + 2; ics++) {
+        for (int ics = (int)i - 2; ics <= (int)i + 2; ics++) {
           sum += xbuf[modssz(ics,owidth)+jc*owidth];
         }
       }
       sbuf[i+j*owidth] = sum / 25.0;
     }
   }
+
   // dgbuf に傾度ベクトル長を設定
 #pragma omp parallel for
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
-      size_t im1 = (i - 1) % owidth;
+      size_t im1 = (owidth + i - 1) % owidth;
       dgbuf[i + j*owidth] = 
         hypot(sbuf[ip1+j*owidth] - sbuf[im1+j*owidth],
         sbuf[i+(j+1)*owidth] - sbuf[i+(j-1)*owidth]);
@@ -611,7 +613,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
   for (size_t j = 1; j < oheight - 1; j++) {
     for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
-      size_t im1 = (i - 1) % owidth;
+      size_t im1 = (owidth + i - 1) % owidth;
       double nx, ny;
       nx = (sbuf[ip1+j*owidth]-sbuf[im1+j*owidth])/dgbuf[i+j*owidth];
       ny = (sbuf[i+(j+1)*owidth]-sbuf[i+(j-1)*owidth])/dgbuf[i+j*owidth];
@@ -638,9 +640,9 @@ drawfront(png_bytep *ovector, const double *gbuf,
   }
 #pragma omp parallel for
   for (size_t j = 6; j < oheight - 6; j++) {
-    for (size_t i = 6; i < owidth - 4; i++) {
+    for (size_t i = 0; i < owidth; i++) {
       size_t ip1 = (i + 1) % owidth;
-      size_t im1 = (i - 1) % owidth;
+      size_t im1 = (owidth + i - 1) % owidth;
       png_bytep pixel = ovector[j] + i * 4;
 #ifdef DRAW_LAPRACIAN_ZERO
       if (
