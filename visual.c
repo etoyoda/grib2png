@@ -629,6 +629,8 @@ drawfront(png_bytep *ovector, const double *gbuf,
   }
   switch (pal) {
   case PALETTE_T:
+    // tuned to highlight upper-tropospheric baroclinic
+    // zone using T500
     // mingrad=10.0 corresponds to
     // 15.6 K/1000km and 23.4 K/1000km for solid line
     mingrad = 10.0;
