@@ -563,6 +563,8 @@ drawfront(png_bytep *ovector, const double *gbuf,
   xbuf = dgbuf + owidth * oheight;
   tfpbuf = xbuf + owidth * oheight;
   memcpy(sbuf, gbuf, owidth * oheight * sizeof(double));
+  // avoid halo zero mixing throuogh smoothing
+  memcpy(xbuf, gbuf, owidth * oheight * sizeof(double));
   // 7x7 + 5x5 格子移動平均をかける。
   // 入力格子間を線形補間しているから二階微分がカクカクになる問題を緩和
 #pragma omp parallel for
