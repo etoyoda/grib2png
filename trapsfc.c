@@ -455,6 +455,7 @@ sfcanal(struct sfctrap_t *strap, outframe_t *ofp, char **textv)
   myfree(gbuf);
   myfree(p);
   myfree(rhs);
+  myfree(cor);
   if (debug) {
     return 8;
   }
