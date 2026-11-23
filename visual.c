@@ -634,7 +634,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
     // mingrad=10.0 corresponds to
     // 15.6 K/1000km and 23.4 K/1000km for solid line
     mingrad = 10.0;
-    pal0 = 128; pal1 = pal2 = 12; pal3 = 255;
+    pal0 = pal1 = pal2 = 12; pal3 = 255;
     break;
   case PALETTE_papT:
   default:
@@ -685,7 +685,7 @@ drawfront(png_bytep *ovector, const double *gbuf,
       ){
         if (dgbuf[i+j*owidth] < mingrad * 1.5) {
           if ((i+j) % 2u) goto skip;
-          if ((i-j) % 2u) goto skip;
+          // if ((i-j) % 2u) goto skip; // not needed
         }
         pixel[0] = pal0; pixel[1] = pal1; pixel[2] = pal2; pixel[3] = pal3;
         skip: ;
